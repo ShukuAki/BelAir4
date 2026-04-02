@@ -1,0 +1,563 @@
+/* ========================================
+RESET AND BASE STYLES
+======================================== */
+* {
+margin: 0;
+padding: 0;
+box-sizing: border-box;
+}
+
+body {
+font-family: 'Arial', 'Helvetica', sans-serif;
+line-height: 1.6;
+color: #333;
+background-color: #f5f5f5;
+min-height: 100vh;
+display: flex;
+flex-direction: column;
+}
+
+/* ========================================
+HEADER SECTION
+======================================== */
+.top-header-container {
+background-color: transparent;
+padding: 20px 0;
+position: absolute;
+top: 0;
+left: 50%;
+transform: translateX(-50%);
+z-index: 1000;
+width: auto;
+display: flex;
+align-items: center;
+gap: 0;
+}
+
+.logo-section {
+margin-right: 0;
+padding-right: 0;
+}
+
+.logo-link {
+text-decoration: none;
+display: flex;
+align-items: center;
+transition: opacity 0.3s;
+}
+
+.logo-link:hover {
+opacity: 0.8;
+}
+
+.logo-image {
+width: 140px;
+height: auto;
+object-fit: contain;
+filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+}
+
+.header-center-wrapper {
+display: flex;
+align-items: center;
+gap: 0;
+background-color: white;
+padding: 8px 16px;
+border-radius: 8px;
+box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.navbar-two-rows {
+display: flex;
+flex-direction: column;
+flex: 1;
+gap: 0;
+min-width: 700px;
+}
+
+.navbar-top-row {
+display: flex;
+align-items: center;
+gap: 12px;
+justify-content: flex-end;
+padding-bottom: 6px;
+border-bottom: 1px solid #e0e0e0;
+}
+
+.navbar-top-row a {
+color: #0a4d3c;
+text-decoration: none;
+font-size: 12px;
+padding: 3px 8px;
+border-radius: 4px;
+transition: background-color 0.3s;
+white-space: nowrap;
+display: flex;
+align-items: center;
+gap: 5px;
+font-weight: 500;
+}
+
+.navbar-top-row a:hover {
+background-color: #f0f8f5;
+}
+
+.navbar-top-row i {
+font-size: 11px;
+}
+
+.nav-separator {
+color: #ccc;
+font-size: 11px;
+}
+
+.navbar-bottom-row {
+display: flex;
+align-items: center;
+gap: 0;
+justify-content: space-between;
+padding-top: 6px;
+width: 100%;
+}
+
+.navbar-bottom-row > a,
+.navbar-bottom-row .dropdown {
+position: relative;
+}
+
+.navbar-bottom-row > a,
+.navbar-bottom-row .dropdown-toggle {
+color: #0a4d3c;
+text-decoration: none;
+padding: 6px 10px;
+font-size: 13px;
+transition: background-color 0.3s;
+white-space: nowrap;
+display: inline-block;
+cursor: pointer;
+border: none;
+background: none;
+font-weight: 500;
+border-radius: 4px;
+}
+
+.navbar-bottom-row > a:hover,
+.navbar-bottom-row .dropdown:hover > .dropdown-toggle {
+background-color: #f0f8f5;
+}
+
+.dropdown {
+display: inline-block;
+}
+
+.dropdown-toggle {
+display: flex;
+align-items: center;
+gap: 4px;
+}
+
+.navbar-bottom-row i.fa-chevron-down {
+font-size: 9px;
+transition: transform 0.3s ease;
+}
+
+.dropdown:hover .dropdown-toggle i.fa-chevron-down {
+transform: rotate(180deg);
+}
+
+.dropdown-menu {
+position: absolute;
+top: 100%;
+left: 0;
+background-color: #ffffff;
+min-width: 220px;
+box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+border: 1px solid #e0e0e0;
+border-top: 3px solid #0a4d3c;
+opacity: 0;
+visibility: hidden;
+transform: translateY(-10px);
+transition: all 0.3s ease;
+z-index: 1000;
+padding: 8px 0;
+}
+
+.dropdown:hover .dropdown-menu {
+opacity: 1;
+visibility: visible;
+transform: translateY(0);
+}
+
+.dropdown-menu a {
+display: block;
+padding: 10px 18px;
+color: #333;
+text-decoration: none;
+font-size: 13px;
+background-color: transparent;
+transition: all 0.2s ease;
+border-left: 3px solid transparent;
+white-space: normal;
+}
+
+.dropdown-menu a:hover {
+background-color: #f5f5f5;
+border-left-color: #0a4d3c;
+padding-left: 21px;
+}
+
+/* ========================================
+LOGIN SECTION WITH DECORATIVE LEAVES
+======================================== */
+.login-section {
+flex: 1;
+display: flex;
+align-items: center;
+justify-content: center;
+padding: 140px 20px 60px;
+background: #f5f5f5;
+position: relative;
+}
+
+/* Decorative Leaves - Minimalist */
+.leaf-decoration {
+position: absolute;
+font-size: 100px;
+color: rgba(10, 77, 60, 0.08);
+z-index: 0;
+pointer-events: none;
+}
+
+.leaf-left-1 { top: 120px; left: 50px; transform: rotate(-30deg); font-size: 120px; }
+.leaf-left-2 { top: 350px; left: 70px; transform: rotate(-50deg); font-size: 90px; }
+.leaf-left-3 { bottom: 100px; left: 60px; transform: rotate(-20deg); font-size: 110px; }
+.leaf-right-1 { top: 150px; right: 50px; transform: rotate(30deg) scaleX(-1); font-size: 115px; }
+.leaf-right-2 { top: 400px; right: 70px; transform: rotate(45deg) scaleX(-1); font-size: 95px; }
+.leaf-right-3 { bottom: 80px; right: 60px; transform: rotate(25deg) scaleX(-1); font-size: 125px; }
+
+.login-container {
+width: 100%;
+max-width: 480px;
+position: relative;
+z-index: 1;
+}
+
+.login-box {
+background: white;
+border-radius: 16px;
+box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+padding: 40px;
+}
+
+/* Login Header */
+.login-header {
+text-align: center;
+margin-bottom: 30px;
+}
+
+.login-header i {
+font-size: 48px;
+color: #0a4d3c;
+margin-bottom: 15px;
+}
+
+.login-header h1 {
+color: #0a4d3c;
+font-size: 28px;
+margin-bottom: 8px;
+}
+
+.login-header p {
+color: #666;
+font-size: 14px;
+}
+
+/* Login Form */
+.login-form {
+display: flex;
+flex-direction: column;
+gap: 20px;
+}
+
+.form-group {
+display: flex;
+flex-direction: column;
+gap: 8px;
+}
+
+.form-group label {
+color: #333;
+font-weight: 600;
+font-size: 14px;
+display: flex;
+align-items: center;
+gap: 8px;
+}
+
+.form-group label i {
+color: #0a4d3c;
+font-size: 14px;
+}
+
+.form-group input {
+padding: 12px 16px;
+border: 2px solid #e0e0e0;
+border-radius: 8px;
+font-size: 14px;
+transition: all 0.3s;
+outline: none;
+}
+
+.form-group input:focus {
+border-color: #0a4d3c;
+box-shadow: 0 0 0 3px rgba(10, 77, 60, 0.1);
+}
+
+/* Password Input with Toggle */
+.password-input-wrapper {
+position: relative;
+display: flex;
+align-items: center;
+}
+
+.password-input-wrapper input {
+width: 100%;
+padding-right: 45px;
+}
+
+.toggle-password {
+position: absolute;
+right: 12px;
+background: none;
+border: none;
+color: #666;
+cursor: pointer;
+padding: 8px;
+transition: color 0.3s;
+}
+
+.toggle-password:hover {
+color: #0a4d3c;
+}
+
+.toggle-password i {
+font-size: 16px;
+}
+
+/* Form Options */
+.form-options {
+display: flex;
+justify-content: space-between;
+align-items: center;
+margin-top: -5px;
+}
+
+.remember-me {
+display: flex;
+align-items: center;
+gap: 8px;
+font-size: 14px;
+color: #666;
+cursor: pointer;
+}
+
+.remember-me input[type="checkbox"] {
+width: 18px;
+height: 18px;
+cursor: pointer;
+accent-color: #0a4d3c;
+}
+
+.forgot-password {
+color: #0a4d3c;
+text-decoration: none;
+font-size: 14px;
+font-weight: 500;
+transition: color 0.3s;
+}
+
+.forgot-password:hover {
+color: #0d5f4a;
+text-decoration: underline;
+}
+
+/* Login Button */
+.login-btn {
+background: #0a4d3c;
+color: white;
+border: none;
+padding: 14px 24px;
+border-radius: 8px;
+font-size: 16px;
+font-weight: 600;
+cursor: pointer;
+transition: all 0.3s;
+display: flex;
+align-items: center;
+justify-content: center;
+gap: 10px;
+margin-top: 10px;
+}
+
+.login-btn:hover {
+background: #0d5f4a;
+transform: translateY(-2px);
+box-shadow: 0 6px 20px rgba(10, 77, 60, 0.3);
+}
+
+.login-btn:active {
+transform: translateY(0);
+}
+
+.login-btn i {
+font-size: 16px;
+}
+
+/* Register Link */
+.register-link {
+text-align: center;
+margin-top: 20px;
+padding-top: 20px;
+border-top: 1px solid #e0e0e0;
+}
+
+.register-link p {
+color: #666;
+font-size: 14px;
+}
+
+.register-link a {
+color: #0a4d3c;
+font-weight: 600;
+text-decoration: none;
+transition: color 0.3s;
+}
+
+.register-link a:hover {
+color: #0d5f4a;
+text-decoration: underline;
+}
+
+/* ========================================
+FOOTER SECTION
+======================================== */
+.footer {
+background-color: #0a4d3c;
+color: white;
+padding: 50px 20px 20px;
+margin-top: auto;
+}
+
+.footer-content {
+max-width: 1200px;
+margin: 0 auto;
+display: grid;
+grid-template-columns: 1fr 1.2fr 1fr 1fr;
+gap: 40px;
+margin-bottom: 30px;
+}
+
+.footer-section h3 {
+font-size: 1.1rem;
+font-weight: bold;
+margin-bottom: 20px;
+padding-bottom: 10px;
+border-bottom: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+.footer-links {
+list-style: none;
+padding: 0;
+margin: 0;
+}
+
+.footer-links li {
+margin-bottom: 12px;
+font-size: 0.9rem;
+line-height: 1.6;
+}
+
+.footer-links li i {
+margin-right: 8px;
+color: rgba(255, 255, 255, 0.8);
+font-size: 0.85rem;
+}
+
+.footer-links a {
+color: white;
+text-decoration: none;
+transition: color 0.3s, padding-left 0.3s;
+display: inline-block;
+}
+
+.footer-links a:hover {
+color: #b8e6d5;
+padding-left: 5px;
+}
+
+.footer-logo-section {
+display: flex;
+align-items: flex-start;
+justify-content: center;
+}
+
+.footer-logo-link {
+display: block;
+transition: opacity 0.3s;
+}
+
+.footer-logo-link:hover {
+opacity: 0.8;
+}
+
+.footer-logo {
+width: 100px;
+height: auto;
+object-fit: contain;
+}
+
+.footer-bottom {
+text-align: center;
+padding-top: 20px;
+border-top: 1px solid rgba(255, 255, 255, 0.2);
+max-width: 1200px;
+margin: 0 auto;
+}
+
+.footer-bottom p {
+font-size: 0.9rem;
+color: rgba(255, 255, 255, 0.8);
+margin: 0;
+}
+
+/* ========================================
+RESPONSIVE DESIGN
+======================================== */
+@media (max-width: 1024px) {
+.top-header-container {
+flex-direction: column;
+gap: 15px;
+}
+.navbar-two-rows { min-width: auto; }
+.navbar-top-row { justify-content: center; }
+.navbar-bottom-row { justify-content: center; }
+.footer-content { grid-template-columns: repeat(2, 1fr); }
+.footer-logo-section { grid-column: 1 / -1; }
+}
+
+@media (max-width: 768px) {
+.login-section { padding: 100px 20px 40px; }
+.login-box { padding: 30px 20px; }
+.login-header h1 { font-size: 24px; }
+.login-header i { font-size: 40px; }
+.navbar-top-row { flex-wrap: wrap; gap: 5px; }
+.navbar-bottom-row { flex-wrap: wrap; gap: 8px; }
+.nav-separator { display: none; }
+.footer-content { grid-template-columns: 1fr; text-align: center; }
+.leaf-decoration { display: none; }
+}
+
+@media (max-width: 576px) {
+.form-options { flex-direction: column; gap: 12px; align-items: flex-start; }
+.logo-image { width: 100px; }
+}
