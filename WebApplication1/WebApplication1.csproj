@@ -6,4 +6,50 @@
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Content Remove="Views\Home\about-laguna-belair.cshtml" />
+    <Content Remove="Views\Home\admin-dashboard.cshtml" />
+    <Content Remove="Views\Home\advertisements.cshtml" />
+    <Content Remove="Views\Home\announcement.cshtml" />
+    <Content Remove="Views\Home\calendars.cshtml" />
+    <Content Remove="Views\Home\committees-bods.cshtml" />
+    <Content Remove="Views\Home\community-map.cshtml" />
+    <Content Remove="Views\Home\contacts.cshtml" />
+    <Content Remove="Views\Home\forgot-password.cshtml" />
+    <Content Remove="Views\Home\forms-documents.cshtml" />
+    <Content Remove="Views\Home\forums.cshtml" />
+    <Content Remove="Views\Home\index.cshtml" />
+    <Content Remove="Views\Home\landmarks.cshtml" />
+    <Content Remove="Views\Home\login.cshtml" />
+    <Content Remove="Views\Home\meeting-agendas.cshtml" />
+    <Content Remove="Views\Home\register.cshtml" />
+    <Content Remove="Views\Home\report-concerns.cshtml" />
+    <Content Remove="Views\Home\reserve.cshtml" />
+    <Content Remove="Views\Home\staff-dashboard.cshtml" />
+    <Content Remove="Views\Home\vehicle-pet-registration.cshtml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="Views\Home\about-laguna-belair.cshtml" />
+    <None Include="Views\Home\admin-dashboard.cshtml" />
+    <None Include="Views\Home\advertisements.cshtml" />
+    <None Include="Views\Home\announcement.cshtml" />
+    <None Include="Views\Home\calendars.cshtml" />
+    <None Include="Views\Home\committees-bods.cshtml" />
+    <None Include="Views\Home\community-map.cshtml" />
+    <None Include="Views\Home\contacts.cshtml" />
+    <None Include="Views\Home\forgot-password.cshtml" />
+    <None Include="Views\Home\forms-documents.cshtml" />
+    <None Include="Views\Home\forums.cshtml" />
+    <None Include="Views\Home\index.cshtml" />
+    <None Include="Views\Home\landmarks.cshtml" />
+    <None Include="Views\Home\login.cshtml" />
+    <None Include="Views\Home\meeting-agendas.cshtml" />
+    <None Include="Views\Home\register.cshtml" />
+    <None Include="Views\Home\report-concerns.cshtml" />
+    <None Include="Views\Home\reserve.cshtml" />
+    <None Include="Views\Home\staff-dashboard.cshtml" />
+    <None Include="Views\Home\vehicle-pet-registration.cshtml" />
+  </ItemGroup>
+
 </Project>

@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reserve Amenities - Laguna BelAir 4</title>
+<!-- Fonts: Playfair Display + Outfit -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<!-- Icons -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<!-- Flatpickr CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<!-- Styles -->
+<link rel="stylesheet" href="reserve.css">
+</head>
+<body>
+
+<!-- HEADER / NAV -->
+<div class="top-header-container">
+  <div class="logo-section">
+    <a href="index.html" class="logo-link">
+      <img src="LBAlogo.png" alt="Laguna BelAir 4 Logo" class="logo-image">
+    </a>
+  </div>
+  <div class="header-center-wrapper">
+    <div class="navbar-two-rows">
+      <div class="navbar-top-row">
+        <a href="login.html"><i class="fas fa-sign-in-alt"></i> Login</a>
+        <span class="nav-sep">|</span>
+        <a href="register.html"><i class="fas fa-user-plus"></i> Register</a>
+      </div>
+      <div class="navbar-bottom-row">
+        <a href="./index.html" class="nav-link">Home</a>
+        <div class="dropdown">
+          <a href="#" class="dropdown-toggle">About <i class="fas fa-chevron-down"></i></a>
+          <div class="dropdown-menu">
+            <a href="about-laguna-belair.html">Laguna BelAir 4</a>
+            <a href="committees-bods.html">Committees / BODs</a>
+            <a href="landmarks.html">Landmarks</a>
+            <a href="contacts.html">Contacts</a>
+          </div>
+        </div>
+        <div class="dropdown">
+          <a href="#" class="dropdown-toggle">Community <i class="fas fa-chevron-down"></i></a>
+          <div class="dropdown-menu">
+            <a href="announcement.html">Announcements</a>
+            <a href="forums.html">Forums / Discussions</a>
+            <a href="advertisements.html">Community Exchange</a>
+            <a href="calendars.html">Calendars</a>
+            <a href="meeting-agendas.html">Meeting Records</a>
+            <a href="community-map.html">Community Map</a>
+          </div>
+        </div>
+        <div class="dropdown">
+          <a href="#" class="dropdown-toggle">Services <i class="fas fa-chevron-down"></i></a>
+          <div class="dropdown-menu">
+            <a href="reserve.html" class="active">Reserve Amenities</a>
+            <a href="report-concerns.html">Report an Issue</a>
+          </div>
+        </div>
+        <div class="dropdown">
+          <a href="#" class="dropdown-toggle">Others <i class="fas fa-chevron-down"></i></a>
+          <div class="dropdown-menu">
+            <a href="forms-documents.html">Forms &amp; Documents</a>
+            <a href="vehicle-pet-registration.html">Register Pet/Vehicle</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- HERO SECTION -->
+<section class="hero-section">
+  <div class="hero-inner">
+    <h1 class="hero-title">Reserve an Amenity</h1>
+    <p class="hero-sub">Book village facilities for your events, practices or gatherings<br>quick and easy online reservation.</p>
+  </div>
+</section>
+
+<!-- MAIN CONTENT -->
+<main class="main-content">
+  
+  <!-- Tabs -->
+  <div class="tabs-container">
+    <button class="tab-btn active" data-amenity="Basketball Court">
+      <i class="fas fa-basketball-ball"></i> Basketball Court
+    </button>
+    <button class="tab-btn" data-amenity="Multi-Purpose Hall">
+      <i class="fas fa-building"></i> Multi-Purpose Hall
+    </button>
+  </div>
+
+  <!-- Single Column Form -->
+  <div class="form-wrapper">
+    <div class="form-card">
+      <h2 class="form-card-title">Reservation Details</h2>
+      
+      <form id="reservationForm">
+        <div class="form-group">
+          <label>Selected Amenity <span class="required">*</span></label>
+          <input type="text" id="selectedAmenity" readonly class="readonly-input">
+        </div>
+
+        <div class="form-group">
+          <label>Reservation Date <span class="required">*</span></label>
+          <input type="text" id="datePicker" placeholder="Click to select a date" readonly>
+          <div class="calendar-legend-inline">
+            <span class="legend-dot available"></span> Available
+            <span class="legend-dot user-pending"></span> Your Pending
+            <span class="legend-dot user-approved"></span> Your Approved
+            <span class="legend-dot unavailable"></span> Unavailable
+          </div>
+          <small class="form-hint"><i class="fas fa-info-circle"></i> Click the date field to open calendar</small>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Start Time <span class="required">*</span></label>
+            <select id="startTime" class="time-select" disabled>
+              <option value="">Select date first</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>End Time <span class="required">*</span></label>
+            <select id="endTime" class="time-select" disabled>
+              <option value="">Select start time first</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Purpose of Reservation <span class="required">*</span></label>
+          <select id="purpose" required>
+            <option value="">Select a purpose</option>
+            <option value="Practice">Practice</option>
+            <option value="Event">Event</option>
+            <option value="Meeting">Meeting</option>
+            <option value="Celebration">Celebration</option>
+            <option value="Others">Others</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Additional Notes</label>
+          <textarea id="notes" rows="3" placeholder="Any special requests or additional information..."></textarea>
+        </div>
+
+        <div class="terms-section">
+          <h4>Terms and Reminders</h4>
+          <ul>
+            <li>Reservations are subject to approval by the HOA.</li>
+            <li>Please follow village rules and regulations when using the facility.</li>
+            <li>Any damages to the facility may result in penalties.</li>
+            <li>Payment for the reservation must be made at the HOA Office.</li>
+            <li>Maximum of <strong>2 reservations per day</strong> per homeowner.</li>
+            <li>Bookings can only be made up to <strong>14 days</strong> in advance.</li>
+          </ul>
+        </div>
+
+        <div class="checkbox-group">
+          <input type="checkbox" id="agreeTerms" required>
+          <label for="agreeTerms">I agree to the terms and conditions. <span class="required">*</span></label>
+        </div>
+
+        <button type="submit" class="submit-btn">Submit Reservation Request</button>
+      </form>
+    </div>
+  </div>
+</main>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="footer-content">
+    <div class="footer-section footer-logo-section">
+      <a href="index.html" class="footer-logo-link">
+        <img src="LBAlogo.png" alt="Bel-Air Village Logo" class="footer-logo">
+      </a>
+    </div>
+    <div class="footer-section">
+      <h3>Contact Us</h3>
+      <ul class="footer-links">
+        <li><i class="fas fa-map-marker-alt"></i> P3 B15 Alpine St. LBA4, Brgy. Don Jose, Sta. Rosa, Laguna 4026</li>
+        <li><i class="fas fa-phone"></i> (+63) 09398588138</li>
+        <li><i class="fas fa-phone"></i> 0495603050</li>
+      </ul>
+    </div>
+    <div class="footer-section">
+      <h3>Quick Links</h3>
+      <ul class="footer-links">
+        <li><a href="about-laguna-belair.html">About Us</a></li>
+        <li><a href="contacts.html">Contact Us</a></li>
+        <li><a href="faq.html">FAQs</a></li>
+        <li><a href="privacy-policy.html">Privacy Policy</a></li>
+      </ul>
+    </div>
+    <div class="footer-section">
+      <h3>Site Links</h3>
+      <ul class="footer-links">
+        <li><a href="announcement.html">Announcements</a></li>
+        <li><a href="calendars.html">Community Calendar</a></li>
+        <li><a href="forms-documents.html">Forms &amp; Documents</a></li>
+        <li><a href="report-concerns.html">Report a Concern</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <p>&copy; <span id="current-year"></span> Laguna BelAir 4. All rights reserved.</p>
+  </div>
+</footer>
+
+<!-- Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="reserve.js"></script>
+<script>
+  document.getElementById('current-year').textContent = new Date().getFullYear();
+  
+  document.querySelectorAll('.dropdown').forEach(dropdown => {
+    const toggle = dropdown.querySelector('.dropdown-toggle');
+    if (!toggle) return;
+    toggle.addEventListener('click', (e) => {
+      e.preventDefault();
+      const isOpen = dropdown.classList.contains('dropdown-open');
+      document.querySelectorAll('.dropdown').forEach(d => d.classList.remove('dropdown-open'));
+      if (!isOpen) dropdown.classList.add('dropdown-open');
+    });
+  });
+  
+  document.addEventListener('click', (e) => {
+    document.querySelectorAll('.dropdown').forEach(d => {
+      if (!d.contains(e.target)) d.classList.remove('dropdown-open');
+    });
+  });
+</script>
+</body>
+</html>

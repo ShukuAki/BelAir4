@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Staff Dashboard — Laguna BelAir 4</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Nunito:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link rel="stylesheet" href="staff-dashboard.css">
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+  <div class="sb-brand">
+    <div class="sb-logo-wrap"><i class="fas fa-leaf"></i></div>
+    <div class="sb-brand-text">
+      <span class="site-name">Laguna BelAir 4</span>
+      <span class="site-sub">Staff Portal</span>
+    </div>
+  </div>
+  <div class="sb-user">
+    <div class="sb-avatar" id="sb-avatar">MS</div>
+    <div class="sb-user-info">
+      <div class="u-name" id="sb-uname">Maria Santos</div>
+      <div class="u-role" id="sb-urole">Admin Officer</div>
+    </div>
+    <div class="online-dot"></div>
+  </div>
+  <nav class="sb-nav">
+    <div class="nav-group-label">Main</div>
+    <div class="nav-link active" onclick="showPage('overview',this)"><i class="fas fa-th-large"></i> Overview</div>
+    <div class="nav-link" onclick="showPage('incidents',this)"><i class="fas fa-exclamation-circle"></i> Incident Reports<span class="nav-badge" id="badge-incidents">0</span></div>
+    <div class="nav-link" onclick="showPage('taskboard',this)"><i class="fas fa-columns"></i> Task Board<span class="nav-badge yellow" id="badge-tasks">7</span></div>
+    <div class="nav-group-label">Approvals</div>
+    <div class="nav-link" onclick="showPage('residents',this)"><i class="fas fa-home"></i> Residents &amp; Verification<span class="nav-badge" id="badge-verif">3</span></div>
+    <div class="nav-link" onclick="showPage('exchange',this)"><i class="fas fa-store"></i> Community Exchange<span class="nav-badge yellow" id="badge-exchange">5</span></div>
+    <div class="nav-link" onclick="showPage('forums',this)"><i class="fas fa-comments"></i> Usap Tayo sa HOA<span class="nav-badge yellow">2</span></div>
+    <div class="nav-link" onclick="showPage('reservations',this)"><i class="fas fa-calendar-check"></i> Reservations<span class="nav-badge yellow">3</span></div>
+    <div class="nav-group-label">Content Management</div>
+    <div class="nav-link" onclick="showPage('announcements',this)"><i class="fas fa-bullhorn"></i> Announcements</div>
+    <div class="nav-link" onclick="showPage('events',this)"><i class="fas fa-calendar-alt"></i> Events / Calendar</div>
+    <div class="nav-link" onclick="showPage('bods',this)"><i class="fas fa-users"></i> Committees &amp; BODs</div>
+    <div class="nav-link" onclick="showPage('meetings',this)"><i class="fas fa-clipboard-list"></i> Meeting Records</div>
+    <div class="nav-link" onclick="showPage('documents',this)"><i class="fas fa-file-alt"></i> Forms &amp; Documents</div>
+    <div class="nav-link" onclick="showPage('contacts',this)"><i class="fas fa-phone-alt"></i> Contacts</div>
+    <div class="nav-group-label">Tools</div>
+    <div class="nav-link" onclick="showPage('communitymap',this)"><i class="fas fa-map-marked-alt"></i> Community Map</div>
+    <div class="nav-link" onclick="showPage('wordbank',this)"><i class="fas fa-brain"></i> Word Bank</div>
+    <div class="nav-link" onclick="showPage('reports',this)"><i class="fas fa-chart-bar"></i> Reports</div>
+    <div class="nav-link" onclick="showPage('subscribers',this)"><i class="fas fa-bell"></i> Subscribers</div>
+  </nav>
+  <div class="sb-footer" onclick="window.location.href='index.html'"><i class="fas fa-sign-out-alt"></i> Sign Out</div>
+</aside>
+
+<!-- TOPBAR -->
+<div class="topbar" id="topbar">
+  <button class="sidebar-toggle" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
+  <div>
+    <div class="topbar-title" id="topbar-title">Overview</div>
+    <div class="topbar-breadcrumb"><i class="fas fa-home"></i> Dashboard <i class="fas fa-chevron-right"></i> <span id="breadcrumb-label">Overview</span></div>
+  </div>
+  <div class="topbar-right">
+    <div class="icon-btn" onclick="openNotifModal()" title="Notifications" style="position:relative">
+      <i class="fas fa-bell"></i>
+      <div id="badge-notifications" style="display:none;position:absolute;top:-4px;right:-4px;background:#c0392b;color:white;border-radius:99px;font-size:9px;font-weight:800;min-width:16px;height:16px;align-items:center;justify-content:center;padding:0 3px;border:2px solid white;">0</div>
+    </div>
+    <div class="icon-btn" title="Settings" onclick="openModal('settings')"><i class="fas fa-cog"></i></div>
+  </div>
+</div>
+
+<main class="main" id="main-content">
+
+<!-- ═══════ OVERVIEW ═══════ -->
+<div class="page active" id="page-overview">
+  <div class="stats-row">
+    <div class="stat-card"><div class="stat-icon si-red"><i class="fas fa-exclamation-circle"></i></div><div class="stat-info"><div class="stat-val" id="stat-open-incidents">0</div><div class="stat-label">Open Incidents</div><div class="stat-sub sub-down"><i class="fas fa-clock"></i> Awaiting action</div></div></div>
+    <div class="stat-card"><div class="stat-icon si-yellow"><i class="fas fa-user-clock"></i></div><div class="stat-info"><div class="stat-val" id="stat-pending-verif">3</div><div class="stat-label">Pending Verification</div><div class="stat-sub sub-warn"><i class="fas fa-clock"></i> Awaiting review</div></div></div>
+    <div class="stat-card"><div class="stat-icon si-orange"><i class="fas fa-store"></i></div><div class="stat-info"><div class="stat-val" id="overview-pending-exchange">5</div><div class="stat-label">Exchange Approvals</div><div class="stat-sub sub-warn"><i class="fas fa-clock"></i> Pending review</div></div></div>
+    <div class="stat-card"><div class="stat-icon si-green"><i class="fas fa-home"></i></div><div class="stat-info"><div class="stat-val">342</div><div class="stat-label">Verified Residents</div><div class="stat-sub sub-up"><i class="fas fa-arrow-up"></i> +4 this month</div></div></div>
+  </div>
+  <div class="grid-60-40">
+    <div class="card">
+      <div class="card-header"><h3><i class="fas fa-exclamation-triangle"></i> Recent Incident Reports</h3><button class="see-all" onclick="showPage('incidents',null)">View All</button></div>
+      <div class="scroll-y" id="overview-incidents-list"><div class="empty-state-inline"><i class="fas fa-inbox"></i><span>No incident reports yet</span></div></div>
+    </div>
+    <div class="flex-col gap-18">
+      <div class="card">
+        <div class="card-header"><h3><i class="fas fa-history"></i> Recent Activity</h3></div>
+        <div class="scroll-y" style="max-height:190px" id="activity-feed">
+          <div class="activity-item"><div class="act-dot" style="background:var(--blue)"></div><div class="act-body"><p><strong>Jess T.</strong> approved post from <em>Pedro Cruz</em></p><div class="act-time">1 hr ago</div></div></div>
+          <div class="activity-item"><div class="act-dot" style="background:var(--accent-dark)"></div><div class="act-body"><p><strong>Rodel L.</strong> verified resident <em>Sofia Mendez</em></p><div class="act-time">2 hr ago</div></div></div>
+          <div class="activity-item"><div class="act-dot" style="background:var(--orange)"></div><div class="act-body"><p><strong>Carlo P.</strong> flagged post in <em>Usap Tayo</em></p><div class="act-time">3 hr ago</div></div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><h3><i class="fas fa-calendar-alt"></i> Upcoming Events</h3><button class="see-all" onclick="showPage('events',null)">Manage</button></div>
+        <div id="overview-events-mini">
+          <div class="event-row"><div class="ev-badge"><div class="ev-day">19</div><div class="ev-mon">Feb</div></div><div class="ev-info"><div class="ev-title">BOD Gate Pass Policy Review</div><div class="ev-time"><i class="fas fa-clock"></i> 10:00 AM · Admin Office</div></div></div>
+          <div class="event-row"><div class="ev-badge"><div class="ev-day">25</div><div class="ev-mon">Feb</div></div><div class="ev-info"><div class="ev-title">Community Clean-up Drive</div><div class="ev-time"><i class="fas fa-clock"></i> 7:00 AM · All Blocks</div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="grid-3">
+    <div class="card">
+      <div class="card-header"><h3><i class="fas fa-user-check"></i> Verification Queue</h3><button class="see-all" onclick="showPage('residents',null)">View All</button></div>
+      <div class="verif-item"><div class="verif-av">SM</div><div class="verif-info"><div class="verif-name">Sofia Mendez</div><div class="verif-sub">Block A, H12 · Today</div></div><div class="verif-actions"><button class="approve-btn yes" onclick="quickApprove(this,'Sofia Mendez')"><i class="fas fa-check"></i></button><button class="approve-btn no" onclick="quickReject(this,'Sofia Mendez')"><i class="fas fa-times"></i></button><button class="approve-btn view-btn" onclick="openResidentDetail({name:'Sofia Mendez',unit:'Block A, H12',date:'Today',docs:[{name:'Government ID'},{name:'Proof of Residency'}]})"><i class="fas fa-eye"></i></button></div></div>
+      <div class="verif-item"><div class="verif-av" style="background:linear-gradient(135deg,#1a5fa8,#4a90e2)">JR</div><div class="verif-info"><div class="verif-name">Joel Ramos</div><div class="verif-sub">Block C, H8 · Feb 17</div></div><div class="verif-actions"><button class="approve-btn yes" onclick="quickApprove(this,'Joel Ramos')"><i class="fas fa-check"></i></button><button class="approve-btn no" onclick="quickReject(this,'Joel Ramos')"><i class="fas fa-times"></i></button><button class="approve-btn view-btn" onclick="openResidentDetail({name:'Joel Ramos',unit:'Block C, H8',date:'Feb 17',docs:[{name:'Government ID'}]})"><i class="fas fa-eye"></i></button></div></div>
+      <div class="verif-item"><div class="verif-av" style="background:linear-gradient(135deg,#c06418,#e8903a)">LP</div><div class="verif-info"><div class="verif-name">Liza Pascual</div><div class="verif-sub">Block B, H3 · Feb 16 ⚠️</div></div><div class="verif-actions"><button class="approve-btn yes" onclick="quickApprove(this,'Liza Pascual')"><i class="fas fa-check"></i></button><button class="approve-btn no" onclick="quickReject(this,'Liza Pascual')"><i class="fas fa-times"></i></button><button class="approve-btn view-btn" onclick="openResidentDetail({name:'Liza Pascual',unit:'Block B, H3',date:'Feb 16',docs:[{name:'Government ID'}],missing:'Proof of Residency'})"><i class="fas fa-eye"></i></button></div></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><h3><i class="fas fa-store"></i> Pending Exchange Posts</h3><button class="see-all" onclick="showPage('exchange',null)">View All</button></div>
+      <div id="overview-exchange-list"></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><h3><i class="fas fa-bolt"></i> Quick Actions</h3></div>
+      <div class="qa-grid">
+        <div class="qa-item" onclick="openModal('addTask')"><div class="qa-emoji">📋</div><div class="qa-label">New Task</div><div class="qa-sub">Add to task board</div></div>
+        <div class="qa-item" onclick="openModal('addAnnouncement')"><div class="qa-emoji">📢</div><div class="qa-label">Announcement</div><div class="qa-sub">Post to residents</div></div>
+        <div class="qa-item" onclick="showPage('communitymap',null)"><div class="qa-emoji">🗺️</div><div class="qa-label">Community Map</div><div class="qa-sub">All map items</div></div>
+        <div class="qa-item" onclick="showPage('documents',null)"><div class="qa-emoji">📁</div><div class="qa-label">Upload Doc</div><div class="qa-sub">Forms &amp; files</div></div>
+        <div class="qa-item" onclick="openModal('addIncident')"><div class="qa-emoji">⚠️</div><div class="qa-label">Log Incident</div><div class="qa-sub">New report</div></div>
+        <div class="qa-item" onclick="openModal('addEvent')"><div class="qa-emoji">📅</div><div class="qa-label">Add Event</div><div class="qa-sub">To calendar</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ INCIDENTS ═══════ -->
+<div class="page" id="page-incidents">
+  <div class="sec-header"><h2><i class="fas fa-exclamation-circle"></i> Incident Reports &amp; Monitoring</h2><button class="btn btn-primary" onclick="openModal('addIncident')"><i class="fas fa-plus"></i> Log Incident</button></div>
+  <div style="display:grid;grid-template-columns:1.65fr 1fr;gap:18px;margin-bottom:20px">
+    <div class="card">
+      <div class="card-header"><h3><i class="fas fa-map-marked-alt"></i> Incident Map</h3><button class="see-all" onclick="showPage('communitymap',null)">Full Map</button></div>
+      <div id="cm-preview" style="height:420px"></div>
+    </div>
+    <div class="flex-col gap-16">
+      <div class="card"><div class="card-header"><h3><i class="fas fa-chart-pie"></i> Priority Distribution</h3></div><div class="card-body">
+        <div class="progress-wrap"><div class="progress-label"><span>High</span><span id="dist-high-n">0</span></div><div class="progress-bar"><div class="progress-fill pf-orange" id="dist-high-bar" style="width:0%"></div></div></div>
+        <div class="progress-wrap"><div class="progress-label"><span>Medium</span><span id="dist-medium-n">0</span></div><div class="progress-bar"><div class="progress-fill pf-blue" id="dist-medium-bar" style="width:0%"></div></div></div>
+        <div class="progress-wrap"><div class="progress-label"><span>Low</span><span id="dist-low-n">0</span></div><div class="progress-bar"><div class="progress-fill pf-green" id="dist-low-bar" style="width:0%"></div></div></div>
+        <div id="dist-empty" style="color:var(--gray-400);font-size:12px;font-style:italic;text-align:center;padding:8px 0">No incidents logged yet</div>
+      </div></div>
+      <div class="card"><div class="card-header"><h3><i class="fas fa-tags"></i> Common Keywords</h3><span class="page-note">From reports</span></div>
+        <div class="keyword-grid" id="common-keywords-grid"><div class="empty-state-inline" style="padding:16px"><i class="fas fa-tags"></i><span>Appear as incidents are logged</span></div></div>
+      </div>
+    </div>
+  </div>
+  <div class="card" id="incidents-table-card">
+    <div class="card-header"><h3><i class="fas fa-list"></i> All Incident Reports</h3>
+      <div class="chip-row">
+        <div class="chip active" onclick="filterIncidents('all',this)">All</div>
+        <div class="chip" onclick="filterIncidents('open',this)">Open</div>
+        <div class="chip" onclick="filterIncidents('progress',this)">In Progress</div>
+        <div class="chip" onclick="filterIncidents('resolved',this)">Resolved</div>
+      </div>
+    </div>
+    <div class="tbl-wrap"><table><thead><tr><th>Ref #</th><th>Type</th><th>Description</th><th>Location</th><th>Category</th><th>Priority</th><th>Status</th><th>Reporter</th><th>Date</th><th>Public</th><th>Action</th></tr></thead>
+    <tbody id="incidents-tbody"><tr><td colspan="11" style="text-align:center;padding:32px;color:var(--gray-400)"><i class="fas fa-inbox" style="font-size:24px;display:block;margin-bottom:8px"></i>No incidents yet. Use "Log Report" to add one.</td></tr></tbody></table></div>
+  </div>
+</div>
+
+<!-- ═══════ TASK BOARD ═══════ -->
+<div class="page" id="page-taskboard">
+  <div class="sec-header"><h2><i class="fas fa-columns"></i> Task Board</h2><button class="btn btn-primary" onclick="openModal('addTask')"><i class="fas fa-plus"></i> Add Task</button></div>
+  <div class="card">
+    <div class="kanban-toolbar">
+      <button class="btn btn-primary btn-sm" id="ktf-all" onclick="filterTasks('all',this)"><i class="fas fa-th"></i> All Tasks</button>
+      <button class="btn btn-outline btn-sm" id="ktf-high" onclick="filterTasks('high',this)"><i class="fas fa-arrow-up"></i> High Priority</button>
+      <div style="margin-left:auto;font-size:12px;color:var(--gray-400)">Drag cards between columns · Click ✕ to delete</div>
+    </div>
+    <div class="kanban-board" id="kanban-board">
+      <div class="k-col" data-col="todo">
+        <div class="k-col-head"><div class="k-col-dot" style="background:#9e9a94"></div><div class="k-col-title">To Do</div><div class="k-col-count" id="k-count-todo">4</div></div>
+        <div class="k-col-body" id="k-body-todo">
+          <div class="k-card kc-orange" draggable="true" data-task-id="t1" data-priority="high" data-due="2026-02-28"><div class="k-card-header-row"><span class="tag tag-orange">Admin</span><button class="k-card-del" onclick="deleteTask(this)"><i class="fas fa-times"></i></button></div><div class="k-card-title">Update emergency contact list for Phase 3</div><div class="k-card-meta"><div class="k-card-date overdue"><i class="fas fa-clock"></i> Feb 28</div><div class="mini-avs"><div class="mini-av ma-g">MS</div></div></div></div>
+          <div class="k-card kc-orange" draggable="true" data-task-id="t2" data-priority="medium" data-due="2026-03-01"><div class="k-card-header-row"><span class="tag tag-orange">Admin</span><button class="k-card-del" onclick="deleteTask(this)"><i class="fas fa-times"></i></button></div><div class="k-card-title">Prepare March BOD meeting agenda</div><div class="k-card-meta"><div class="k-card-date"><i class="fas fa-calendar"></i> Mar 1</div><div class="mini-avs"><div class="mini-av ma-b">JT</div></div></div></div>
+          <div class="k-card kc-yellow" draggable="true" data-task-id="t3" data-priority="medium" data-due="2026-03-05"><div class="k-card-header-row"><span class="tag tag-gray">Maintenance</span><button class="k-card-del" onclick="deleteTask(this)"><i class="fas fa-times"></i></button></div><div class="k-card-title">Schedule annual park equipment inspection</div><div class="k-card-meta"><div class="k-card-date"><i class="fas fa-calendar"></i> Mar 5</div><div class="mini-avs"><div class="mini-av ma-a">RL</div></div></div></div>
+          <div class="k-card" draggable="true" data-task-id="t4" data-priority="low" data-due="2026-02-20"><div class="k-card-header-row"><span class="tag tag-blue">Communications</span><button class="k-card-del" onclick="deleteTask(this)"><i class="fas fa-times"></i></button></div><div class="k-card-title">Post February community newsletter</div><div class="k-card-meta"><div class="k-card-date"><i class="fas fa-calendar"></i> Feb 20</div><div class="mini-avs"><div class="mini-av ma-b">CP</div></div></div></div>
+          <button class="k-add-btn" onclick="openModal('addTask')"><i class="fas fa-plus"></i> Add task</button>
+        </div>
+      </div>
+      <div class="k-col" data-col="progress">
+        <div class="k-col-head"><div class="k-col-dot" style="background:#1a5fa8"></div><div class="k-col-title">In Progress</div><div class="k-col-count" id="k-count-progress">2</div></div>
+        <div class="k-col-body" id="k-body-progress">
+          <div class="k-card kc-orange" draggable="true" data-task-id="t5" data-priority="high" data-due="2026-02-28"><div class="k-card-header-row"><span class="tag tag-orange">Finance</span><button class="k-card-del" onclick="deleteTask(this)"><i class="fas fa-times"></i></button></div><div class="k-card-title">Q1 dues follow-up — 18 households</div><div class="k-card-meta"><div class="k-card-date"><i class="fas fa-calendar"></i> Feb 28</div><div class="mini-avs"><div class="mini-av ma-b">JT</div></div></div></div>
+          <div class="k-card kc-yellow" draggable="true" data-task-id="t6" data-priority="medium" data-due="2026-02-25"><div class="k-card-header-row"><span class="tag tag-gray">Maintenance</span><button class="k-card-del" onclick="deleteTask(this)"><i class="fas fa-times"></i></button></div><div class="k-card-title">Repaint perimeter fence — Block C</div><div class="k-card-meta"><div class="k-card-date"><i class="fas fa-calendar"></i> Feb 25</div><div class="mini-avs"><div class="mini-av ma-a">RL</div></div></div></div>
+          <button class="k-add-btn" onclick="openModal('addTask')"><i class="fas fa-plus"></i> Add task</button>
+        </div>
+      </div>
+      <div class="k-col" data-col="review">
+        <div class="k-col-head"><div class="k-col-dot" style="background:#c06418"></div><div class="k-col-title">For Review</div><div class="k-col-count" id="k-count-review">2</div></div>
+        <div class="k-col-body" id="k-body-review">
+          <div class="k-card kc-orange" draggable="true" data-task-id="t7" data-priority="high" data-due="2026-02-19"><div class="k-card-header-row"><span class="tag tag-orange">Admin</span><button class="k-card-del" onclick="deleteTask(this)"><i class="fas fa-times"></i></button></div><div class="k-card-title">Gate pass policy revision — BOD approval</div><div class="k-card-meta"><div class="k-card-date"><i class="fas fa-calendar"></i> Feb 19</div><div class="mini-avs"><div class="mini-av ma-b">JT</div><div class="mini-av ma-g">MS</div></div></div></div>
+          <div class="k-card kc-yellow" draggable="true" data-task-id="t8" data-priority="medium" data-due="2026-02-22"><div class="k-card-header-row"><span class="tag tag-green">Environment</span><button class="k-card-del" onclick="deleteTask(this)"><i class="fas fa-times"></i></button></div><div class="k-card-title">Main Blvd landscaping proposal — 3 quotes</div><div class="k-card-meta"><div class="k-card-date"><i class="fas fa-calendar"></i> Feb 22</div><div class="mini-avs"><div class="mini-av ma-g">MS</div></div></div></div>
+          <button class="k-add-btn" onclick="openModal('addTask')"><i class="fas fa-plus"></i> Add task</button>
+        </div>
+      </div>
+      <div class="k-col" data-col="done">
+        <div class="k-col-head"><div class="k-col-dot" style="background:#2e7a50"></div><div class="k-col-title">Done</div><div class="k-col-count" id="k-count-done">3</div></div>
+        <div class="k-col-body" id="k-body-done">
+          <div class="k-card kc-green" draggable="true" data-task-id="t9" data-priority="low" data-due="2026-02-15"><div class="k-card-header-row"><span class="tag tag-green"><i class="fas fa-check"></i> Done</span><button class="k-card-del" onclick="deleteTask(this)"><i class="fas fa-times"></i></button></div><div class="k-card-title">Install CCTV cameras at Gate 2</div><div class="k-card-meta"><div class="k-card-date"><i class="fas fa-check-circle"></i> Feb 15</div><div class="mini-avs"><div class="mini-av ma-a">RL</div></div></div></div>
+          <div class="k-card kc-green" draggable="true" data-task-id="t10" data-priority="low" data-due="2026-02-10"><div class="k-card-header-row"><span class="tag tag-green"><i class="fas fa-check"></i> Done</span><button class="k-card-del" onclick="deleteTask(this)"><i class="fas fa-times"></i></button></div><div class="k-card-title">Submit Q4 2025 financial report</div><div class="k-card-meta"><div class="k-card-date"><i class="fas fa-check-circle"></i> Feb 10</div><div class="mini-avs"><div class="mini-av ma-b">JT</div></div></div></div>
+          <div class="k-card kc-green" draggable="true" data-task-id="t11" data-priority="low" data-due="2026-02-08"><div class="k-card-header-row"><span class="tag tag-green"><i class="fas fa-check"></i> Done</span><button class="k-card-del" onclick="deleteTask(this)"><i class="fas fa-times"></i></button></div><div class="k-card-title">Conduct fire drill — Blocks A &amp; B</div><div class="k-card-meta"><div class="k-card-date"><i class="fas fa-check-circle"></i> Feb 8</div><div class="mini-avs"><div class="mini-av ma-g">MS</div></div></div></div>
+          <button class="k-add-btn" onclick="openModal('addTask')"><i class="fas fa-plus"></i> Add task</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ RESIDENTS & VERIFICATION ═══════ -->
+<div class="page" id="page-residents">
+  <div class="sec-header"><h2><i class="fas fa-home"></i> Residents &amp; Verification</h2></div>
+  <div class="res-tabs">
+    <button class="res-tab active" onclick="switchResTab('pending',this)"><i class="fas fa-clock"></i> Pending Verification <span class="nav-badge" id="badge-verif-tab" style="position:static;display:inline-flex;margin-left:4px">3</span></button>
+    <button class="res-tab" onclick="switchResTab('verified',this)"><i class="fas fa-check-circle"></i> Verified Residents</button>
+  </div>
+  <div id="res-tab-pending">
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-header"><h3><i class="fas fa-clock"></i> Pending Verification</h3><span class="page-note">Residents awaiting staff review</span></div>
+      <div id="verif-pending-list">
+        <div class="verif-item" id="verif-SM"><div class="verif-av">SM</div><div class="verif-info"><div class="verif-name">Sofia Mendez</div><div class="verif-sub">Block A, H12 · Today · Gov't ID + Proof of Residency</div></div><div class="verif-actions"><button class="btn btn-primary btn-sm" onclick="approveResident('verif-SM','Sofia Mendez')"><i class="fas fa-check"></i> Approve</button><button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="rejectResident('verif-SM','Sofia Mendez')"><i class="fas fa-times"></i> Reject</button><button class="btn btn-outline btn-sm" onclick="openResidentDetail({name:'Sofia Mendez',unit:'Block A, H12',date:'Today',docs:[{name:'Government ID'},{name:'Proof of Residency'}]})"><i class="fas fa-eye"></i> View</button></div></div>
+        <div class="verif-item" id="verif-JR"><div class="verif-av" style="background:linear-gradient(135deg,#1a5fa8,#4a90e2)">JR</div><div class="verif-info"><div class="verif-name">Joel Ramos</div><div class="verif-sub">Block C, H8 · Feb 17 · Gov't ID submitted</div></div><div class="verif-actions"><button class="btn btn-primary btn-sm" onclick="approveResident('verif-JR','Joel Ramos')"><i class="fas fa-check"></i> Approve</button><button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="rejectResident('verif-JR','Joel Ramos')"><i class="fas fa-times"></i> Reject</button><button class="btn btn-outline btn-sm" onclick="openResidentDetail({name:'Joel Ramos',unit:'Block C, H8',date:'Feb 17',docs:[{name:'Government ID'}]})"><i class="fas fa-eye"></i> View</button></div></div>
+        <div class="verif-item" id="verif-LP"><div class="verif-av" style="background:linear-gradient(135deg,#c06418,#e8903a)">LP</div><div class="verif-info"><div class="verif-name">Liza Pascual</div><div class="verif-sub">Block B, H3 · Feb 16 · ⚠️ Missing address proof</div></div><div class="verif-actions"><button class="btn btn-primary btn-sm" onclick="approveResident('verif-LP','Liza Pascual')"><i class="fas fa-check"></i> Approve</button><button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="rejectResident('verif-LP','Liza Pascual')"><i class="fas fa-times"></i> Reject</button><button class="btn btn-outline btn-sm" onclick="openResidentDetail({name:'Liza Pascual',unit:'Block B, H3',date:'Feb 16',docs:[{name:'Government ID'}],missing:'Proof of Residency'})"><i class="fas fa-eye"></i> View</button></div></div>
+      </div>
+    </div>
+    <div class="card"><div class="card-header"><h3><i class="fas fa-history"></i> Recently Verified</h3></div>
+      <div class="tbl-wrap"><table><thead><tr><th>Resident</th><th>Unit</th><th>Verified By</th><th>Date</th></tr></thead><tbody>
+        <tr><td><strong>Maria Lopez</strong></td><td>Block A, H4</td><td>Maria S.</td><td>Feb 17</td></tr>
+        <tr><td><strong>David Cruz</strong></td><td>Block D, H7</td><td>Jess T.</td><td>Feb 15</td></tr>
+        <tr><td><strong>Karen Dizon</strong></td><td>Block B, H11</td><td>Maria S.</td><td>Feb 12</td></tr>
+      </tbody></table></div>
+    </div>
+  </div>
+  <div id="res-tab-verified" style="display:none">
+    <div class="card">
+      <div class="card-header"><h3><i class="fas fa-users"></i> All Verified Residents (342)</h3>
+        <input type="text" placeholder="Search residents…" style="border:1.5px solid var(--gray-200);border-radius:var(--radius);padding:6px 12px;font-family:inherit;font-size:12.5px;outline:none;width:200px" oninput="searchResidents(this.value)">
+      </div>
+      <div class="tbl-wrap"><table><thead><tr><th>Name</th><th>Unit</th><th>Contact</th><th>Verified</th><th>Status</th><th>Actions</th></tr></thead><tbody id="residents-tbody">
+        <tr id="res-r1"><td><strong>Juan dela Cruz</strong></td><td>Block C, H5</td><td>09171234567</td><td>Jan 10</td><td><span class="status-pill sp-approved">Verified</span></td><td><button class="btn btn-outline btn-sm" onclick="viewResidentInfo('Juan dela Cruz','Block C, H5')"><i class="fas fa-eye"></i> View</button> <button class="btn btn-outline btn-sm" style="color:var(--orange)" onclick="openSuspendModal('res-r1','Juan dela Cruz')"><i class="fas fa-ban"></i> Suspend</button></td></tr>
+        <tr id="res-r2"><td><strong>Ana Reyes</strong></td><td>Block D, H3</td><td>09181234567</td><td>Jan 12</td><td><span class="status-pill sp-approved">Verified</span></td><td><button class="btn btn-outline btn-sm" onclick="viewResidentInfo('Ana Reyes','Block D, H3')"><i class="fas fa-eye"></i> View</button> <button class="btn btn-outline btn-sm" style="color:var(--orange)" onclick="openSuspendModal('res-r2','Ana Reyes')"><i class="fas fa-ban"></i> Suspend</button></td></tr>
+        <tr id="res-r3"><td><strong>Maria Lopez</strong></td><td>Block A, H4</td><td>09191234567</td><td>Feb 17</td><td><span class="status-pill sp-approved">Verified</span></td><td><button class="btn btn-outline btn-sm" onclick="viewResidentInfo('Maria Lopez','Block A, H4')"><i class="fas fa-eye"></i> View</button> <button class="btn btn-outline btn-sm" style="color:var(--orange)" onclick="openSuspendModal('res-r3','Maria Lopez')"><i class="fas fa-ban"></i> Suspend</button></td></tr>
+      </tbody></table></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ COMMUNITY EXCHANGE ═══════ -->
+<div class="page" id="page-exchange">
+  <div class="sec-header"><h2><i class="fas fa-store"></i> Community Exchange Approvals</h2><a href="advertisements.html" target="_blank" class="btn btn-outline btn-sm"><i class="fas fa-external-link-alt"></i> View Public Page</a></div>
+  <div class="card" style="margin-bottom:18px">
+    <div class="card-header"><h3><i class="fas fa-clock"></i> Pending Approvals (<span id="pending-exchange-count">5</span>)</h3></div>
+    <div id="pending-exchange-list"></div>
+  </div>
+  <div class="card">
+    <div class="card-header"><h3><i class="fas fa-check-circle"></i> Recently Published</h3></div>
+    <div class="tbl-wrap"><table><thead><tr><th>Listing</th><th>Category</th><th>Poster</th><th>Published</th><th>Status</th><th>Actions</th></tr></thead><tbody id="published-exchange-list"></tbody></table></div>
+  </div>
+</div>
+
+<!-- ═══════ USAP TAYO ═══════ -->
+<div class="page" id="page-forums">
+  <div class="sec-header">
+    <h2><i class="fas fa-comments"></i> Usap Tayo Para sa HOA</h2>
+    <a href="forums.html" target="_blank" class="btn btn-primary"><i class="fas fa-external-link-alt"></i> Open Forum Page</a>
+  </div>
+
+  <!-- Info banner explaining Option 2 -->
+  <div class="info-banner" style="margin-bottom:20px">
+    <i class="fas fa-info-circle"></i> <strong>Staff manage discussions directly on the forum page.</strong>
+    Moderation, replies, and approvals are done on <a href="forums.html" target="_blank" style="color:var(--green);font-weight:800;text-decoration:underline">forums.html</a>.
+    This dashboard shows a live summary of forum activity.
+  </div>
+
+  <!-- Live stats pulled from lba4_forums localStorage -->
+  <div class="stats-row" style="margin-bottom:20px">
+    <div class="stat-card"><div class="stat-icon si-blue"><i class="fas fa-comments"></i></div><div class="stat-info"><div class="stat-val" id="forums-stat-posts">87</div><div class="stat-label">Total Discussions</div><div class="stat-sub sub-up">This month</div></div></div>
+    <div class="stat-card"><div class="stat-icon si-green"><i class="fas fa-reply"></i></div><div class="stat-info"><div class="stat-val" id="forums-stat-replies">234</div><div class="stat-label">Total Replies</div><div class="stat-sub sub-up">Community active</div></div></div>
+    <div class="stat-card"><div class="stat-icon si-green"><i class="fas fa-check-double"></i></div><div class="stat-info"><div class="stat-val" id="forums-stat-resolved">31</div><div class="stat-label">Resolved</div><div class="stat-sub sub-up">Answered by staff</div></div></div>
+    <div class="stat-card"><div class="stat-icon si-red"><i class="fas fa-flag"></i></div><div class="stat-info"><div class="stat-val" id="forums-stat-flagged">2</div><div class="stat-label">Flagged Posts</div><div class="stat-sub sub-down"><i class="fas fa-exclamation"></i> Needs review</div></div></div>
+  </div>
+
+  <div class="grid-60-40">
+    <div class="card">
+      <div class="card-header"><h3><i class="fas fa-flag" style="color:var(--red)"></i> Flagged Posts — Needs Attention</h3><span class="page-note">Manage on <a href="forums.html" target="_blank" style="color:var(--blue)">forum page</a></span></div>
+      <div class="forum-item"><div class="forum-av" style="background:var(--red)">AK</div><div class="forum-body"><div class="forum-title">"The security guard at Gate 1 is useless!!!"</div><div class="forum-meta"><span>Anonymous Resident</span><span><i class="fas fa-flag"></i> Flagged by 3 users</span><span>Feb 18, 10:23 AM</span></div><div class="forum-actions"><button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="removeForumPost(this)"><i class="fas fa-trash"></i> Remove</button><button class="btn btn-primary btn-sm" onclick="allowForumPost(this)"><i class="fas fa-check"></i> Allow</button><a href="forums.html" target="_blank" class="btn btn-outline btn-sm"><i class="fas fa-external-link-alt"></i> Manage on Page</a></div></div></div>
+      <div class="forum-item"><div class="forum-av" style="background:var(--orange)">RD</div><div class="forum-body"><div class="forum-title">Selling imported perfumes — DM for details [spam]</div><div class="forum-meta"><span>Rina Dela Rosa</span><span><i class="fas fa-flag"></i> Flagged as spam</span><span>Feb 17, 3:45 PM</span></div><div class="forum-actions"><button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="removeForumPost(this)"><i class="fas fa-trash"></i> Remove</button><a href="forums.html" target="_blank" class="btn btn-outline btn-sm"><i class="fas fa-external-link-alt"></i> Manage on Page</a></div></div></div>
+    </div>
+    <div class="flex-col gap-16">
+      <div class="card"><div class="card-header"><h3><i class="fas fa-chart-bar"></i> Category Breakdown</h3></div><div class="card-body">
+        <div class="progress-wrap"><div class="progress-label"><span>General</span><span>38%</span></div><div class="progress-bar"><div class="progress-fill pf-green" style="width:38%"></div></div></div>
+        <div class="progress-wrap"><div class="progress-label"><span>Concerns</span><span>27%</span></div><div class="progress-bar"><div class="progress-fill pf-red" style="width:27%"></div></div></div>
+        <div class="progress-wrap"><div class="progress-label"><span>Suggestions</span><span>20%</span></div><div class="progress-bar"><div class="progress-fill pf-orange" style="width:20%"></div></div></div>
+        <div class="progress-wrap"><div class="progress-label"><span>Community Help</span><span>15%</span></div><div class="progress-bar"><div class="progress-fill pf-blue" style="width:15%"></div></div></div>
+      </div></div>
+      <div class="card"><div class="card-header"><h3><i class="fas fa-shield-alt"></i> Moderation Summary</h3></div><div class="card-body">
+        <div class="stat-row-mini"><span>Total Posts (this month)</span><strong>87</strong></div>
+        <div class="stat-row-mini"><span>Posts Removed</span><strong style="color:var(--red)">4</strong></div>
+        <div class="stat-row-mini"><span>Users Warned</span><strong style="color:var(--orange)">2</strong></div>
+        <div class="stat-row-mini"><span>Users Banned</span><strong style="color:var(--red)">0</strong></div>
+      </div></div>
+      <div class="card" style="text-align:center;padding:20px 16px">
+        <i class="fas fa-comments" style="font-size:32px;color:var(--green);display:block;margin-bottom:10px"></i>
+        <div style="font-size:14px;font-weight:800;color:var(--green);margin-bottom:6px">Manage Full Forum</div>
+        <div style="font-size:12px;color:var(--gray-400);margin-bottom:14px">Reply, moderate, and control all discussions from the forum page</div>
+        <a href="forums.html" target="_blank" class="btn btn-primary" style="width:100%;justify-content:center"><i class="fas fa-external-link-alt"></i> Go to Forum Page</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ RESERVATIONS ═══════ -->
+<div class="page" id="page-reservations">
+  <div class="sec-header"><h2><i class="fas fa-calendar-check"></i> Amenity Reservations</h2></div>
+  <div class="card"><div class="card-header"><h3><i class="fas fa-clock"></i> Pending Reservations (3)</h3></div>
+  <div class="tbl-wrap"><table><thead><tr><th>Resident</th><th>Amenity</th><th>Date &amp; Time</th><th>Purpose</th><th>Status</th><th>Actions</th></tr></thead><tbody>
+    <tr id="resv-1"><td><strong>Santos Family</strong></td><td>Clubhouse</td><td>Feb 22, 4:00 PM</td><td>Birthday Party</td><td><span class="status-pill sp-pending">Pending</span></td><td><button class="btn btn-primary btn-sm" onclick="approveReservation('resv-1')"><i class="fas fa-check"></i> Approve</button> <button class="btn btn-outline btn-sm" onclick="rejectReservation('resv-1')"><i class="fas fa-times"></i> Reject</button></td></tr>
+    <tr id="resv-2"><td><strong>Reyes Family</strong></td><td>Basketball Court</td><td>Feb 23, 8:00 AM</td><td>Team Practice</td><td><span class="status-pill sp-pending">Pending</span></td><td><button class="btn btn-primary btn-sm" onclick="approveReservation('resv-2')"><i class="fas fa-check"></i> Approve</button> <button class="btn btn-outline btn-sm" onclick="rejectReservation('resv-2')"><i class="fas fa-times"></i> Reject</button></td></tr>
+    <tr id="resv-3"><td><strong>Cruz, Pedro</strong></td><td>Function Room</td><td>Mar 1, 2:00 PM</td><td>Meeting</td><td><span class="status-pill sp-pending">Pending</span></td><td><button class="btn btn-primary btn-sm" onclick="approveReservation('resv-3')"><i class="fas fa-check"></i> Approve</button> <button class="btn btn-outline btn-sm" onclick="rejectReservation('resv-3')"><i class="fas fa-times"></i> Reject</button></td></tr>
+  </tbody></table></div></div>
+</div>
+
+<!-- ═══════ ANNOUNCEMENTS ═══════ -->
+<div class="page" id="page-announcements">
+  <div class="sec-header"><h2><i class="fas fa-bullhorn"></i> Announcements</h2><button class="btn btn-primary" onclick="openModal('addAnnouncement')"><i class="fas fa-plus"></i> Post Announcement</button></div>
+  <div class="card"><div class="card-header"><h3><i class="fas fa-list"></i> Published &amp; Scheduled</h3></div>
+  <div class="tbl-wrap"><table><thead><tr><th>Title</th><th>Category</th><th>Posted By</th><th>Date</th><th>Status</th><th>Actions</th></tr></thead><tbody id="announcements-tbody">
+    <tr id="ann-1"><td><strong>February Community Newsletter</strong></td><td><span class="tag tag-blue">Newsletter</span></td><td>Maria Santos</td><td>Feb 15</td><td><span class="status-pill sp-approved">Published</span></td><td><button class="btn btn-outline btn-sm" onclick="editAnnouncement('ann-1','February Community Newsletter','General')"><i class="fas fa-edit"></i> Edit</button> <button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="deleteAnnouncement('ann-1','February Community Newsletter')"><i class="fas fa-trash"></i></button></td></tr>
+    <tr id="ann-2"><td><strong>Water Interruption — Feb 20</strong></td><td><span class="tag tag-red">Urgent</span></td><td>Maria Santos</td><td>Feb 14</td><td><span class="status-pill sp-approved">Published</span></td><td><button class="btn btn-outline btn-sm" onclick="editAnnouncement('ann-2','Water Interruption — Feb 20','Urgent')"><i class="fas fa-edit"></i> Edit</button> <button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="deleteAnnouncement('ann-2','Water Interruption')"><i class="fas fa-trash"></i></button></td></tr>
+    <tr id="ann-3"><td><strong>March BOD Meeting Agenda</strong></td><td><span class="tag tag-orange">Governance</span></td><td>Jess Torres</td><td>Feb 12</td><td><span class="status-pill sp-approved">Published</span></td><td><button class="btn btn-outline btn-sm" onclick="editAnnouncement('ann-3','March BOD Meeting Agenda','Governance')"><i class="fas fa-edit"></i> Edit</button> <button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="deleteAnnouncement('ann-3','March BOD Meeting Agenda')"><i class="fas fa-trash"></i></button></td></tr>
+  </tbody></table></div></div>
+</div>
+
+<!-- ═══════ EVENTS / CALENDAR ═══════ -->
+<div class="page" id="page-events">
+  <div class="sec-header"><h2><i class="fas fa-calendar-alt"></i> Events / Calendar</h2><button class="btn btn-primary" onclick="openModal('addEvent')"><i class="fas fa-plus"></i> Add Event</button></div>
+  <div class="grid-60-40" style="align-items:start">
+    <div class="card">
+      <div class="card-header">
+        <h3><i class="fas fa-calendar"></i> <span id="cal-month-label">February 2026</span></h3>
+        <div style="display:flex;gap:6px"><button class="btn btn-outline btn-sm" onclick="calNav(-1)"><i class="fas fa-chevron-left"></i></button><button class="btn btn-outline btn-sm" onclick="calNav(1)"><i class="fas fa-chevron-right"></i></button></div>
+      </div>
+      <div style="padding:16px"><div class="cal-grid" id="cal-grid"></div></div>
+    </div>
+    <div class="flex-col gap-16">
+      <div class="card">
+        <div class="card-header"><h3><i class="fas fa-calendar-check"></i> Upcoming Events</h3></div>
+        <div id="events-list"></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><h3><i class="fas fa-history" style="color:var(--gray-400)"></i> Past Events</h3><span class="page-note">Archive</span></div>
+        <div id="past-events-list"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ COMMITTEES & BODS ═══════ -->
+<div class="page" id="page-bods">
+  <div class="sec-header"><h2><i class="fas fa-users"></i> Committees &amp; Board of Directors</h2><button class="btn btn-primary" onclick="openModal('addMember')"><i class="fas fa-plus"></i> Add Member</button></div>
+  <div class="card">
+    <div class="card-header"><h3><i class="fas fa-user-tie"></i> Board of Directors</h3></div>
+    <div class="bods-grid" id="bods-grid">
+      <div class="bod-card" id="bod-1" data-name="Roberto Dela Cruz" data-pos="President" data-term="2024–2026" data-phone="09171234567">
+        <div class="bod-avatar">RD</div><div class="bod-name">Roberto Dela Cruz</div><div class="bod-pos">President</div>
+        <div class="bod-term">Term: 2024–2026</div>
+        <div class="bod-contact"><i class="fas fa-phone"></i> 09171234567</div>
+        <div class="bod-actions"><button class="btn btn-outline btn-sm" onclick="viewBodMember('bod-1')"><i class="fas fa-eye"></i> View</button><button class="btn btn-outline btn-sm" onclick="editBodMember('bod-1')"><i class="fas fa-edit"></i> Edit</button><button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="deleteBodMember('bod-1','Roberto Dela Cruz')"><i class="fas fa-trash"></i></button></div>
+      </div>
+      <div class="bod-card" id="bod-2" data-name="Carla Reyes" data-pos="Vice President" data-term="2024–2026" data-phone="09181234567">
+        <div class="bod-avatar" style="background:linear-gradient(135deg,#1a5fa8,#4a90e2)">CR</div><div class="bod-name">Carla Reyes</div><div class="bod-pos">Vice President</div>
+        <div class="bod-term">Term: 2024–2026</div>
+        <div class="bod-contact"><i class="fas fa-phone"></i> 09181234567</div>
+        <div class="bod-actions"><button class="btn btn-outline btn-sm" onclick="viewBodMember('bod-2')"><i class="fas fa-eye"></i> View</button><button class="btn btn-outline btn-sm" onclick="editBodMember('bod-2')"><i class="fas fa-edit"></i> Edit</button><button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="deleteBodMember('bod-2','Carla Reyes')"><i class="fas fa-trash"></i></button></div>
+      </div>
+      <div class="bod-card" id="bod-3" data-name="Jose Santos" data-pos="Treasurer" data-term="2024–2026" data-phone="09191234567">
+        <div class="bod-avatar" style="background:linear-gradient(135deg,#c06418,#e8903a)">JS</div><div class="bod-name">Jose Santos</div><div class="bod-pos">Treasurer</div>
+        <div class="bod-term">Term: 2024–2026</div>
+        <div class="bod-contact"><i class="fas fa-phone"></i> 09191234567</div>
+        <div class="bod-actions"><button class="btn btn-outline btn-sm" onclick="viewBodMember('bod-3')"><i class="fas fa-eye"></i> View</button><button class="btn btn-outline btn-sm" onclick="editBodMember('bod-3')"><i class="fas fa-edit"></i> Edit</button><button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="deleteBodMember('bod-3','Jose Santos')"><i class="fas fa-trash"></i></button></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ MEETING RECORDS ═══════ -->
+<div class="page" id="page-meetings">
+  <div class="sec-header"><h2><i class="fas fa-clipboard-list"></i> Meeting Records &amp; Governance</h2><button class="btn btn-primary" onclick="openModal('addMeeting')"><i class="fas fa-plus"></i> Upload Record</button></div>
+  <div class="card"><div class="card-header"><h3><i class="fas fa-file-alt"></i> Meeting Records</h3></div>
+  <div class="tbl-wrap"><table><thead><tr><th>Title</th><th>Date</th><th>Type</th><th>File</th><th>Actions</th></tr></thead><tbody id="meetings-tbody">
+    <tr id="meet-1"><td><strong>BOD Meeting Minutes — Feb 2026</strong></td><td>Feb 7</td><td><span class="tag tag-orange">BOD</span></td><td><span class="tag tag-gray"><i class="fas fa-file-pdf"></i> PDF</span></td><td><button class="btn btn-outline btn-sm" onclick="showToast('Download started')"><i class="fas fa-download"></i></button> <button class="btn btn-outline btn-sm" onclick="editMeeting('meet-1','BOD Meeting Minutes — Feb 2026','BOD','2026-02-07')"><i class="fas fa-edit"></i></button> <button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="deleteMeeting('meet-1','BOD Meeting Minutes')"><i class="fas fa-trash"></i></button></td></tr>
+    <tr id="meet-2"><td><strong>Annual General Meeting — Jan 2026</strong></td><td>Jan 15</td><td><span class="tag tag-blue">AGM</span></td><td><span class="tag tag-gray"><i class="fas fa-file-pdf"></i> PDF</span></td><td><button class="btn btn-outline btn-sm" onclick="showToast('Download started')"><i class="fas fa-download"></i></button> <button class="btn btn-outline btn-sm" onclick="editMeeting('meet-2','Annual General Meeting — Jan 2026','AGM','2026-01-15')"><i class="fas fa-edit"></i></button> <button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="deleteMeeting('meet-2','Annual General Meeting')"><i class="fas fa-trash"></i></button></td></tr>
+  </tbody></table></div></div>
+</div>
+
+<!-- ═══════ FORMS & DOCUMENTS ═══════ -->
+<div class="page" id="page-documents">
+  <div class="sec-header"><h2><i class="fas fa-file-alt"></i> Forms &amp; Documents</h2><button class="btn btn-primary" onclick="openModal('addDocument')"><i class="fas fa-upload"></i> Upload Document</button></div>
+  <div class="card"><div class="card-header"><h3><i class="fas fa-folder-open"></i> All Documents</h3></div>
+  <div class="tbl-wrap"><table><thead><tr><th>Document Name</th><th>Category</th><th>Actions</th></tr></thead><tbody id="documents-tbody">
+    <tr id="doc-1"><td><strong>Gate Pass Application Form</strong></td><td><span class="tag tag-orange">Form</span></td><td><button class="btn btn-outline btn-sm" onclick="viewDocument('Gate Pass Application Form')"><i class="fas fa-eye"></i> View</button> <button class="btn btn-outline btn-sm" onclick="showToast('Download started')"><i class="fas fa-download"></i> Download</button> <button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="deleteDocument('doc-1','Gate Pass Application Form')"><i class="fas fa-trash"></i> Delete</button></td></tr>
+    <tr id="doc-2"><td><strong>Amenity Reservation Form</strong></td><td><span class="tag tag-blue">Form</span></td><td><button class="btn btn-outline btn-sm" onclick="viewDocument('Amenity Reservation Form')"><i class="fas fa-eye"></i> View</button> <button class="btn btn-outline btn-sm" onclick="showToast('Download started')"><i class="fas fa-download"></i> Download</button> <button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="deleteDocument('doc-2','Amenity Reservation Form')"><i class="fas fa-trash"></i> Delete</button></td></tr>
+    <tr id="doc-3"><td><strong>House Renovation Guidelines</strong></td><td><span class="tag tag-green">Policy</span></td><td><button class="btn btn-outline btn-sm" onclick="viewDocument('House Renovation Guidelines')"><i class="fas fa-eye"></i> View</button> <button class="btn btn-outline btn-sm" onclick="showToast('Download started')"><i class="fas fa-download"></i> Download</button> <button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="deleteDocument('doc-3','House Renovation Guidelines')"><i class="fas fa-trash"></i> Delete</button></td></tr>
+  </tbody></table></div></div>
+</div>
+
+<!-- ═══════ CONTACTS ═══════ -->
+<div class="page" id="page-contacts">
+  <div class="sec-header"><h2><i class="fas fa-phone-alt"></i> Contacts Management</h2><button class="btn btn-primary" onclick="openModal('addContact')"><i class="fas fa-plus"></i> Add Contact</button></div>
+  <div class="card"><div class="card-header"><h3><i class="fas fa-address-book"></i> Directory</h3></div>
+  <div class="tbl-wrap"><table><thead><tr><th>Name / Office</th><th>Role</th><th>Phone</th><th>Email</th><th>Actions</th></tr></thead><tbody id="contacts-tbody">
+    <tr id="con-1"><td><strong>HOA Office</strong></td><td>Main Office</td><td>0495603050</td><td><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="a9c1c6c8e9c5cbc89d87cac6c4">[email&#160;protected]</a></td><td><button class="btn btn-outline btn-sm" onclick="editContact('con-1','HOA Office','Main Office','0495603050','hoa@lba4.com')"><i class="fas fa-edit"></i> Edit</button> <button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="deleteContact('con-1','HOA Office')"><i class="fas fa-trash"></i></button></td></tr>
+    <tr id="con-2"><td><strong>Security Office</strong></td><td>Security</td><td>09398588138</td><td>—</td><td><button class="btn btn-outline btn-sm" onclick="editContact('con-2','Security Office','Security','09398588138','')"><i class="fas fa-edit"></i> Edit</button> <button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="deleteContact('con-2','Security Office')"><i class="fas fa-trash"></i></button></td></tr>
+    <tr id="con-3"><td><strong>Maintenance Team</strong></td><td>Maintenance</td><td>09171234567</td><td>—</td><td><button class="btn btn-outline btn-sm" onclick="editContact('con-3','Maintenance Team','Maintenance','09171234567','')"><i class="fas fa-edit"></i> Edit</button> <button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="deleteContact('con-3','Maintenance Team')"><i class="fas fa-trash"></i></button></td></tr>
+  </tbody></table></div></div>
+</div>
+
+<!-- ═══════ COMMUNITY MAP ═══════ -->
+<div class="page" id="page-communitymap">
+  <div class="sec-header">
+    <h2><i class="fas fa-map-marked-alt"></i> Community Map Management</h2>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-outline btn-sm" onclick="cmResetView()"><i class="fas fa-compress-arrows-alt"></i> Reset View</button>
+      <button class="btn btn-primary btn-sm" onclick="openModal('addMapItem')"><i class="fas fa-plus"></i> Add Map Item</button>
+    </div>
+  </div>
+  <div class="grid-60-40" style="align-items:start">
+    <div class="card" style="overflow:hidden">
+      <div class="card-header" style="flex-wrap:wrap;gap:8px">
+        <h3><i class="fas fa-map"></i> LBA4 Village Map</h3>
+        <div class="chip-row" id="cm-filter-chips">
+          <div class="chip active" onclick="cmSetFilter('all',this)">All</div>
+          <div class="chip" onclick="cmSetFilter('Incident',this)">Incidents</div>
+          <div class="chip" onclick="cmSetFilter('Concern',this)">Concerns</div>
+          <div class="chip" onclick="cmSetFilter('Project',this)">Projects</div>
+          <div class="chip" onclick="cmSetFilter('Landmark',this)">Landmarks</div>
+        </div>
+      </div>
+      <div id="cm-main-map" style="height:500px"></div>
+      <div class="map-legend">
+        <div class="legend-item"><div class="legend-dot" style="background:#c0392b"></div> Incident</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#7c3aed"></div> Concern</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#c0621a"></div> Project</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#1a5fa8"></div> Landmark</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#e74c3c;border:2px solid #fff;box-shadow:0 0 4px rgba(0,0,0,.3)"></div> From Residents</div>
+      </div>
+    </div>
+    <div class="flex-col gap-16">
+      <div class="card">
+        <div class="card-header"><h3><i class="fas fa-list"></i> Map Items</h3><span class="page-note" id="cm-item-count">0 items</span></div>
+        <div class="scroll-y" id="cm-items-list" style="max-height:340px"><div class="empty-state-inline"><i class="fas fa-map-marked-alt"></i><span>No items yet</span></div></div>
+      </div>
+      <div class="card"><div class="card-header"><h3><i class="fas fa-chart-bar"></i> Summary</h3></div>
+        <div class="card-body" id="cm-summary-body"><div class="empty-state-inline"><i class="fas fa-chart-pie"></i><span>No data yet</span></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ WORD BANK ═══════ -->
+<div class="page" id="page-wordbank">
+  <div class="sec-header"><h2><i class="fas fa-brain"></i> Word Bank &amp; Keyword Dictionary</h2><button class="btn btn-primary" onclick="openModal('addKeyword')"><i class="fas fa-plus"></i> Add Keyword</button></div>
+  <div class="info-banner"><i class="fas fa-info-circle"></i> <strong>How it works:</strong> The system scans incident descriptions for keywords and auto-determines priority. Bilingual (English–Tagalog) supported. Click any chip to remove it.</div>
+  <div class="grid-2">
+    <div class="card"><div class="card-header"><h3><i class="fas fa-arrow-up" style="color:var(--red)"></i> High Priority Keywords</h3></div><div class="keyword-grid" id="kw-high-grid">
+      <span class="kw-chip kw-high" onclick="removeKeyword(this)">suspicious</span><span class="kw-chip kw-high" onclick="removeKeyword(this)">break-in</span><span class="kw-chip kw-high" onclick="removeKeyword(this)">theft / nakawan</span><span class="kw-chip kw-high" onclick="removeKeyword(this)">tubig / water leak</span><span class="kw-chip kw-high" onclick="removeKeyword(this)">baha / flood</span><span class="kw-chip kw-high" onclick="removeKeyword(this)">sunog / fire</span><span class="kw-chip kw-high" onclick="removeKeyword(this)">emergency</span><span class="kw-chip kw-high" onclick="removeKeyword(this)">fallen tree</span><span class="kw-chip kw-high" onclick="removeKeyword(this)">open gate</span>
+    </div></div>
+    <div class="card"><div class="card-header"><h3><i class="fas fa-exclamation"></i> Medium &amp; Low Severity</h3></div><div class="keyword-grid" id="kw-med-grid">
+      <span class="kw-chip kw-medium" onclick="removeKeyword(this)">ilaw (light)</span><span class="kw-chip kw-medium" onclick="removeKeyword(this)">kuryente</span><span class="kw-chip kw-medium" onclick="removeKeyword(this)">pothole</span><span class="kw-chip kw-medium" onclick="removeKeyword(this)">kalsada</span><span class="kw-chip kw-medium" onclick="removeKeyword(this)">maintenance</span><span class="kw-chip kw-medium" onclick="removeKeyword(this)">sira (broken)</span><span class="kw-chip kw-low" onclick="removeKeyword(this)">parking</span><span class="kw-chip kw-low" onclick="removeKeyword(this)">basura</span><span class="kw-chip kw-low" onclick="removeKeyword(this)">ingay (noise)</span>
+    </div></div>
+  </div>
+</div>
+
+<!-- ═══════ REPORTS ═══════ -->
+<div class="page" id="page-reports">
+  <div class="sec-header"><h2><i class="fas fa-chart-bar"></i> Reports &amp; Analytics</h2><button class="btn btn-primary"><i class="fas fa-download"></i> Export</button></div>
+  <div class="stats-row">
+    <div class="stat-card"><div class="stat-icon si-red"><i class="fas fa-exclamation-circle"></i></div><div class="stat-info"><div class="stat-val">48</div><div class="stat-label">Total Incidents (Feb)</div><div class="stat-sub sub-down">+12% from last month</div></div></div>
+    <div class="stat-card"><div class="stat-icon si-green"><i class="fas fa-check-circle"></i></div><div class="stat-info"><div class="stat-val">36</div><div class="stat-label">Resolved (Feb)</div><div class="stat-sub sub-up">75% resolution rate</div></div></div>
+    <div class="stat-card"><div class="stat-icon si-blue"><i class="fas fa-store"></i></div><div class="stat-info"><div class="stat-val">23</div><div class="stat-label">Exchange Posts (Feb)</div><div class="stat-sub sub-up">+5 from last month</div></div></div>
+    <div class="stat-card"><div class="stat-icon si-yellow"><i class="fas fa-users"></i></div><div class="stat-info"><div class="stat-val">342</div><div class="stat-label">Verified Residents</div><div class="stat-sub sub-up">+4 this month</div></div></div>
+  </div>
+</div>
+
+<!-- ═══════ SUBSCRIBERS ═══════ -->
+<div class="page" id="page-subscribers">
+  <div class="sec-header"><h2><i class="fas fa-bell"></i> Notification Subscribers</h2></div>
+  <div class="card" style="padding:60px 20px;text-align:center">
+    <i class="fas fa-tools" style="font-size:48px;color:var(--gray-300);display:block;margin-bottom:16px"></i>
+    <div style="font-size:18px;font-weight:800;color:var(--gray-600);margin-bottom:8px">Coming Soon</div>
+    <div style="font-size:13px;color:var(--gray-400)">Subscriber management will be available in a future update.</div>
+  </div>
+</div>
+
+</main>
+
+<!-- ═══════════════════ MODALS ═══════════════════ -->
+
+<!-- ADD TASK -->
+<div class="modal-overlay" id="modal-addTask"><div class="modal"><div class="modal-head"><h3><i class="fas fa-columns" style="color:var(--green)"></i> Add New Task</h3><button class="modal-close" onclick="closeModal('addTask')"><i class="fas fa-times"></i></button></div>
+<div class="form-group"><label>Task Title <span style="color:var(--red)">*</span></label><input type="text" id="task-title" placeholder="e.g. Repair floodlight near Gate 1"></div>
+<div class="form-group"><label>Description</label><textarea id="task-desc" placeholder="What needs to be done?" style="min-height:70px"></textarea></div>
+<div class="form-row">
+  <div class="form-group"><label>Category</label><select id="task-cat"><option>Admin</option><option>Maintenance</option><option>Finance</option><option>Communications</option><option>Environment</option><option>Security</option><option>Legal</option><option>Events</option><option>Other</option></select></div>
+  <div class="form-group"><label>Due Date</label><input type="date" id="task-due"></div>
+</div>
+<div class="form-group"><label>Auto-delete from Done after</label><select id="task-autodel"><option value="">Never</option><option value="1">1 day</option><option value="3">3 days</option><option value="7">7 days</option><option value="14">14 days</option><option value="30">30 days</option></select></div>
+<div class="modal-actions"><button class="btn btn-outline" onclick="closeModal('addTask')">Cancel</button><button class="btn btn-primary" onclick="addNewTask()"><i class="fas fa-plus"></i> Add Task</button></div>
+</div></div>
+
+<!-- ADD INCIDENT -->
+<div class="modal-overlay" id="modal-addIncident"><div class="modal" style="width:640px;max-width:96vw;max-height:90vh;overflow-y:auto">
+<div class="modal-head"><h3><i class="fas fa-exclamation-circle" style="color:var(--red)"></i> Log Report</h3><button class="modal-close" onclick="closeModal('addIncident')"><i class="fas fa-times"></i></button></div>
+<div class="form-row">
+  <div class="form-group"><label>Type <span style="color:var(--red)">*</span></label>
+    <select id="inc-type">
+      <option value="Incident">⚠️ Incident — physical/safety event</option>
+      <option value="Concern">💬 Concern — issue or complaint</option>
+    </select>
+  </div>
+  <div class="form-group"><label>Reporter Name</label><input type="text" id="inc-reporter" placeholder="Resident name"></div>
+</div>
+<div class="form-row">
+  <div class="form-group"><label>Category</label><select id="inc-category"><option>Infrastructure</option><option>Safety</option><option>Security</option><option>Maintenance</option><option>Roads</option><option>Sanitation</option></select></div>
+  <div class="form-group"><label>Priority</label><select id="inc-priority-override"><option value="auto">Auto-detect from description</option><option value="high">High — Immediate attention</option><option value="medium">Medium — Within 24–48 hrs</option><option value="low">Low — Schedule within 3–7 days</option></select></div>
+</div>
+<div class="form-group"><label>Description <span style="color:var(--red)">*</span></label><textarea id="inc-description" placeholder="Describe the incident or concern…" style="min-height:90px" oninput="updateAutoPriority()"></textarea></div>
+<div class="auto-priority-box" id="inc-priority-box"><i class="fas fa-brain"></i> <strong>Auto-priority</strong> will be assigned based on keywords detected.</div>
+<div class="form-group"><label>Location <span style="color:var(--red)">*</span></label>
+  <div class="inc-loc-toggle-row">
+    <label class="inc-loc-radio-label"><input type="radio" name="inc-loc-type" value="text" checked onchange="toggleIncidentLocType()"><span><i class="fas fa-keyboard"></i> Type Address</span></label>
+    <label class="inc-loc-radio-label"><input type="radio" name="inc-loc-type" value="map" onchange="toggleIncidentLocType()"><span><i class="fas fa-map-pin"></i> Pin on Map</span></label>
+  </div>
+  <div id="inc-loc-text-wrap" style="margin-top:10px"><input type="text" id="inc-location" placeholder="e.g. Block C, near Gate 2, Alpine St." style="width:100%;padding:9px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius);font-family:inherit;font-size:13px;outline:none"></div>
+  <div id="inc-loc-map-wrap" style="display:none;margin-top:10px">
+    <div id="inc-log-map" style="height:240px;border-radius:var(--radius);overflow:hidden;border:1.5px solid var(--gray-200);position:relative;cursor:crosshair">
+      <div id="inc-log-map-hint" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(10,77,60,.88);color:white;padding:12px 20px;border-radius:10px;font-size:12.5px;font-weight:700;z-index:500;pointer-events:none;text-align:center"><i class="fas fa-map-pin" style="display:block;margin-bottom:6px;font-size:18px"></i>Click to drop a pin</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;margin-top:8px;padding:7px 10px;background:#f5fbf7;border-radius:6px;border:1px solid #c5e0d8;font-size:12px"><i class="fas fa-crosshairs" style="color:var(--green)"></i><span id="inc-log-coords-display">No location pinned yet</span></div>
+    <div class="form-group" style="margin-top:10px"><label>Street / Notes <small style="font-weight:400">(optional)</small></label><input type="text" id="inc-log-street" placeholder="e.g. Alpine St., near streetlight #4" style="width:100%;padding:9px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius);font-family:inherit;font-size:13px;outline:none"></div>
+    <input type="hidden" id="inc-log-lat"><input type="hidden" id="inc-log-lng">
+    <p style="font-size:11px;color:var(--gray-400);margin-top:4px"><i class="fas fa-info-circle"></i> Drag the pin to adjust position.</p>
+  </div>
+</div>
+<div class="form-group"><label>Show on Public Community Map</label>
+  <select id="inc-visibility">
+    <option value="public">🌐 Public — visible to all residents</option>
+    <option value="staff">🔒 Staff only — internal record</option>
+  </select>
+</div>
+<div class="form-group"><label>Attach Photo / File <small style="font-weight:400;color:#9e9a94">(optional)</small></label>
+  <input type="file" id="inc-file" accept="image/*,.pdf,.doc,.docx" multiple style="display:none">
+  <button type="button" class="upload-btn" onclick="document.getElementById('inc-file').click()"><i class="fas fa-upload"></i> Upload File</button>
+  <div id="inc-file-list" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px"></div>
+</div>
+<div class="modal-actions"><button class="btn btn-outline" onclick="closeModal('addIncident')">Cancel</button><button class="btn btn-primary" onclick="saveIncident()"><i class="fas fa-save"></i> Log Report</button></div>
+</div></div>
+
+<!-- VIEW INCIDENT -->
+<div class="modal-overlay" id="modal-viewIncident"><div class="modal" style="width:580px;max-height:90vh;overflow-y:auto">
+<div class="modal-head"><h3><i class="fas fa-exclamation-circle" style="color:var(--red)"></i> Incident Report</h3><button class="modal-close" onclick="closeModal('viewIncident')"><i class="fas fa-times"></i></button></div>
+<div id="view-incident-content"></div>
+<div class="modal-actions"><button class="btn btn-outline" onclick="closeModal('viewIncident')">Close</button><button class="btn btn-primary" onclick="saveIncidentUpdate()"><i class="fas fa-save"></i> Save Update</button></div>
+</div></div>
+
+<!-- ADD ANNOUNCEMENT -->
+<div class="modal-overlay" id="modal-addAnnouncement"><div class="modal" style="width:600px;max-height:90vh;overflow-y:auto">
+<div class="modal-head"><h3><i class="fas fa-bullhorn" style="color:var(--green)"></i> Post Announcement</h3><button class="modal-close" onclick="closeModal('addAnnouncement')"><i class="fas fa-times"></i></button></div>
+<div class="form-group"><label>Title <span style="color:var(--red)">*</span></label><input type="text" id="ann-title" placeholder="e.g. Water interruption — March 5"></div>
+<div class="form-group"><label>Header Image <small style="font-weight:400;color:#9e9a94">(shown at top of announcement)</small></label>
+  <input type="file" id="ann-header-img" accept="image/*" style="display:none">
+  <button type="button" class="upload-btn" onclick="document.getElementById('ann-header-img').click()"><i class="fas fa-image"></i> Choose Header Image</button>
+  <div id="ann-header-preview" style="margin-top:8px"></div>
+</div>
+<div class="form-group"><label>Body</label><textarea id="ann-body" placeholder="Write the announcement…" style="min-height:120px"></textarea></div>
+<div class="form-group"><label>Body Image <small style="font-weight:400;color:#9e9a94">(image within body)</small></label>
+  <input type="file" id="ann-body-img" accept="image/*" style="display:none">
+  <button type="button" class="upload-btn" onclick="document.getElementById('ann-body-img').click()"><i class="fas fa-image"></i> Add Body Image</button>
+  <div id="ann-body-img-name" style="font-size:11.5px;color:var(--gray-400);margin-top:4px"></div>
+</div>
+<div class="form-group"><label>Attach Document <small style="font-weight:400;color:#9e9a94">(PDF, DOCX, etc.)</small></label>
+  <input type="file" id="ann-doc" accept=".pdf,.doc,.docx,.xlsx" style="display:none">
+  <button type="button" class="upload-btn" onclick="document.getElementById('ann-doc').click()"><i class="fas fa-file-alt"></i> Attach Document</button>
+  <div id="ann-doc-name" style="font-size:11.5px;color:var(--gray-400);margin-top:4px"></div>
+</div>
+<div class="form-row">
+  <div class="form-group"><label>Category</label><select id="ann-cat"><option>General</option><option>Urgent</option><option>Event</option><option>Governance</option><option>Newsletter</option></select></div>
+  <div class="form-group"><label>Visible Until</label><input type="date" id="ann-until"></div>
+</div>
+<div class="form-row">
+  <div class="form-group"><label>Publish</label><select id="ann-post-type" onchange="toggleSchedule()"><option value="now">Publish Now</option><option value="scheduled">Schedule for Later</option></select></div>
+  <div class="form-group" id="ann-schedule-field" style="display:none"><label>Scheduled Date &amp; Time</label><input type="datetime-local" id="ann-schedule-dt"></div>
+</div>
+<div class="modal-actions"><button class="btn btn-outline" onclick="closeModal('addAnnouncement')">Cancel</button><button class="btn btn-primary" onclick="publishAnnouncement()"><i class="fas fa-bullhorn"></i> Publish</button></div>
+</div></div>
+
+<!-- EDIT ANNOUNCEMENT -->
+<div class="modal-overlay" id="modal-editAnnouncement"><div class="modal">
+<div class="modal-head"><h3><i class="fas fa-edit" style="color:var(--green)"></i> Edit Announcement</h3><button class="modal-close" onclick="closeModal('editAnnouncement')"><i class="fas fa-times"></i></button></div>
+<input type="hidden" id="edit-ann-id">
+<div class="form-group"><label>Title</label><input type="text" id="edit-ann-title"></div>
+<div class="form-group"><label>Body</label><textarea id="edit-ann-body" style="min-height:100px"></textarea></div>
+<div class="form-group"><label>Category</label><select id="edit-ann-cat"><option>General</option><option>Urgent</option><option>Event</option><option>Governance</option><option>Newsletter</option></select></div>
+<div class="modal-actions"><button class="btn btn-outline" onclick="closeModal('editAnnouncement')">Cancel</button><button class="btn btn-primary" onclick="saveEditAnnouncement()"><i class="fas fa-save"></i> Save Changes</button></div>
+</div></div>
+
+<!-- ADD EVENT -->
+<div class="modal-overlay" id="modal-addEvent"><div class="modal">
+<div class="modal-head"><h3><i class="fas fa-calendar-plus" style="color:var(--green)"></i> Add Event</h3><button class="modal-close" onclick="closeModal('addEvent')"><i class="fas fa-times"></i></button></div>
+<div class="form-group"><label>Event Title <span style="color:var(--red)">*</span></label><input type="text" id="ev-title" placeholder="e.g. Community Clean-up Drive"></div>
+<div class="form-group"><label>Description</label><textarea id="ev-desc" placeholder="Event details…" style="min-height:70px"></textarea></div>
+<div class="form-row"><div class="form-group"><label>Date <span style="color:var(--red)">*</span></label><input type="date" id="ev-date"></div><div class="form-group"><label>Time</label><input type="time" id="ev-time"></div></div>
+<div class="form-row"><div class="form-group"><label>Location</label><input type="text" id="ev-loc" placeholder="e.g. Clubhouse"></div><div class="form-group"><label>Category</label><select id="ev-cat"><option>Community</option><option>Governance</option><option>Maintenance</option><option>Social</option><option>Emergency</option></select></div></div>
+<div class="modal-actions"><button class="btn btn-outline" onclick="closeModal('addEvent')">Cancel</button><button class="btn btn-primary" onclick="addEvent()"><i class="fas fa-calendar-plus"></i> Add Event</button></div>
+</div></div>
+
+<!-- EDIT EVENT -->
+<div class="modal-overlay" id="modal-editEvent"><div class="modal">
+<div class="modal-head"><h3><i class="fas fa-edit" style="color:var(--green)"></i> Edit Event</h3><button class="modal-close" onclick="closeModal('editEvent')"><i class="fas fa-times"></i></button></div>
+<input type="hidden" id="edit-ev-id">
+<div class="form-group"><label>Event Title</label><input type="text" id="edit-ev-title"></div>
+<div class="form-row"><div class="form-group"><label>Date</label><input type="date" id="edit-ev-date"></div><div class="form-group"><label>Time</label><input type="time" id="edit-ev-time"></div></div>
+<div class="form-row"><div class="form-group"><label>Location</label><input type="text" id="edit-ev-loc"></div><div class="form-group"><label>Category</label><select id="edit-ev-cat"><option>Community</option><option>Governance</option><option>Maintenance</option><option>Social</option><option>Emergency</option></select></div></div>
+<div class="modal-actions"><button class="btn btn-outline" onclick="closeModal('editEvent')">Cancel</button><button class="btn btn-primary" onclick="saveEditEvent()"><i class="fas fa-save"></i> Save Changes</button></div>
+</div></div>
+
+<!-- ADD MEMBER -->
+<div class="modal-overlay" id="modal-addMember"><div class="modal">
+<div class="modal-head"><h3><i class="fas fa-user-plus" style="color:var(--green)"></i> Add Member</h3><button class="modal-close" onclick="closeModal('addMember')"><i class="fas fa-times"></i></button></div>
+<div class="form-row"><div class="form-group"><label>Full Name <span style="color:var(--red)">*</span></label><input type="text" id="bod-name"></div><div class="form-group"><label>Position</label><input type="text" id="bod-pos" placeholder="e.g. Treasurer"></div></div>
+<div class="form-row"><div class="form-group"><label>Term</label><input type="text" id="bod-term" placeholder="2024–2026"></div><div class="form-group"><label>Contact Number</label><input type="text" id="bod-phone" placeholder="09XXXXXXXXX"></div></div>
+<div class="form-group"><label>Photo <small style="font-weight:400;color:#9e9a94">(optional)</small></label><input type="file" id="bod-photo" accept="image/*"></div>
+<div class="modal-actions"><button class="btn btn-outline" onclick="closeModal('addMember')">Cancel</button><button class="btn btn-primary" onclick="addBodMember()"><i class="fas fa-user-plus"></i> Add Member</button></div>
+</div></div>
+
+<!-- EDIT MEMBER -->
+<div class="modal-overlay" id="modal-editMember"><div class="modal">
+<div class="modal-head"><h3><i class="fas fa-edit" style="color:var(--green)"></i> Edit Member</h3><button class="modal-close" onclick="closeModal('editMember')"><i class="fas fa-times"></i></button></div>
+<input type="hidden" id="edit-bod-id">
+<div class="form-row"><div class="form-group"><label>Full Name</label><input type="text" id="edit-bod-name"></div><div class="form-group"><label>Position</label><input type="text" id="edit-bod-pos"></div></div>
+<div class="form-row"><div class="form-group"><label>Term</label><input type="text" id="edit-bod-term"></div><div class="form-group"><label>Contact</label><input type="text" id="edit-bod-phone"></div></div>
+<div class="modal-actions"><button class="btn btn-outline" onclick="closeModal('editMember')">Cancel</button><button class="btn btn-primary" onclick="saveEditBodMember()"><i class="fas fa-save"></i> Save Changes</button></div>
+</div></div>
+
+<!-- VIEW MEMBER -->
+<div class="modal-overlay" id="modal-viewMember"><div class="modal">
+<div class="modal-head"><h3><i class="fas fa-user" style="color:var(--green)"></i> Member Details</h3><button class="modal-close" onclick="closeModal('viewMember')"><i class="fas fa-times"></i></button></div>
+<div id="view-member-content"></div>
+<div class="modal-actions"><button class="btn btn-outline" onclick="closeModal('viewMember')">Close</button></div>
+</div></div>
+
+<!-- ADD MEETING -->
+<div class="modal-overlay" id="modal-addMeeting"><div class="modal">
+<div class="modal-head"><h3><i class="fas fa-clipboard-list" style="color:var(--green)"></i> Upload Meeting Record</h3><button class="modal-close" onclick="closeModal('addMeeting')"><i class="fas fa-times"></i></button></div>
+<div class="form-group"><label>Title <span style="color:var(--red)">*</span></label><input type="text" id="meet-title" placeholder="e.g. BOD Meeting Minutes — March 2026"></div>
+<div class="form-row"><div class="form-group"><label>Meeting Date</label><input type="date" id="meet-date"></div><div class="form-group"><label>Type</label><select id="meet-type"><option>BOD</option><option>AGM</option><option>Special</option><option>Committee</option></select></div></div>
+<div class="form-group"><label>Upload File (PDF)</label><input type="file" id="meet-file" accept=".pdf,.doc,.docx"></div>
+<div class="modal-actions"><button class="btn btn-outline" onclick="closeModal('addMeeting')">Cancel</button><button class="btn btn-primary" onclick="addMeetingRecord()"><i class="fas fa-upload"></i> Upload</button></div>
+</div></div>
+
+<!-- EDIT MEETING -->
+<div class="modal-overlay" id="modal-editMeeting"><div class="modal">
+<div class="modal-head"><h3><i class="fas fa-edit" style="color:var(--green)"></i> Edit Meeting Record</h3><button class="modal-close" onclick="closeModal('editMeeting')"><i class="fas fa-times"></i></button></div>
+<input type="hidden" id="edit-meet-id">
+<div class="form-group"><label>Title</label><input type="text" id="edit-meet-title"></div>
+<div class="form-row"><div class="form-group"><label>Date</label><input type="date" id="edit-meet-date"></div><div class="form-group"><label>Type</label><select id="edit-meet-type"><option>BOD</option><option>AGM</option><option>Special</option><option>Committee</option></select></div></div>
+<div class="modal-actions"><button class="btn btn-outline" onclick="closeModal('editMeeting')">Cancel</button><button class="btn btn-primary" onclick="saveEditMeeting()"><i class="fas fa-save"></i> Save Changes</button></div>
+</div></div>
+
+<!-- ADD DOCUMENT -->
+<div class="modal-overlay" id="modal-addDocument"><div class="modal">
+<div class="modal-head"><h3><i class="fas fa-upload" style="color:var(--green)"></i> Upload Document</h3><button class="modal-close" onclick="closeModal('addDocument')"><i class="fas fa-times"></i></button></div>
+<div class="form-group"><label>Document Name <span style="color:var(--red)">*</span></label><input type="text" id="doc-name" placeholder="e.g. Gate Pass Application Form"></div>
+<div class="form-row"><div class="form-group"><label>Category</label><select id="doc-cat"><option>Form</option><option>Policy</option><option>Guide</option><option>Certificate</option></select></div><div class="form-group"><label>Upload File</label><input type="file" id="doc-file" accept=".pdf,.doc,.docx,.xlsx"></div></div>
+<div class="modal-actions"><button class="btn btn-outline" onclick="closeModal('addDocument')">Cancel</button><button class="btn btn-primary" onclick="addDocument()"><i class="fas fa-upload"></i> Upload</button></div>
+</div></div>
+
+<!-- ADD CONTACT -->
+<div class="modal-overlay" id="modal-addContact"><div class="modal">
+<div class="modal-head"><h3><i class="fas fa-phone-alt" style="color:var(--green)"></i> Add Contact</h3><button class="modal-close" onclick="closeModal('addContact')"><i class="fas fa-times"></i></button></div>
+<div class="form-row"><div class="form-group"><label>Name / Office <span style="color:var(--red)">*</span></label><input type="text" id="con-name" placeholder="e.g. Security Gate 2"></div><div class="form-group"><label>Role</label><input type="text" id="con-role" placeholder="e.g. Security"></div></div>
+<div class="form-row"><div class="form-group"><label>Phone</label><input type="text" id="con-phone" placeholder="09XXXXXXXXX"></div><div class="form-group"><label>Email</label><input type="email" id="con-email" placeholder="email@example.com"></div></div>
+<div class="modal-actions"><button class="btn btn-outline" onclick="closeModal('addContact')">Cancel</button><button class="btn btn-primary" onclick="addContact()"><i class="fas fa-save"></i> Save</button></div>
+</div></div>
+
+<!-- EDIT CONTACT -->
+<div class="modal-overlay" id="modal-editContact"><div class="modal">
+<div class="modal-head"><h3><i class="fas fa-edit" style="color:var(--green)"></i> Edit Contact</h3><button class="modal-close" onclick="closeModal('editContact')"><i class="fas fa-times"></i></button></div>
+<input type="hidden" id="edit-con-id">
+<div class="form-row"><div class="form-group"><label>Name / Office</label><input type="text" id="edit-con-name"></div><div class="form-group"><label>Role</label><input type="text" id="edit-con-role"></div></div>
+<div class="form-row"><div class="form-group"><label>Phone</label><input type="text" id="edit-con-phone"></div><div class="form-group"><label>Email</label><input type="email" id="edit-con-email"></div></div>
+<div class="modal-actions"><button class="btn btn-outline" onclick="closeModal('editContact')">Cancel</button><button class="btn btn-primary" onclick="saveEditContact()"><i class="fas fa-save"></i> Save Changes</button></div>
+</div></div>
+
+<!-- ADD MAP ITEM (matches reference image) -->
+<div class="modal-overlay" id="modal-addMapItem"><div class="modal ami-modal">
+<div class="ami-header"><i class="fas fa-map-marker-alt ami-header-icon"></i><h3>Add Map Item</h3><button class="ami-close" onclick="closeModal('addMapItem')"><i class="fas fa-times"></i></button></div>
+<div class="ami-body">
+  <div class="ami-field-label">CATEGORY <span class="ami-req">*</span></div>
+  <div class="ami-cat-row" id="ami-cat-row">
+    <button class="ami-cat-btn active" data-cat="Incident" onclick="selectAmiCat(this)"><i class="fas fa-exclamation-circle" style="color:#c0392b"></i> Incident</button>
+    <button class="ami-cat-btn" data-cat="Concern" onclick="selectAmiCat(this)"><i class="fas fa-comment-dots" style="color:#7c3aed"></i> Concern</button>
+    <button class="ami-cat-btn" data-cat="Project" onclick="selectAmiCat(this)"><i class="fas fa-hard-hat" style="color:#c0621a"></i> Project</button>
+    <button class="ami-cat-btn" data-cat="Landmark" onclick="selectAmiCat(this)"><i class="fas fa-map-pin" style="color:#1a5fa8"></i> Landmark</button>
+  </div>
+  <div class="ami-field-label">TITLE / NAME <span class="ami-req">*</span></div>
+  <input type="text" class="ami-input" id="ami-title" placeholder="e.g. Broken Streetlight, Gate 1...">
+  <div class="ami-field-label">DESCRIPTION</div>
+  <textarea class="ami-input ami-textarea" id="ami-desc" placeholder="Brief description..."></textarea>
+  <!-- Status shown for non-Landmark; Icon picker shown for Landmark -->
+  <div id="ami-status-wrap">
+    <div class="ami-field-label">STATUS</div>
+    <select class="ami-input ami-select" id="ami-status"><option>Pending</option><option>Active</option><option>Resolved</option><option>In Progress</option></select>
+  </div>
+  <div id="ami-icon-wrap" style="display:none">
+    <div class="ami-field-label">LANDMARK ICON</div>
+    <div class="ami-icon-grid" id="ami-icon-grid">
+      <button class="ami-icon-btn active" data-icon="fa-map-pin" onclick="selectAmiIcon(this)" title="Pin"><i class="fas fa-map-pin"></i></button>
+      <button class="ami-icon-btn" data-icon="fa-home" onclick="selectAmiIcon(this)" title="Home"><i class="fas fa-home"></i></button>
+      <button class="ami-icon-btn" data-icon="fa-tree" onclick="selectAmiIcon(this)" title="Park/Tree"><i class="fas fa-tree"></i></button>
+      <button class="ami-icon-btn" data-icon="fa-swimming-pool" onclick="selectAmiIcon(this)" title="Pool"><i class="fas fa-swimming-pool"></i></button>
+      <button class="ami-icon-btn" data-icon="fa-basketball-ball" onclick="selectAmiIcon(this)" title="Court"><i class="fas fa-basketball-ball"></i></button>
+      <button class="ami-icon-btn" data-icon="fa-car" onclick="selectAmiIcon(this)" title="Parking"><i class="fas fa-car"></i></button>
+      <button class="ami-icon-btn" data-icon="fa-shield-alt" onclick="selectAmiIcon(this)" title="Security"><i class="fas fa-shield-alt"></i></button>
+      <button class="ami-icon-btn" data-icon="fa-building" onclick="selectAmiIcon(this)" title="Building"><i class="fas fa-building"></i></button>
+      <button class="ami-icon-btn" data-icon="fa-futbol" onclick="selectAmiIcon(this)" title="Sports Field"><i class="fas fa-futbol"></i></button>
+      <button class="ami-icon-btn" data-icon="fa-church" onclick="selectAmiIcon(this)" title="Chapel"><i class="fas fa-church"></i></button>
+      <button class="ami-icon-btn" data-icon="fa-star" onclick="selectAmiIcon(this)" title="Featured"><i class="fas fa-star"></i></button>
+      <button class="ami-icon-btn" data-icon="fa-parking" onclick="selectAmiIcon(this)" title="Parking Area"><i class="fas fa-parking"></i></button>
+    </div>
+  </div>
+  <div class="ami-field-label">PHOTO / BEFORE IMAGE <small style="font-weight:400;text-transform:none;letter-spacing:0">(optional)</small></div>
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+    <input type="file" id="ami-photo" accept="image/*" style="display:none">
+    <button class="ami-upload-btn" onclick="document.getElementById('ami-photo').click()"><i class="fas fa-upload"></i> CHOOSE PHOTO</button>
+    <span id="ami-photo-name" style="font-size:12px;color:var(--gray-400)">No file chosen</span>
+  </div>
+  <div class="ami-field-label"><i class="fas fa-map-pin" style="color:var(--red)"></i> PIN LOCATION ON MAP <small style="font-weight:400;text-transform:none;letter-spacing:0">(click the map to drop a pin)</small></div>
+  <div id="ami-map" style="height:220px;border-radius:8px;overflow:hidden;border:1.5px solid var(--gray-200);position:relative;margin-bottom:12px">
+    <div id="ami-map-hint" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(10,77,60,.85);color:white;padding:10px 18px;border-radius:8px;font-size:12px;font-weight:700;z-index:500;pointer-events:none;text-align:center">Click on the map to place the pin</div>
+  </div>
+  <div class="ami-coords-row">
+    <div class="ami-coord-group"><div class="ami-field-label">LATITUDE</div><input type="text" class="ami-input ami-coord-input" id="ami-lat" placeholder="14.XXXXXXX" readonly></div>
+    <div class="ami-coord-group"><div class="ami-field-label">LONGITUDE</div><input type="text" class="ami-input ami-coord-input" id="ami-lng" placeholder="121.XXXXXXX" readonly></div>
+  </div>
+</div>
+<div class="ami-footer"><button class="ami-cancel-btn" onclick="closeModal('addMapItem')">Cancel</button><button class="ami-save-btn" onclick="saveMapItem()"><i class="fas fa-save"></i> Save Map Item</button></div>
+</div></div>
+
+<!-- EDIT MAP ITEM -->
+<div class="modal-overlay" id="modal-editMapItem"><div class="modal ami-modal">
+<div class="ami-header"><i class="fas fa-edit ami-header-icon"></i><h3>Edit Map Item</h3><button class="ami-close" onclick="closeModal('editMapItem')"><i class="fas fa-times"></i></button></div>
+<div class="ami-body">
+  <input type="hidden" id="edit-mi-id">
+  <div class="ami-field-label">TITLE / NAME</div>
+  <input type="text" class="ami-input" id="edit-mi-title">
+  <div class="ami-field-label">DESCRIPTION</div>
+  <textarea class="ami-input ami-textarea" id="edit-mi-desc"></textarea>
+  <div class="ami-field-label">STATUS</div>
+  <select class="ami-input ami-select" id="edit-mi-status"><option>Pending</option><option>Active</option><option>Resolved</option><option>In Progress</option></select>
+</div>
+<div class="ami-footer"><button class="ami-cancel-btn" onclick="closeModal('editMapItem')">Cancel</button><button class="ami-save-btn" onclick="saveEditMapItem()"><i class="fas fa-save"></i> Save Changes</button></div>
+</div></div>
+
+<!-- RESIDENT DETAIL VIEW -->
+<div class="modal-overlay" id="modal-residentDetail"><div class="modal" style="width:580px;max-height:90vh;overflow-y:auto">
+<div class="modal-head"><h3><i class="fas fa-user" style="color:var(--green)"></i> Resident Application</h3><button class="modal-close" onclick="closeModal('residentDetail')"><i class="fas fa-times"></i></button></div>
+<div id="resident-detail-content"></div>
+</div></div>
+
+<!-- SUSPEND RESIDENT -->
+<div class="modal-overlay" id="modal-suspendResident"><div class="modal">
+<div class="modal-head"><h3><i class="fas fa-ban" style="color:var(--orange)"></i> Suspend / Ban Account</h3><button class="modal-close" onclick="closeModal('suspendResident')"><i class="fas fa-times"></i></button></div>
+<input type="hidden" id="suspend-row-id">
+<div class="form-group"><label>Resident Name</label><input type="text" id="suspend-name" readonly style="background:var(--gray-50)"></div>
+<div class="form-group"><label>Action</label><select id="suspend-action" onchange="toggleSuspendDuration()"><option value="suspend">Suspend — Temporary (can appeal)</option><option value="ban">Ban — Permanent</option></select></div>
+<div class="form-group" id="suspend-duration-group"><label>Duration</label><select id="suspend-duration"><option value="7">7 days</option><option value="14">14 days</option><option value="30">30 days</option><option value="90">90 days</option></select></div>
+<div class="form-group"><label>Reason <span style="color:var(--red)">*</span></label><textarea id="suspend-reason" placeholder="Why is this account being suspended/banned?"></textarea></div>
+<div class="modal-actions"><button class="btn btn-outline" onclick="closeModal('suspendResident')">Cancel</button><button class="btn btn-primary" style="background:var(--orange)" onclick="confirmSuspend()"><i class="fas fa-ban"></i> Confirm</button></div>
+</div></div>
+
+<!-- ADD KEYWORD -->
+<div class="modal-overlay" id="modal-addKeyword"><div class="modal">
+<div class="modal-head"><h3><i class="fas fa-plus" style="color:var(--green)"></i> Add Keyword</h3><button class="modal-close" onclick="closeModal('addKeyword')"><i class="fas fa-times"></i></button></div>
+<div class="form-group"><label>Keyword (Tagalog / English)</label><input type="text" id="kw-word" placeholder="e.g. basura / garbage"></div>
+<div class="form-row"><div class="form-group"><label>Severity</label><select id="kw-sev"><option value="high">High</option><option value="medium" selected>Medium</option><option value="low">Low</option></select></div><div class="form-group"><label>Category</label><select id="kw-cat"><option>Safety</option><option>Infrastructure</option><option>Maintenance</option><option>Roads</option><option>Sanitation</option></select></div></div>
+<div class="modal-actions"><button class="btn btn-outline" onclick="closeModal('addKeyword')">Cancel</button><button class="btn btn-primary" onclick="addKeyword()"><i class="fas fa-plus"></i> Add</button></div>
+</div></div>
+
+<!-- SETTINGS -->
+<div class="modal-overlay" id="modal-settings"><div class="modal" style="width:520px;max-height:90vh;overflow-y:auto">
+<div class="modal-head"><h3><i class="fas fa-cog" style="color:var(--green)"></i> Staff Portal Settings</h3><button class="modal-close" onclick="closeModal('settings')"><i class="fas fa-times"></i></button></div>
+<div class="form-group"><label>Display Name</label><input type="text" id="set-name" value="Maria Santos"></div>
+<div class="form-group"><label>Role / Title</label><input type="text" id="set-role" value="Admin Officer"></div>
+<div class="form-group"><label>Email</label><input type="email" id="set-email" value="m.santos@lba4.com"></div>
+<div style="border-top:1px solid var(--gray-100);padding-top:16px;margin-top:4px">
+  <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--green);margin-bottom:12px">Notification Preferences</div>
+  <label style="display:flex;align-items:center;gap:10px;margin-bottom:10px;cursor:pointer"><input type="checkbox" id="set-notif-inc" checked style="accent-color:var(--green)"> <span style="font-size:13px">Notify on new incident reports</span></label>
+  <label style="display:flex;align-items:center;gap:10px;margin-bottom:10px;cursor:pointer"><input type="checkbox" id="set-notif-verif" checked style="accent-color:var(--green)"> <span style="font-size:13px">Notify on pending verifications</span></label>
+  <label style="display:flex;align-items:center;gap:10px;margin-bottom:10px;cursor:pointer"><input type="checkbox" id="set-notif-exc" checked style="accent-color:var(--green)"> <span style="font-size:13px">Alert on new exchange approvals</span></label>
+  <label style="display:flex;align-items:center;gap:10px;cursor:pointer"><input type="checkbox" id="set-notif-digest" style="accent-color:var(--green)"> <span style="font-size:13px">Daily summary digest</span></label>
+</div>
+<div style="border-top:1px solid var(--gray-100);padding-top:16px;margin-top:12px">
+  <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--green);margin-bottom:12px">Appearance</div>
+  <div class="form-group"><label>Color Theme</label>
+    <select id="set-theme" onchange="applyTheme(this.value)">
+      <option value="green">Forest Green (Default)</option>
+      <option value="blue">Navy Blue</option>
+      <option value="slate">Slate Gray</option>
+    </select>
+  </div>
+  <div class="form-group"><label>Font Size</label>
+    <select id="set-fontsize" onchange="applyFontSize(this.value)">
+      <option value="13.5px">Normal (Default)</option>
+      <option value="14.5px">Large</option>
+      <option value="12.5px">Small</option>
+    </select>
+  </div>
+  <div class="form-group"><label>Sidebar on Load</label>
+    <select id="set-sidebar">
+      <option value="expanded">Expanded (Default)</option>
+      <option value="collapsed">Collapsed</option>
+    </select>
+  </div>
+</div>
+<div class="modal-actions"><button class="btn btn-outline" onclick="closeModal('settings')">Cancel</button><button class="btn btn-primary" onclick="saveSettings()"><i class="fas fa-save"></i> Save Settings</button></div>
+</div></div>
+
+<!-- NOTIFICATION PANEL -->
+<div class="notif-modal-overlay" id="notif-modal-overlay"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="staff-dashboard.js"></script>
+</body>
+</html>

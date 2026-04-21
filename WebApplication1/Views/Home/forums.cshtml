@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Usap Tayo Para sa HOA – Laguna BelAir 4</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="forums.css">
+</head>
+<body>
+
+<div class="top-header-container">
+  <div class="logo-section">
+    <a href="index.html" class="logo-link">
+      <img src="LBAlogo.png" alt="Laguna BelAir 4 Logo" class="logo-image">
+    </a>
+  </div>
+  <div class="header-center-wrapper">
+    <div class="navbar-two-rows">
+      <div class="navbar-top-row">
+        <a href="login.html"><i class="fas fa-sign-in-alt"></i> Login</a>
+        <span class="nav-sep">|</span>
+        <a href="register.html"><i class="fas fa-user-plus"></i> Register</a>
+      </div>
+      <div class="navbar-bottom-row">
+        <a href="./index.html" class="nav-link">Home</a>
+        <div class="dropdown">
+          <a href="#" class="dropdown-toggle">About <i class="fas fa-chevron-down"></i></a>
+          <div class="dropdown-menu">
+            <a href="about-laguna-belair.html">Laguna BelAir 4</a>
+            <a href="committees-bods.html">Committees / BODs</a>
+            <a href="landmarks.html">Landmarks</a>
+            <a href="contacts.html">Contacts</a>
+          </div>
+        </div>
+        <div class="dropdown">
+          <a href="#" class="dropdown-toggle">Community <i class="fas fa-chevron-down"></i></a>
+          <div class="dropdown-menu">
+            <a href="announcement.html">Announcements</a>
+            <a href="forums.html" class="active">Forums / Discussions</a>
+            <a href="advertisements.html">Community Exchange</a>
+            <a href="calendars.html">Calendars</a>
+            <a href="meeting-agendas.html">Meeting Records</a>
+            <a href="community-map.html">Community Map</a>
+          </div>
+        </div>
+        <div class="dropdown">
+          <a href="#" class="dropdown-toggle">Services <i class="fas fa-chevron-down"></i></a>
+          <div class="dropdown-menu">
+            <a href="reserve.html">Reserve Amenities</a>
+            <a href="report-concerns.html">Report an Issue</a>
+          </div>
+        </div>
+        <div class="dropdown">
+          <a href="#" class="dropdown-toggle">Others <i class="fas fa-chevron-down"></i></a>
+          <div class="dropdown-menu">
+            <a href="forms-documents.html">Forms &amp; Documents</a>
+            <a href="vehicle-pet-registration.html">Register Pet/Vehicle</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<section class="hero-section">
+  <div class="hero-inner">
+    <h1 class="hero-title">Usap Tayo HOA</h1>
+    <p class="hero-sub">Ask questions, share suggestions, and discuss community concerns <br> with your fellow homeowners and the HOA. Every voice matters here.</p>
+  </div>
+</section>
+
+<div class="intro-strip">
+  <div class="intro-strip-inner">
+    <div class="intro-text">
+      <p>Ask questions, share suggestions, and discuss community concerns with your fellow homeowners and the HOA. <strong>Every voice matters here.</strong></p>
+    </div>
+    <div class="intro-stats">
+      <div class="intro-stat">
+        <span class="intro-stat-num" id="stat-posts">—</span>
+        <span class="intro-stat-lbl">Discussions</span>
+      </div>
+      <div class="intro-stat-divider"></div>
+      <div class="intro-stat">
+        <span class="intro-stat-num" id="stat-replies">—</span>
+        <span class="intro-stat-lbl">Replies</span>
+      </div>
+      <div class="intro-stat-divider"></div>
+      <div class="intro-stat">
+        <span class="intro-stat-num" id="stat-resolved">—</span>
+        <span class="intro-stat-lbl">Resolved</span>
+      </div>
+      <div class="intro-stat-divider"></div>
+      <div class="intro-stat intro-stat--alert">
+        <span class="intro-stat-num" id="stat-unanswered">—</span>
+        <span class="intro-stat-lbl">Unanswered</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toolbar">
+  <div class="toolbar-inner">
+    <div class="toolbar-row toolbar-cats">
+      <span class="toolbar-label"><i class="fas fa-filter"></i> Filter by Category:</span>
+      <div class="category-chips">
+        <div class="chip chip-all active" data-cat="All"><i class="fas fa-border-all"></i> All Discussions</div>
+        <div class="chip chip-question" data-cat="Questions"><i class="fas fa-question-circle"></i> Questions</div>
+        <div class="chip chip-concern" data-cat="Concerns"><i class="fas fa-exclamation-circle"></i> Concerns</div>
+        <div class="chip chip-suggest" data-cat="Suggestions"><i class="fas fa-lightbulb"></i> Suggestions</div>
+        <div class="chip chip-help" data-cat="Community Help"><i class="fas fa-hands-helping"></i> Community Help</div>
+      </div>
+    </div>
+    <div class="toolbar-divider"></div>
+    <div class="toolbar-row toolbar-search">
+      <div class="search-wrap">
+        <i class="fas fa-search"></i>
+        <input type="text" class="search-input" id="searchInput" placeholder="Search discussions by title, keyword, or author…">
+      </div>
+      <div class="filter-group">
+        <select class="filter-select" id="statusFilter">
+          <option value="">All Status</option>
+          <option value="Open">Open</option>
+          <option value="Under Review">Under Review</option>
+          <option value="Answered">Answered</option>
+          <option value="Resolved">Resolved</option>
+        </select>
+        <select class="filter-select" id="sortFilter">
+          <option value="newest">Newest First</option>
+          <option value="oldest">Oldest First</option>
+          <option value="active">Most Active</option>
+          <option value="helpful">Most Helpful</option>
+        </select>
+      </div>
+      <button class="btn-create" id="openCreateBtn">
+        <i class="fas fa-plus"></i> Start Discussion
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="page-body">
+  <div class="result-bar">
+    <p class="result-count">Showing <strong id="resultCount">0</strong> discussion(s)</p>
+  </div>
+  <div class="posts-grid" id="postsGrid"></div>
+  <div class="empty-state" id="emptyState">
+    <i class="fas fa-comments"></i>
+    <h3>No discussions found</h3>
+    <p>Try adjusting your filters or be the first to start a conversation!</p>
+  </div>
+</div>
+
+<!-- POST DETAIL MODAL -->
+<div class="modal-overlay" id="detailOverlay">
+  <div class="modal modal-detail">
+    <div class="modal-detail-hero">
+      <button class="modal-close" id="closeDetailBtn"><i class="fas fa-times"></i></button>
+      <div class="modal-detail-meta" id="detailMeta"></div>
+      <h2 class="modal-detail-title" id="detailTitle"></h2>
+      <div class="modal-detail-info" id="detailInfo"></div>
+    </div>
+    <div class="modal-body">
+      <img class="modal-detail-img" id="detailImg" src="" alt="" style="display:none">
+      <div class="modal-location-row" id="detailLocation" style="display:none">
+        <i class="fas fa-map-marker-alt"></i>
+        <span id="detailLocationText"></span>
+      </div>
+      <p class="modal-detail-desc" id="detailDesc"></p>
+      <div class="detail-helpful-row">
+        <span class="detail-helpful-label">Was this discussion helpful?</span>
+        <button class="btn-helpful-detail" id="detailHelpfulBtn">
+          <i class="fas fa-thumbs-up"></i>
+          <span>Helpful</span>
+          <span class="helpful-count" id="detailHelpfulCount">0</span>
+        </button>
+      </div>
+      <div class="replies-section-title">
+        Replies <span id="replyCountBadge">0</span>
+      </div>
+      <div class="reply-thread" id="replyThread"></div>
+      <div class="reply-form-wrap">
+        <h4>Leave a Reply</h4>
+        <textarea class="reply-textarea" id="replyInput" placeholder="Write your reply here…"></textarea>
+        <button class="reply-submit" id="replySubmitBtn">
+          <i class="fas fa-paper-plane"></i> Post Reply
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- START DISCUSSION MODAL -->
+<div class="modal-overlay" id="createOverlay">
+  <div class="modal modal-create">
+    <div class="modal-create-header">
+      <button class="modal-close" id="closeCreateBtn"><i class="fas fa-times"></i></button>
+      <h2><i class="fas fa-pen-alt"></i> Start a Discussion</h2>
+      <p>Share your question, concern, or suggestion with the community.</p>
+    </div>
+    <div class="modal-create-body">
+      <div class="form-group">
+        <label class="form-label">Title <span>*</span></label>
+        <input type="text" class="form-input" id="formTitle" placeholder="What would you like to discuss?">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Category <span>*</span></label>
+          <select class="form-select" id="formCategory">
+            <option value="">Select a category</option>
+            <option value="Questions">❓ Questions</option>
+            <option value="Concerns">⚠️ Concerns</option>
+            <option value="Suggestions">💡 Suggestions</option>
+            <option value="Community Help">🤝 Community Help</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Location <span class="optional">(optional)</span></label>
+          <input type="text" class="form-input" id="formLocation" placeholder="e.g. Block 12, Gate 2…">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Description <span>*</span></label>
+        <textarea class="form-textarea" id="formDesc" placeholder="Describe your topic in detail…"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Attach Image <span class="optional">(optional)</span></label>
+        <input type="file" id="fileInput" accept="image/*" style="display:none">
+        <div class="upload-area" id="uploadArea">
+          <i class="fas fa-cloud-upload-alt"></i>
+          <p>Click to upload or drag &amp; drop</p>
+          <span>PNG, JPG up to 5MB</span>
+        </div>
+        <div class="upload-preview" id="uploadPreview">
+          <img id="previewImg" src="" alt="Preview">
+          <button class="upload-remove" id="removeImg"><i class="fas fa-times"></i></button>
+        </div>
+      </div>
+      <div class="form-footer">
+        <button class="btn-cancel" id="cancelCreateBtn">Cancel</button>
+        <button class="btn-submit" id="submitPostBtn">
+          <i class="fas fa-paper-plane"></i> Post Discussion
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- REPORT DISCUSSION MODAL -->
+<div class="modal-overlay" id="reportOverlay">
+  <div class="modal modal-report">
+    <div class="modal-report-header">
+      <button class="modal-close modal-close-dark" id="closeReportBtn">
+        <i class="fas fa-times"></i>
+      </button>
+      <div class="report-header-icon">
+        <i class="fas fa-flag"></i>
+      </div>
+      <h2>Report Discussion</h2>
+      <p>Help us keep Usap Tayo a safe and respectful community space.</p>
+    </div>
+    <div class="modal-report-body">
+      <p class="report-subtitle">Why are you reporting this discussion?</p>
+      <div class="report-reasons" id="reportReasons">
+
+        <label class="report-reason-item">
+          <input type="radio" name="reportReason" value="Inappropriate Content">
+          <span class="reason-inner">
+            <span class="reason-icon reason-icon--red"><i class="fas fa-ban"></i></span>
+            <span class="reason-text">
+              <strong>Inappropriate Content</strong>
+              <small>Offensive, harmful, or adult material</small>
+            </span>
+          </span>
+        </label>
+
+        <label class="report-reason-item">
+          <input type="radio" name="reportReason" value="Spam or Advertising">
+          <span class="reason-inner">
+            <span class="reason-icon reason-icon--amber"><i class="fas fa-envelope-open-text"></i></span>
+            <span class="reason-text">
+              <strong>Spam or Advertising</strong>
+              <small>Unsolicited promotion or repeated posting</small>
+            </span>
+          </span>
+        </label>
+
+        <label class="report-reason-item">
+          <input type="radio" name="reportReason" value="Harassment or Bullying">
+          <span class="reason-inner">
+            <span class="reason-icon reason-icon--orange"><i class="fas fa-user-slash"></i></span>
+            <span class="reason-text">
+              <strong>Harassment or Bullying</strong>
+              <small>Targeting or intimidating another resident</small>
+            </span>
+          </span>
+        </label>
+
+        <label class="report-reason-item">
+          <input type="radio" name="reportReason" value="False or Misleading Info">
+          <span class="reason-inner">
+            <span class="reason-icon reason-icon--blue"><i class="fas fa-exclamation-triangle"></i></span>
+            <span class="reason-text">
+              <strong>False or Misleading Information</strong>
+              <small>Inaccurate HOA rules, facts, or announcements</small>
+            </span>
+          </span>
+        </label>
+
+        <label class="report-reason-item">
+          <input type="radio" name="reportReason" value="Other">
+          <span class="reason-inner">
+            <span class="reason-icon reason-icon--gray"><i class="fas fa-ellipsis-h"></i></span>
+            <span class="reason-text">
+              <strong>Other</strong>
+              <small>Describe the issue in the box below</small>
+            </span>
+          </span>
+        </label>
+
+      </div>
+      <textarea class="report-note" id="reportNote" placeholder="Additional details (optional) — help our moderators understand the issue…" rows="3"></textarea>
+      <div class="report-footer">
+        <button class="btn-cancel" id="cancelReportBtn">Cancel</button>
+        <button class="btn-report-submit" id="submitReportBtn" disabled>
+          <i class="fas fa-flag"></i> Submit Report
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"><i class="fas fa-check-circle"></i><span id="toastMsg"></span></div>
+
+<footer class="footer">
+  <div class="footer-content">
+    <div class="footer-section footer-logo-section">
+      <a href="index.html" class="footer-logo-link">
+        <img src="LBAlogo.png" alt="Bel-Air Village Logo" class="footer-logo">
+      </a>
+    </div>
+    <div class="footer-section">
+      <h3>Contact Us</h3>
+      <ul class="footer-links">
+        <li><i class="fas fa-map-marker-alt"></i> P3 B15 Alpine St. LBA4, Brgy. Don Jose, Sta. Rosa, Laguna 4026</li>
+        <li><i class="fas fa-phone"></i> (+63) 09398588138</li>
+        <li><i class="fas fa-phone"></i> 0495603050</li>
+      </ul>
+    </div>
+    <div class="footer-section">
+      <h3>Quick Links</h3>
+      <ul class="footer-links">
+        <li><a href="about-laguna-belair.html">About Us</a></li>
+        <li><a href="contacts.html">Contact Us</a></li>
+        <li><a href="faq.html">FAQs</a></li>
+        <li><a href="privacy-policy.html">Privacy Policy</a></li>
+      </ul>
+    </div>
+    <div class="footer-section">
+      <h3>Site Links</h3>
+      <ul class="footer-links">
+        <li><a href="announcement.html">Announcements</a></li>
+        <li><a href="calendars.html">Community Calendar</a></li>
+        <li><a href="forms-documents.html">Forms &amp; Documents</a></li>
+        <li><a href="report-concerns.html">Report a Concern</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <p>&copy; <span id="current-year"></span> Laguna BelAir 4. All rights reserved.</p>
+  </div>
+</footer>
+
+<script src="forums.js"></script>
+<script>
+  document.getElementById('current-year').textContent = new Date().getFullYear();
+  document.querySelectorAll('.dropdown').forEach(dropdown => {
+    const toggle = dropdown.querySelector('.dropdown-toggle');
+    if (!toggle) return;
+    toggle.addEventListener('click', (e) => {
+      e.preventDefault();
+      const isOpen = dropdown.classList.contains('dropdown-open');
+      document.querySelectorAll('.dropdown').forEach(d => d.classList.remove('dropdown-open'));
+      if (!isOpen) dropdown.classList.add('dropdown-open');
+    });
+  });
+  document.addEventListener('click', (e) => {
+    document.querySelectorAll('.dropdown').forEach(d => {
+      if (!d.contains(e.target)) d.classList.remove('dropdown-open');
+    });
+  });
+</script>
+</body>
+</html>

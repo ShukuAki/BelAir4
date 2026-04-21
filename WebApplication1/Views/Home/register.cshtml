@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Member Registration - Laguna BelAir 4</title>
+<!-- Fonts: Playfair Display + Outfit (matching advertisements) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="register.css">
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════
+  HEADER / NAV (updated to match advertisements style)
+═══════════════════════════════════════ -->
+<div class="top-header-container">
+  <div class="logo-section">
+    <a href="index.html" class="logo-link">
+      <img src="LBAlogo.png" alt="Laguna BelAir 4 Logo" class="logo-image">
+    </a>
+  </div>
+  <div class="header-center-wrapper">
+    <div class="navbar-two-rows">
+      <div class="navbar-top-row">
+        <a href="login.html"><i class="fas fa-sign-in-alt"></i> Login</a>
+        <span class="nav-sep">|</span>
+        <a href="register.html"><i class="fas fa-user-plus"></i> Register</a>
+      </div>
+      <div class="navbar-bottom-row">
+        <a href="./index.html" class="nav-link">Home</a>
+        <div class="dropdown">
+          <a href="#" class="dropdown-toggle">About <i class="fas fa-chevron-down"></i></a>
+          <div class="dropdown-menu">
+            <a href="about-laguna-belair.html">Laguna BelAir 4</a>
+            <a href="committees-bods.html">Committees / BODs</a>
+            <a href="landmarks.html">Landmarks</a>
+            <a href="contacts.html">Contacts</a>
+          </div>
+        </div>
+        <div class="dropdown">
+          <a href="#" class="dropdown-toggle">Community <i class="fas fa-chevron-down"></i></a>
+          <div class="dropdown-menu">
+            <a href="announcement.html">Announcements</a>
+            <a href="forums.html">Forums / Discussions</a>
+            <a href="advertisements.html">Community Exchange</a>
+            <a href="calendars.html">Calendars</a>
+            <a href="meeting-agendas.html">Meeting Records</a>
+            <a href="community-map.html">Community Map</a>
+          </div>
+        </div>
+        <div class="dropdown">
+          <a href="#" class="dropdown-toggle">Services <i class="fas fa-chevron-down"></i></a>
+          <div class="dropdown-menu">
+            <a href="reserve.html">Reserve Amenities</a>
+            <a href="report-concerns.html">Report an Issue</a>
+          </div>
+        </div>
+        <div class="dropdown">
+          <a href="#" class="dropdown-toggle">Others <i class="fas fa-chevron-down"></i></a>
+          <div class="dropdown-menu">
+            <a href="forms-documents.html">Forms &amp; Documents</a>
+            <a href="vehicle-pet-registration.html">Register Pet/Vehicle</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+  HERO SECTION (matching advertisements style with added <p>)
+═══════════════════════════════════════ -->
+<section class="hero-section">
+  <div class="hero-inner">
+    <h1 class="hero-title">Member Registration</h1>
+    <p class="hero-sub">Create a member account to access village services and features.<br> Registration is limited to residents of Laguna Bel Air 4.</p>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════
+  REGISTRATION SECTION
+═══════════════════════════════════════ -->
+<section class="register-section">
+  <!-- Decorative Leaves -->
+  <div class="leaf-decoration leaf-left-1"><i class="fas fa-leaf"></i></div>
+  <div class="leaf-decoration leaf-left-2"><i class="fas fa-leaf"></i></div>
+  <div class="leaf-decoration leaf-left-3"><i class="fas fa-leaf"></i></div>
+  <div class="leaf-decoration leaf-right-1"><i class="fas fa-leaf"></i></div>
+  <div class="leaf-decoration leaf-right-2"><i class="fas fa-leaf"></i></div>
+  <div class="leaf-decoration leaf-right-3"><i class="fas fa-leaf"></i></div>
+
+  <div class="register-container">
+    <div class="register-box">
+      <!-- Registration Header -->
+      <div class="register-header">
+        <i class="fas fa-user-plus"></i>
+        <h1>Member Registration</h1>
+        <p>Create a member account to access village services and features. Registration is limited to residents of the village. Your application will be reviewed and approved by the HOA administration before your account is activated.</p>
+      </div>
+
+      <!-- Registration Form -->
+      <form class="register-form" id="registerForm">
+        <!-- Account Information Section -->
+        <div class="form-section">
+          <div class="section-heading">
+            <i class="fas fa-user-circle"></i>
+            Account Information
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="fullName">
+                <i class="fas fa-id-card"></i>
+                Full Name
+                <span class="required">*</span>
+              </label>
+              <input 
+                type="text" 
+                id="fullName" 
+                name="fullName" 
+                placeholder="Enter your full name"
+                required
+              >
+            </div>
+
+            <div class="form-group">
+              <label for="email">
+                <i class="fas fa-envelope"></i>
+                Email Address
+                <span class="required">*</span>
+              </label>
+              <input 
+                type="email" 
+                id="email" 
+                name="email" 
+                placeholder="Enter your email"
+                required
+              >
+            </div>
+          </div>
+
+          <div class="form-row single-column">
+            <div class="form-group">
+              <label for="mobile">
+                <i class="fas fa-mobile-alt"></i>
+                Mobile Number
+                <span class="required">*</span>
+              </label>
+              <input 
+                type="text" 
+                id="mobile" 
+                name="mobile" 
+                placeholder="e.g., 09XX XXX XXXX"
+                required
+              >
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="password">
+                <i class="fas fa-lock"></i>
+                Password
+                <span class="required">*</span>
+              </label>
+              <div class="password-input-wrapper">
+                <input 
+                  type="password" 
+                  id="password" 
+                  name="password" 
+                  placeholder="Enter password"
+                  required
+                >
+                <button type="button" class="toggle-password" data-target="password" aria-label="Toggle password visibility">
+                  <i class="fas fa-eye"></i>
+                </button>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="confirmPassword">
+                <i class="fas fa-lock"></i>
+                Confirm Password
+                <span class="required">*</span>
+              </label>
+              <div class="password-input-wrapper">
+                <input 
+                  type="password" 
+                  id="confirmPassword" 
+                  name="confirmPassword" 
+                  placeholder="Re-enter password"
+                  required
+                >
+                <button type="button" class="toggle-password" data-target="confirmPassword" aria-label="Toggle password visibility">
+                  <i class="fas fa-eye"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Residency Information Section -->
+        <div class="form-section">
+          <div class="section-heading">
+            <i class="fas fa-home"></i>
+            Residency Information
+          </div>
+
+          <div class="form-row single-column" style="max-width: 48%;">
+            <div class="form-group">
+              <label for="residentType">
+                <i class="fas fa-user-tag"></i>
+                Type of Resident
+                <span class="required">*</span>
+              </label>
+              <select 
+                id="residentType" 
+                name="residentType"
+                required
+              >
+                <option value="">-- Select Type --</option>
+                <option value="homeowner">Homeowner</option>
+                <option value="tenant">Tenant</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="address-section" style="margin-top: 18px;">
+            <label class="address-label">
+              <i class="fas fa-map-marker-alt"></i>
+              Address
+              <span class="required">*</span>
+            </label>
+            <div id="addressList"></div>
+          </div>
+        </div>
+
+        <!-- Proof of Residency Section -->
+        <div class="form-section">
+          <div class="file-upload-section">
+            <h3>
+              <i class="fas fa-file-upload"></i>
+              Proof of Residency
+              <span class="required">*</span>
+            </h3>
+
+            <p class="file-upload-description">
+              Please upload a valid document that proves you are currently living in the village. Your application will be reviewed by the HOA staff.
+            </p>
+
+            <div class="file-upload-examples">
+              <h4>Accepted examples:</h4>
+              <ul>
+                <li>Valid ID showing village address</li>
+                <li>Utility bill (electricity, water, internet)</li>
+                <li>Lease contract (for tenants)</li>
+                <li>Authorization letter from homeowner</li>
+              </ul>
+            </div>
+
+            <div class="file-upload-wrapper">
+              <input 
+                type="file" 
+                id="proofOfResidency" 
+                name="proofOfResidency" 
+                class="file-upload-input"
+                accept=".jpg,.jpeg,.png,.pdf"
+                required
+              >
+              <label for="proofOfResidency" class="file-upload-label">
+                <i class="fas fa-cloud-upload-alt"></i>
+                Choose File
+              </label>
+              <div class="file-name-display" id="fileNameDisplay"></div>
+            </div>
+
+            <p class="file-upload-note">Allowed formats: JPG, PNG, PDF (Max 5MB)</p>
+
+            <div class="confidentiality-note">
+              <p>
+                <i class="fas fa-shield-alt"></i>
+                <strong>Note:</strong> All submitted documents will be kept confidential and used only for verification purposes.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Terms and Declaration Section -->
+        <div class="form-section">
+          <div class="terms-section">
+            <div class="terms-checkbox">
+              <input 
+                type="checkbox" 
+                id="termsAgreement" 
+                name="termsAgreement"
+                required
+              >
+              <label for="termsAgreement">
+                I confirm that the information provided is true and accurate. I understand that providing false information may result in rejection of my registration.
+                <span class="required">*</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Submit Button -->
+        <button type="submit" class="submit-btn" id="submitBtn">
+          <i class="fas fa-paper-plane"></i>
+          Submit Registration
+        </button>
+
+        <!-- Success Message (Hidden by default) -->
+        <div class="success-message" id="successMessage">
+          <i class="fas fa-check-circle"></i>
+          <h3>Registration Submitted Successfully!</h3>
+          <p>Your registration has been submitted and is pending approval. You will be notified via email once your account is approved.</p>
+        </div>
+
+        <!-- Login Link -->
+        <div class="login-link">
+          <p>Already have an account? <a href="login.html">Login here</a></p>
+        </div>
+      </form>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════
+  FOOTER
+═══════════════════════════════════════ -->
+<footer class="footer">
+  <div class="footer-content">
+    <div class="footer-section footer-logo-section">
+      <a href="index.html" class="footer-logo-link">
+        <img src="LBAlogo.png" alt="Bel-Air Village Logo" class="footer-logo">
+      </a>
+    </div>
+    <div class="footer-section">
+      <h3>Contact Us</h3>
+      <ul class="footer-links">
+        <li><i class="fas fa-map-marker-alt"></i> P3 B15 Alpine St. LBA4, Brgy. Don Jose, Sta. Rosa, Laguna 4026</li>
+        <li><i class="fas fa-phone"></i> (+63) 09398588138</li>
+        <li><i class="fas fa-phone"></i> 0495603050</li>
+      </ul>
+    </div>
+    <div class="footer-section">
+      <h3>Quick Links</h3>
+      <ul class="footer-links">
+        <li><a href="about-laguna-belair.html">About Us</a></li>
+        <li><a href="contacts.html">Contact Us</a></li>
+        <li><a href="faq.html">FAQs</a></li>
+        <li><a href="privacy-policy.html">Privacy Policy</a></li>
+      </ul>
+    </div>
+    <div class="footer-section">
+      <h3>Site Links</h3>
+      <ul class="footer-links">
+        <li><a href="announcement.html">Announcements</a></li>
+        <li><a href="calendars.html">Community Calendar</a></li>
+        <li><a href="forms-documents.html">Forms &amp; Documents</a></li>
+        <li><a href="report-concerns.html">Report a Concern</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <p>&copy; <span id="current-year"></span> Laguna BelAir 4. All rights reserved.</p>
+  </div>
+</footer>
+
+<!-- JavaScript -->
+<script src="register.js"></script>
+<script>
+  // Set current year in footer
+  document.getElementById('current-year').textContent = new Date().getFullYear();
+  // Mobile dropdown toggle support
+  document.querySelectorAll('.dropdown').forEach(dropdown => {
+    const toggle = dropdown.querySelector('.dropdown-toggle');
+    if (!toggle) return;
+    toggle.addEventListener('click', (e) => {
+      e.preventDefault();
+      const isOpen = dropdown.classList.contains('dropdown-open');
+      document.querySelectorAll('.dropdown').forEach(d => d.classList.remove('dropdown-open'));
+      if (!isOpen) dropdown.classList.add('dropdown-open');
+    });
+  });
+  document.addEventListener('click', (e) => {
+    document.querySelectorAll('.dropdown').forEach(d => {
+      if (!d.contains(e.target)) d.classList.remove('dropdown-open');
+    });
+  });
+</script>
+</body>
+</html>

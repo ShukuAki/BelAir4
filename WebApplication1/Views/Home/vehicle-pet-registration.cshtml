@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vehicle & Pet Registration - Laguna BelAir 4</title>
+<!-- Fonts: Playfair Display + Outfit (matching advertisements) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="vehicle-pet-registration.css">
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════
+  HEADER / NAV (updated to match advertisements style)
+═══════════════════════════════════════ -->
+<div class="top-header-container">
+  <div class="logo-section">
+    <a href="index.html" class="logo-link">
+      <img src="LBAlogo.png" alt="Laguna BelAir 4 Logo" class="logo-image">
+    </a>
+  </div>
+  <div class="header-center-wrapper">
+    <div class="navbar-two-rows">
+      <div class="navbar-top-row">
+        <a href="login.html"><i class="fas fa-sign-in-alt"></i> Login</a>
+        <span class="nav-sep">|</span>
+        <a href="register.html"><i class="fas fa-user-plus"></i> Register</a>
+      </div>
+      <div class="navbar-bottom-row">
+        <a href="./index.html" class="nav-link">Home</a>
+        <div class="dropdown">
+          <a href="#" class="dropdown-toggle">About <i class="fas fa-chevron-down"></i></a>
+          <div class="dropdown-menu">
+            <a href="about-laguna-belair.html">Laguna BelAir 4</a>
+            <a href="committees-bods.html">Committees / BODs</a>
+            <a href="landmarks.html">Landmarks</a>
+            <a href="contacts.html">Contacts</a>
+          </div>
+        </div>
+        <div class="dropdown">
+          <a href="#" class="dropdown-toggle">Community <i class="fas fa-chevron-down"></i></a>
+          <div class="dropdown-menu">
+            <a href="announcement.html">Announcements</a>
+            <a href="forums.html">Forums / Discussions</a>
+            <a href="advertisements.html">Community Exchange</a>
+            <a href="calendars.html">Calendars</a>
+            <a href="meeting-agendas.html">Meeting Records</a>
+            <a href="community-map.html">Community Map</a>
+          </div>
+        </div>
+        <div class="dropdown">
+          <a href="#" class="dropdown-toggle">Services <i class="fas fa-chevron-down"></i></a>
+          <div class="dropdown-menu">
+            <a href="reserve.html">Reserve Amenities</a>
+            <a href="report-concerns.html">Report an Issue</a>
+          </div>
+        </div>
+        <div class="dropdown">
+          <a href="#" class="dropdown-toggle">Others <i class="fas fa-chevron-down"></i></a>
+          <div class="dropdown-menu">
+            <a href="forms-documents.html">Forms &amp; Documents</a>
+            <a href="vehicle-pet-registration.html" class="active">Register Pet/Vehicle</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+  HERO SECTION (matching advertisements style with added <p>)
+═══════════════════════════════════════ -->
+<section class="hero-section">
+  <div class="hero-inner">
+    <h1 class="hero-title">Vehicle & Pet Registration</h1>
+    <p class="hero-sub">Register your vehicles and pets for community records. <br> This information helps us maintain security and emergency contact records for all residents.</p>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════
+  REGISTRATION SECTION
+═══════════════════════════════════════ -->
+<section class="register-section">
+  <!-- Decorative Leaves -->
+  <div class="leaf-decoration leaf-left-1"><i class="fas fa-leaf"></i></div>
+  <div class="leaf-decoration leaf-left-2"><i class="fas fa-leaf"></i></div>
+  <div class="leaf-decoration leaf-left-3"><i class="fas fa-leaf"></i></div>
+  <div class="leaf-decoration leaf-right-1"><i class="fas fa-leaf"></i></div>
+  <div class="leaf-decoration leaf-right-2"><i class="fas fa-leaf"></i></div>
+  <div class="leaf-decoration leaf-right-3"><i class="fas fa-leaf"></i></div>
+
+  <div class="register-container">
+    <div class="register-box">
+      <!-- Registration Header -->
+      <div class="register-header">
+        <i class="fas fa-car"></i>
+        <i class="fas fa-paw"></i>
+        <h1>Vehicle & Pet Registration</h1>
+        <p>Register your vehicles and pets for community records. This information helps us maintain security and emergency contact records for all residents.</p>
+      </div>
+
+      <!-- Owner Info (Auto-filled from session) -->
+      <div class="info-banner">
+        <i class="fas fa-user-check"></i>
+        <div class="info-content">
+          <strong>Logged in as:</strong>
+          <span id="ownerName">Juan Dela Cruz</span>
+          <span class="info-sub" id="ownerAddress">P3 B15 Alpine St., Laguna BelAir 4</span>
+        </div>
+      </div>
+
+      <!-- Tab Navigation -->
+      <div class="tab-navigation">
+        <button class="tab-btn active" data-tab="vehicle">
+          <i class="fas fa-car"></i>
+          <span>Vehicle Registration</span>
+        </button>
+        <button class="tab-btn" data-tab="pet">
+          <i class="fas fa-paw"></i>
+          <span>Pet Registration</span>
+        </button>
+        <button class="tab-btn" data-tab="view">
+          <i class="fas fa-list"></i>
+          <span>View Registered</span>
+        </button>
+      </div>
+
+      <!-- ═══════════════════════════════════════
+      VEHICLE REGISTRATION FORM
+      ═══════════════════════════════════════ -->
+      <div class="tab-content active" id="vehicle-tab">
+        <form class="register-form" id="vehicleForm">
+
+          <!-- Vehicle Information Section -->
+          <div class="form-section">
+            <div class="section-heading">
+              <i class="fas fa-car-side"></i>
+              Vehicle Information
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="vehicleType">
+                  <i class="fas fa-car"></i>
+                  Vehicle Type
+                  <span class="required">*</span>
+                </label>
+                <select id="vehicleType" name="vehicleType" required>
+                  <option value="">-- Select Type --</option>
+                  <option value="sedan">Sedan</option>
+                  <option value="suv">SUV</option>
+                  <option value="truck">Truck</option>
+                  <option value="van">Van</option>
+                  <option value="motorcycle">Motorcycle</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="vehicleCategory">
+                  <i class="fas fa-tag"></i>
+                  Category
+                  <span class="required">*</span>
+                </label>
+                <select id="vehicleCategory" name="vehicleCategory" required>
+                  <option value="owner">Owner's Vehicle</option>
+                  <option value="guest">Guest Vehicle</option>
+                  <option value="service">Service Vehicle</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="plateNumber">
+                  <i class="fas fa-id-badge"></i>
+                  Plate Number
+                  <span class="required">*</span>
+                </label>
+                <input type="text" id="plateNumber" name="plateNumber" placeholder="e.g., ABC 1234" required>
+              </div>
+
+              <div class="form-group">
+                <label for="vehicleColor">
+                  <i class="fas fa-palette"></i>
+                  Color
+                  <span class="required">*</span>
+                </label>
+                <input type="text" id="vehicleColor" name="vehicleColor" placeholder="e.g., Silver" required>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="vehicleBrand">
+                  <i class="fas fa-industry"></i>
+                  Brand/Make
+                  <span class="required">*</span>
+                </label>
+                <input type="text" id="vehicleBrand" name="vehicleBrand" placeholder="e.g., Toyota" required>
+              </div>
+
+              <div class="form-group">
+                <label for="vehicleModel">
+                  <i class="fas fa-car"></i>
+                  Model
+                  <span class="required">*</span>
+                </label>
+                <input type="text" id="vehicleModel" name="vehicleModel" placeholder="e.g., Vios" required>
+              </div>
+            </div>
+
+            <!-- Guest Vehicle Fields (conditionally shown) -->
+            <div class="conditional-field" id="guestFields">
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="guestName">
+                    <i class="fas fa-user"></i>
+                    Guest Name
+                    <span class="required">*</span>
+                  </label>
+                  <input type="text" id="guestName" name="guestName" placeholder="Full name of guest">
+                </div>
+
+                <div class="form-group">
+                  <label for="guestContact">
+                    <i class="fas fa-phone"></i>
+                    Guest Contact Number
+                    <span class="required">*</span>
+                  </label>
+                  <input type="tel" id="guestContact" name="guestContact" placeholder="e.g., 09XX XXX XXXX">
+                </div>
+              </div>
+
+              <div class="form-row" style="margin-top: 15px;">
+                <div class="form-group">
+                  <label for="guestDuration">
+                    <i class="fas fa-clock"></i>
+                    Expected Duration
+                  </label>
+                  <input type="number" id="guestDuration" name="guestDuration" placeholder="e.g., 3" min="1">
+                </div>
+
+                <div class="form-group">
+                  <label for="guestDurationType">
+                    <i class="fas fa-hourglass"></i>
+                    Duration Type
+                  </label>
+                  <select id="guestDurationType" name="guestDurationType">
+                    <option value="hours">Hours</option>
+                    <option value="days">Days</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Additional Details -->
+          <div class="form-section">
+            <div class="section-heading">
+              <i class="fas fa-clipboard-list"></i>
+              Additional Details
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="vehicleYear">
+                  <i class="fas fa-calendar"></i>
+                  Year
+                </label>
+                <input type="number" id="vehicleYear" name="vehicleYear" placeholder="e.g., 2023" min="1900" max="2026">
+              </div>
+
+              <div class="form-group">
+                <label for="vehicleVIN">
+                  <i class="fas fa-barcode"></i>
+                  VIN (Optional)
+                </label>
+                <input type="text" id="vehicleVIN" name="vehicleVIN" placeholder="Vehicle Identification Number">
+              </div>
+            </div>
+
+            <div class="form-group full-width">
+              <label for="vehicleNotes">
+                <i class="fas fa-sticky-note"></i>
+                Additional Notes
+              </label>
+              <textarea id="vehicleNotes" name="vehicleNotes" rows="3" placeholder="Any additional information about the vehicle..."></textarea>
+            </div>
+          </div>
+
+          <!-- Terms -->
+          <div class="form-section">
+            <div class="terms-section">
+              <div class="terms-checkbox">
+                <input type="checkbox" id="vehicleTerms" name="vehicleTerms" required>
+                <label for="vehicleTerms">
+                  I confirm that the vehicle information provided is accurate. I understand that guest vehicles must be registered prior to entry.
+                  <span class="required">*</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Submit Button -->
+          <button type="submit" class="submit-btn">
+            <i class="fas fa-check-circle"></i>
+            Register Vehicle
+          </button>
+
+          <!-- Success Message -->
+          <div class="success-message" id="vehicleSuccess">
+            <i class="fas fa-check-circle"></i>
+            <h3>Vehicle Registered Successfully!</h3>
+            <p>Your vehicle has been added to the community registry.</p>
+          </div>
+        </form>
+      </div>
+
+      <!-- ═══════════════════════════════════════
+      PET REGISTRATION FORM
+      ═══════════════════════════════════════ -->
+      <div class="tab-content" id="pet-tab">
+        <form class="register-form" id="petForm">
+
+          <!-- Pet Information Section -->
+          <div class="form-section">
+            <div class="section-heading">
+              <i class="fas fa-paw"></i>
+              Pet Information
+            </div>
+
+            <!-- Pet Photo Upload -->
+            <div class="file-upload-section" style="margin-bottom: 20px;">
+              <h3>
+                <i class="fas fa-camera"></i>
+                Pet Photo
+                <span style="color: #856404; font-size: 12px;">(Optional but recommended)</span>
+              </h3>
+              <p class="file-upload-description">
+                Upload a clear photo of your pet to help security identify them in case they wander.
+              </p>
+              <div class="file-upload-wrapper">
+                <input type="file" id="petPhoto" name="petPhoto" class="file-upload-input" accept=".jpg,.jpeg,.png">
+                <label for="petPhoto" class="file-upload-label">
+                  <i class="fas fa-cloud-upload-alt"></i>
+                  Choose Photo
+                </label>
+                <div class="file-name-display" id="petFileNameDisplay"></div>
+              </div>
+              <p class="file-upload-note">Allowed formats: JPG, PNG (Max 5MB)</p>
+              <!-- Photo Preview -->
+              <div class="photo-preview" id="petPhotoPreview"></div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="petType">
+                  <i class="fas fa-dog"></i>
+                  Pet Type
+                  <span class="required">*</span>
+                </label>
+                <select id="petType" name="petType" required>
+                  <option value="">-- Select Type --</option>
+                  <option value="dog">Dog</option>
+                  <option value="cat">Cat</option>
+                  <option value="bird">Bird</option>
+                  <option value="fish">Fish</option>
+                  <option value="rabbit">Rabbit</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="petBreed">
+                  <i class="fas fa-award"></i>
+                  Breed
+                </label>
+                <input type="text" id="petBreed" name="petBreed" placeholder="e.g., Golden Retriever">
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="petName">
+                  <i class="fas fa-tag"></i>
+                  Pet Name
+                  <span class="required">*</span>
+                </label>
+                <input type="text" id="petName" name="petName" placeholder="e.g., Buddy" required>
+              </div>
+
+              <div class="form-group">
+                <label for="petColor">
+                  <i class="fas fa-palette"></i>
+                  Color/Markings
+                  <span class="required">*</span>
+                </label>
+                <input type="text" id="petColor" name="petColor" placeholder="e.g., Golden with white chest" required>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="petAge">
+                  <i class="fas fa-birthday-cake"></i>
+                  Age
+                  <span class="required">*</span>
+                </label>
+                <input type="number" id="petAge" name="petAge" placeholder="e.g., 3" min="0" max="30" required>
+              </div>
+
+              <div class="form-group">
+                <label for="petGender">
+                  <i class="fas fa-venus-mars"></i>
+                  Gender
+                  <span class="required">*</span>
+                </label>
+                <select id="petGender" name="petGender" required>
+                  <option value="">-- Select --</option>
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="petVaccinated">
+                  <i class="fas fa-syringe"></i>
+                  Vaccination Status
+                  <span class="required">*</span>
+                </label>
+                <select id="petVaccinated" name="petVaccinated" required>
+                  <option value="">-- Select --</option>
+                  <option value="yes">Yes, up to date</option>
+                  <option value="partial">Partially vaccinated</option>
+                  <option value="no">No</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="petMicrochip">
+                  <i class="fas fa-microchip"></i>
+                  Microchipped?
+                </label>
+                <select id="petMicrochip" name="petMicrochip">
+                  <option value="">-- Select --</option>
+                  <option value="yes">Yes</option>
+                  <option value="no">No</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="petNeutered">
+                  <i class="fas fa-notes-medical"></i>
+                  Spayed/Neutered?
+                </label>
+                <select id="petNeutered" name="petNeutered">
+                  <option value="">-- Select --</option>
+                  <option value="yes">Yes</option>
+                  <option value="no">No</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Behavior & Notes -->
+          <div class="form-section">
+            <div class="section-heading">
+              <i class="fas fa-brain"></i>
+              Behavior & Notes
+            </div>
+
+            <div class="form-group">
+              <label for="petTemperament">
+                <i class="fas fa-smile"></i>
+                Temperament
+              </label>
+              <select id="petTemperament" name="petTemperament">
+                <option value="">-- Select --</option>
+                <option value="friendly">Friendly</option>
+                <option value="calm">Calm</option>
+                <option value="energetic">Energetic</option>
+                <option value="shy">Shy</option>
+                <option value="aggressive">Aggressive</option>
+              </select>
+            </div>
+
+            <div class="form-group full-width">
+              <label for="petNotes">
+                <i class="fas fa-sticky-note"></i>
+                Behavior Notes / Special Needs
+              </label>
+              <textarea id="petNotes" name="petNotes" rows="3" placeholder="Any behavior notes (e.g., good with kids, barks at strangers, medical conditions, etc.)..."></textarea>
+            </div>
+          </div>
+
+          <!-- Terms -->
+          <div class="form-section">
+            <div class="terms-section">
+              <div class="terms-checkbox">
+                <input type="checkbox" id="petTerms" name="petTerms" required>
+                <label for="petTerms">
+                  I confirm that my pet is properly cared for and will not disturb other residents. I understand I am responsible for my pet's behavior within the community.
+                  <span class="required">*</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Submit Button -->
+          <button type="submit" class="submit-btn">
+            <i class="fas fa-check-circle"></i>
+            Register Pet
+          </button>
+
+          <!-- Success Message -->
+          <div class="success-message" id="petSuccess">
+            <i class="fas fa-check-circle"></i>
+            <h3>Pet Registered Successfully!</h3>
+            <p>Your pet has been added to the community registry.</p>
+          </div>
+        </form>
+      </div>
+
+      <!-- ═══════════════════════════════════════
+      VIEW REGISTERED ITEMS
+      ═══════════════════════════════════════ -->
+      <div class="tab-content" id="view-tab">
+        <div class="view-container">
+
+          <!-- Registered Vehicles -->
+          <div class="form-section">
+            <div class="section-heading">
+              <i class="fas fa-car"></i>
+              Registered Vehicles
+              <span class="count-badge" id="vehicleCount" style="margin-left: auto; background: #0a4d3c; color: white; padding: 4px 12px; border-radius: 12px; font-size: 12px;">0</span>
+            </div>
+            <div class="items-list" id="vehiclesList">
+              <div class="empty-state">
+                <i class="fas fa-car"></i>
+                <p>No vehicles registered yet</p>
+                <button class="btn-add" onclick="switchToTab('vehicle')">
+                  <i class="fas fa-plus"></i> Add Vehicle
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Registered Pets -->
+          <div class="form-section">
+            <div class="section-heading">
+              <i class="fas fa-paw"></i>
+              Registered Pets
+              <span class="count-badge" id="petCount" style="margin-left: auto; background: #0a4d3c; color: white; padding: 4px 12px; border-radius: 12px; font-size: 12px;">0</span>
+            </div>
+            <div class="items-list" id="petsList">
+              <div class="empty-state">
+                <i class="fas fa-paw"></i>
+                <p>No pets registered yet</p>
+                <button class="btn-add" onclick="switchToTab('pet')">
+                  <i class="fas fa-plus"></i> Add Pet
+                </button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Login Link -->
+      <div class="login-link" style="margin-top: 10px; border-top: 1px solid #e0e0e0; padding-top: 20px;">
+        <p>Need to update information? <a href="#" onclick="alert('Contact HOA admin for updates')">Contact Administration</a></p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ========================================
+FOOTER SECTION
+======================================== -->
+<footer class="footer">
+  <div class="footer-content">
+    <div class="footer-section footer-logo-section">
+      <a href="index.html" class="footer-logo-link">
+        <img src="LBAlogo.png" alt="Laguna BelAir 4 Logo" class="footer-logo">
+      </a>
+    </div>
+    <div class="footer-section">
+      <h3>Contact Us</h3>
+      <ul class="footer-links">
+        <li><i class="fas fa-map-marker-alt"></i> P3 B15 Alpine St. LBA4, Brgy. Don Jose, Sta. Rosa, Laguna 4026</li>
+        <li><i class="fas fa-phone"></i> (+63) 09398588138</li>
+        <li><i class="fas fa-phone"></i> 0495603050</li>
+      </ul>
+    </div>
+    <div class="footer-section">
+      <h3>Quick Links</h3>
+      <ul class="footer-links">
+        <li><a href="about-laguna-belair.html">About Us</a></li>
+        <li><a href="contacts.html">Contact Us</a></li>
+        <li><a href="faq.html">FAQs</a></li>
+        <li><a href="privacy-policy.html">Privacy Policy</a></li>
+      </ul>
+    </div>
+    <div class="footer-section">
+      <h3>Site Links</h3>
+      <ul class="footer-links">
+        <li><a href="announcement.html">Announcements</a></li>
+        <li><a href="calendars.html">Community Calendar</a></li>
+        <li><a href="forms-documents.html">Forms & Documents</a></li>
+        <li><a href="report-concerns.html">Report a Concern</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <p>&copy; <span id="current-year"></span> Laguna BelAir 4. All rights reserved.</p>
+  </div>
+</footer>
+
+<!-- JavaScript -->
+<script src="vehicle-pet-registration.js"></script>
+<script>
+  // Set current year in footer
+  document.getElementById('current-year').textContent = new Date().getFullYear();
+  // Mobile dropdown toggle support
+  document.querySelectorAll('.dropdown').forEach(dropdown => {
+    const toggle = dropdown.querySelector('.dropdown-toggle');
+    if (!toggle) return;
+    toggle.addEventListener('click', (e) => {
+      e.preventDefault();
+      const isOpen = dropdown.classList.contains('dropdown-open');
+      document.querySelectorAll('.dropdown').forEach(d => d.classList.remove('dropdown-open'));
+      if (!isOpen) dropdown.classList.add('dropdown-open');
+    });
+  });
+  document.addEventListener('click', (e) => {
+    document.querySelectorAll('.dropdown').forEach(d => {
+      if (!d.contains(e.target)) d.classList.remove('dropdown-open');
+    });
+  });
+</script>
+</body>
+</html>

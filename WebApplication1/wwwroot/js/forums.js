@@ -103,8 +103,12 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   ];
 
-  // Track which posts the user has upvoted (by id)
-  const votedPosts = new Set();
+  // Track voted and reported posts
+  const votedPosts      = new Set();
+  const reportedPosts   = new Set();   // stores post id
+  const reportedReplies = new Set();   // stores "postId-replyIndex"
+  let reportTargetId    = null;        // post id being reported
+  let reportTargetReply = null;        // "postId-replyIndex" being reported, or null
 
   // ─────────────────────────────────────────
   // STATE
@@ -126,9 +130,9 @@ document.addEventListener('DOMContentLoaded', function () {
   const sortFilter      = document.getElementById('sortFilter');
   const chips           = document.querySelectorAll('.chip');
 
-  const detailOverlay   = document.getElementById('detailOverlay');
-  const closeDetailBtn  = document.getElementById('closeDetailBtn');
-  const detailHelpfulBtn= document.getElementById('detailHelpfulBtn');
+  const detailOverlay      = document.getElementById('detailOverlay');
+  const closeDetailBtn     = document.getElementById('closeDetailBtn');
+  const detailHelpfulBtn   = document.getElementById('detailHelpfulBtn');
   const detailHelpfulCount = document.getElementById('detailHelpfulCount');
 
   const createOverlay   = document.getElementById('createOverlay');
@@ -137,18 +141,24 @@ document.addEventListener('DOMContentLoaded', function () {
   const cancelCreateBtn = document.getElementById('cancelCreateBtn');
   const submitPostBtn   = document.getElementById('submitPostBtn');
 
-  const uploadArea      = document.getElementById('uploadArea');
-  const fileInput       = document.getElementById('fileInput');
-  const uploadPreview   = document.getElementById('uploadPreview');
-  const previewImg      = document.getElementById('previewImg');
-  const removeImgBtn    = document.getElementById('removeImg');
+  const reportOverlay    = document.getElementById('reportOverlay');
+  const closeReportBtn   = document.getElementById('closeReportBtn');
+  const cancelReportBtn  = document.getElementById('cancelReportBtn');
+  const submitReportBtn  = document.getElementById('submitReportBtn');
+  const reportNote       = document.getElementById('reportNote');
 
-  const replySubmitBtn  = document.getElementById('replySubmitBtn');
-  const replyInput      = document.getElementById('replyInput');
+  const uploadArea    = document.getElementById('uploadArea');
+  const fileInput     = document.getElementById('fileInput');
+  const uploadPreview = document.getElementById('uploadPreview');
+  const previewImg    = document.getElementById('previewImg');
+  const removeImgBtn  = document.getElementById('removeImg');
 
-  const toast           = document.getElementById('toast');
-  const toastMsg        = document.getElementById('toastMsg');
-  const currentYearEl   = document.getElementById('current-year');
+  const replySubmitBtn = document.getElementById('replySubmitBtn');
+  const replyInput     = document.getElementById('replyInput');
+
+  const toast      = document.getElementById('toast');
+  const toastMsg   = document.getElementById('toastMsg');
+  const currentYearEl = document.getElementById('current-year');
 
   // ─────────────────────────────────────────
   // HELPERS
@@ -182,10 +192,19 @@ document.addEventListener('DOMContentLoaded', function () {
   function showToast(msg) {
     toastMsg.textContent = msg;
     toast.classList.add('show');
-    setTimeout(() => toast.classList.remove('show'), 3000);
+    setTimeout(() => toast.classList.remove('show'), 3500);
   }
   function isUnanswered(p) {
     return p.status === 'Open' && p.replies.length === 0;
+  }
+  function escapeHtml(str) {
+    if (!str) return '';
+    return str
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
   }
 
   // ─────────────────────────────────────────
@@ -232,7 +251,6 @@ document.addEventListener('DOMContentLoaded', function () {
         role="button" tabindex="0"
         aria-label="Open discussion: ${p.title}"
       >
-        <!-- STATUS first, then category tag -->
         <div class="card-top">
           <div class="card-badges">
             <span class="status-badge status-${statusClass(p.status)}">
@@ -244,16 +262,16 @@ document.addEventListener('DOMContentLoaded', function () {
           </div>
         </div>
 
-        <h3 class="card-title">${p.title}</h3>
-        <p class="card-preview">${p.desc}</p>
+        <h3 class="card-title">${escapeHtml(p.title)}</h3>
+        <p class="card-preview">${escapeHtml(p.desc)}</p>
 
-        ${p.location ? `<div class="card-location"><i class="fas fa-map-marker-alt"></i> ${p.location}</div>` : ''}
+        ${p.location ? `<div class="card-location"><i class="fas fa-map-marker-alt"></i> ${escapeHtml(p.location)}</div>` : ''}
 
         <div class="card-footer">
           <div class="card-author">
             <div class="avatar-sm" style="background:${avatarBg(p.author)}">${initials(p.author)}</div>
             <div>
-              <div class="card-author-name">${p.author}</div>
+              <div class="card-author-name">${escapeHtml(p.author)}</div>
               <div class="card-date">${p.date}</div>
             </div>
           </div>
@@ -272,16 +290,24 @@ document.addEventListener('DOMContentLoaded', function () {
             >
               <i class="fas fa-comment-alt"></i> ${p.replies.length}
             </button>
+            <button
+              class="btn-report-card ${reportedPosts.has(p.id) ? 'reported' : ''}"
+              data-id="${p.id}"
+              aria-label="${reportedPosts.has(p.id) ? 'Already reported' : 'Report this discussion'}"
+              title="${reportedPosts.has(p.id) ? 'Already reported' : 'Report this discussion'}"
+            >
+              <i class="fas fa-flag"></i> ${reportedPosts.has(p.id) ? 'Reported' : 'Report'}
+            </button>
           </div>
         </div>
       </article>
     `).join('');
 
-    // Card click — open detail (but not when clicking action buttons)
+    // Card click → open detail
     postsGrid.querySelectorAll('.post-card').forEach(card => {
       const openFn = () => openDetail(+card.dataset.id);
       card.addEventListener('click', e => {
-        if (e.target.closest('.card-action-btn')) return;
+        if (e.target.closest('.card-action-btn') || e.target.closest('.btn-report-card')) return;
         openFn();
       });
       card.addEventListener('keydown', e => {
@@ -289,7 +315,7 @@ document.addEventListener('DOMContentLoaded', function () {
       });
     });
 
-    // Helpful button on cards
+    // Helpful button
     postsGrid.querySelectorAll('.btn-helpful-card').forEach(btn => {
       btn.addEventListener('click', e => {
         e.stopPropagation();
@@ -307,34 +333,44 @@ document.addEventListener('DOMContentLoaded', function () {
       });
     });
 
-    // Reply count button — opens detail scrolled to replies
+    // Replies button
     postsGrid.querySelectorAll('.btn-replies-card').forEach(btn => {
       btn.addEventListener('click', e => {
         e.stopPropagation();
         openDetail(+btn.dataset.id);
       });
     });
+
+    // Report button
+    postsGrid.querySelectorAll('.btn-report-card').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        const id = +btn.dataset.id;
+        if (reportedPosts.has(id)) return;
+        openReport(id);
+      });
+    });
   }
 
   // ─────────────────────────────────────────
-  // STATS  (discussions, replies, resolved, unanswered)
+  // STATS
   // ─────────────────────────────────────────
   function renderStats() {
-    const totalReplies  = POSTS.reduce((s, p) => s + p.replies.length, 0);
-    const resolved      = POSTS.filter(p => p.status === 'Resolved' || p.status === 'Answered').length;
-    const unanswered    = POSTS.filter(isUnanswered).length;
-    animateNum('stat-posts',       POSTS.length);
-    animateNum('stat-replies',     totalReplies);
-    animateNum('stat-resolved',    resolved);
-    animateNum('stat-unanswered',  unanswered);
+    const totalReplies = POSTS.reduce((s, p) => s + p.replies.length, 0);
+    const resolved     = POSTS.filter(p => p.status === 'Resolved' || p.status === 'Answered').length;
+    const unanswered   = POSTS.filter(isUnanswered).length;
+    animateNum('stat-posts',      POSTS.length);
+    animateNum('stat-replies',    totalReplies);
+    animateNum('stat-resolved',   resolved);
+    animateNum('stat-unanswered', unanswered);
   }
 
   function animateNum(id, target) {
-    const el   = document.getElementById(id);
+    const el  = document.getElementById(id);
     if (!el) return;
-    let cur    = 0;
+    let cur   = 0;
     const step = Math.ceil(target / 24) || 1;
-    const t    = setInterval(() => {
+    const t   = setInterval(() => {
       cur = Math.min(cur + step, target);
       el.textContent = cur;
       if (cur >= target) clearInterval(t);
@@ -349,7 +385,6 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!p) return;
     currentPostId = id;
 
-    // STATUS badge first, then category tag
     document.getElementById('detailMeta').innerHTML = `
       <span class="status-badge status-${statusClass(p.status)}">
         <i class="fas ${statusIcon(p.status)}"></i> ${p.status}
@@ -361,7 +396,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     document.getElementById('detailTitle').textContent = p.title;
     document.getElementById('detailInfo').innerHTML = `
-      <span><i class="fas fa-user-circle"></i> ${p.author}</span>
+      <span><i class="fas fa-user-circle"></i> ${escapeHtml(p.author)}</span>
       <span><i class="fas fa-calendar"></i> ${p.date}</span>
       <span><i class="fas fa-comment-alt"></i> ${p.replies.length} ${p.replies.length === 1 ? 'reply' : 'replies'}</span>
       <span><i class="fas fa-thumbs-up"></i> ${p.helpful} helpful</span>
@@ -378,7 +413,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
     document.getElementById('detailDesc').textContent = p.desc;
 
-    // Helpful button state
     detailHelpfulCount.textContent = p.helpful;
     detailHelpfulBtn.classList.toggle('voted', votedPosts.has(id));
 
@@ -397,7 +431,10 @@ document.addEventListener('DOMContentLoaded', function () {
       thread.innerHTML = '<p style="color:#9ca3af;font-size:13px;text-align:center;padding:16px 0">No replies yet. Be the first to respond!</p>';
       return;
     }
-    thread.innerHTML = p.replies.map(r => `
+    thread.innerHTML = p.replies.map((r, idx) => {
+      const replyKey    = `${p.id}-${idx}`;
+      const isReported  = reportedReplies.has(replyKey);
+      return `
       <div class="reply-item ${r.isStaff ? 'staff-reply' : ''}">
         <div class="reply-avatar ${r.isStaff ? 'staff-avatar' : ''}"
              style="${!r.isStaff ? `background:${avatarBg(r.name)}` : ''}">
@@ -405,14 +442,27 @@ document.addEventListener('DOMContentLoaded', function () {
         </div>
         <div class="reply-content">
           <div class="reply-header">
-            <span class="reply-name">${r.name}</span>
+            <span class="reply-name">${escapeHtml(r.name)}</span>
             ${r.isStaff ? '<span class="staff-badge"><i class="fas fa-shield-alt"></i> HOA Staff</span>' : ''}
             <span class="reply-date">${r.date}</span>
+            <button
+              class="btn-report-reply ${isReported ? 'reported' : ''}"
+              data-reply-key="${replyKey}"
+              title="${isReported ? 'Already reported' : 'Report this reply'}"
+              ${isReported ? 'disabled' : ''}
+            >
+              <i class="fas fa-flag"></i>${isReported ? ' Reported' : ''}
+            </button>
           </div>
-          <p class="reply-text">${r.text}</p>
+          <p class="reply-text">${escapeHtml(r.text)}</p>
         </div>
-      </div>
-    `).join('');
+      </div>`;
+    }).join('');
+
+    // Attach report listeners to reply buttons
+    thread.querySelectorAll('.btn-report-reply:not(.reported)').forEach(btn => {
+      btn.addEventListener('click', () => openReport(null, btn.dataset.replyKey));
+    });
   }
 
   function closeDetail() {
@@ -421,7 +471,6 @@ document.addEventListener('DOMContentLoaded', function () {
     currentPostId = null;
   }
 
-  // Helpful toggle inside detail modal
   detailHelpfulBtn.addEventListener('click', () => {
     const p = POSTS.find(x => x.id === currentPostId);
     if (!p) return;
@@ -436,11 +485,12 @@ document.addEventListener('DOMContentLoaded', function () {
       showToast('Marked as helpful!');
     }
     detailHelpfulCount.textContent = p.helpful;
-    // Update the info line too
     const infoEl = document.getElementById('detailInfo');
     if (infoEl) {
-      const spans = infoEl.querySelectorAll('span');
-      spans.forEach(s => { if (s.innerHTML.includes('fa-thumbs-up')) s.innerHTML = `<i class="fas fa-thumbs-up"></i> ${p.helpful} helpful`; });
+      infoEl.querySelectorAll('span').forEach(s => {
+        if (s.innerHTML.includes('fa-thumbs-up'))
+          s.innerHTML = `<i class="fas fa-thumbs-up"></i> ${p.helpful} helpful`;
+      });
     }
   });
 
@@ -468,6 +518,51 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   // ─────────────────────────────────────────
+  // REPORT MODAL
+  // ─────────────────────────────────────────
+  function openReport(postId, replyKey = null) {
+    reportTargetId    = postId;
+    reportTargetReply = replyKey;
+    document.querySelectorAll('input[name="reportReason"]').forEach(r => r.checked = false);
+    reportNote.value = '';
+    submitReportBtn.disabled = true;
+    reportOverlay.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeReport() {
+    reportOverlay.classList.remove('open');
+    document.body.style.overflow = '';
+    reportTargetId    = null;
+    reportTargetReply = null;
+  }
+
+  // Enable submit only when a reason is chosen
+  document.querySelectorAll('input[name="reportReason"]').forEach(radio => {
+    radio.addEventListener('change', () => {
+      submitReportBtn.disabled = false;
+    });
+  });
+
+  submitReportBtn.addEventListener('click', () => {
+    if (reportTargetReply) {
+      reportedReplies.add(reportTargetReply);
+      // Re-render replies so the button flips to "Reported"
+      const [postId] = reportTargetReply.split('-');
+      const p = POSTS.find(x => x.id === +postId);
+      if (p) renderReplies(p);
+    } else if (reportTargetId) {
+      reportedPosts.add(reportTargetId);
+      renderPosts();
+    }
+    closeReport();
+    showToast('Report submitted. Thank you for keeping the community safe!');
+  });
+
+  closeReportBtn.addEventListener('click',  closeReport);
+  cancelReportBtn.addEventListener('click', closeReport);
+  reportOverlay.addEventListener('click', e => { if (e.target === reportOverlay) closeReport(); });
+
+  // ─────────────────────────────────────────
   // IMAGE UPLOAD
   // ─────────────────────────────────────────
   function handleFile(file) {
@@ -483,8 +578,6 @@ document.addEventListener('DOMContentLoaded', function () {
   // ─────────────────────────────────────────
   // EVENT LISTENERS
   // ─────────────────────────────────────────
-
-  // Category chips
   chips.forEach(chip => {
     chip.addEventListener('click', () => {
       chips.forEach(c => c.classList.remove('active'));
@@ -494,12 +587,10 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   });
 
-  // Search & filters
-  searchInput.addEventListener('input',    () => { searchQuery  = searchInput.value.trim(); renderPosts(); });
-  statusFilter.addEventListener('change',  () => { activeStatus = statusFilter.value;       renderPosts(); });
-  sortFilter.addEventListener('change',    () => { activeSort   = sortFilter.value;          renderPosts(); });
+  searchInput.addEventListener('input',   () => { searchQuery  = searchInput.value.trim(); renderPosts(); });
+  statusFilter.addEventListener('change', () => { activeStatus = statusFilter.value;       renderPosts(); });
+  sortFilter.addEventListener('change',   () => { activeSort   = sortFilter.value;          renderPosts(); });
 
-  // Modal open / close
   openCreateBtn.addEventListener('click',   openCreate);
   closeCreateBtn.addEventListener('click',  closeCreate);
   cancelCreateBtn.addEventListener('click', closeCreate);
@@ -507,9 +598,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
   detailOverlay.addEventListener('click', e => { if (e.target === detailOverlay) closeDetail(); });
   createOverlay.addEventListener('click', e => { if (e.target === createOverlay) closeCreate(); });
-  document.addEventListener('keydown',    e => { if (e.key === 'Escape') { closeDetail(); closeCreate(); } });
 
-  // Upload
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { closeDetail(); closeCreate(); closeReport(); }
+  });
+
   uploadArea.addEventListener('click',    () => fileInput.click());
   uploadArea.addEventListener('dragover',  e => { e.preventDefault(); uploadArea.style.borderColor = '#0a4d3c'; });
   uploadArea.addEventListener('dragleave', () => { uploadArea.style.borderColor = ''; });
@@ -524,7 +617,6 @@ document.addEventListener('DOMContentLoaded', function () {
     uploadArea.style.display = ''; fileInput.value = '';
   });
 
-  // Submit new post
   submitPostBtn.addEventListener('click', () => {
     const title = document.getElementById('formTitle').value.trim();
     const cat   = document.getElementById('formCategory').value;
@@ -544,7 +636,6 @@ document.addEventListener('DOMContentLoaded', function () {
     showToast('Your discussion has been posted successfully!');
   });
 
-  // Submit reply
   replySubmitBtn.addEventListener('click', () => {
     const text = replyInput.value.trim();
     if (!text) return;
@@ -553,24 +644,8 @@ document.addEventListener('DOMContentLoaded', function () {
     p.replies.push({ name: 'You', isStaff: false, date: todayStr(), text });
     renderReplies(p);
     replyInput.value = '';
-    renderStats(); // refresh unanswered count
+    renderStats();
     showToast('Reply posted!');
-  });
-
-  // Navbar dropdowns (mobile)
-  const dropdowns = document.querySelectorAll('.dropdown');
-  dropdowns.forEach(dropdown => {
-    const toggle = dropdown.querySelector('.dropdown-toggle');
-    if (!toggle) return;
-    toggle.addEventListener('click', e => {
-      e.preventDefault();
-      const isOpen = dropdown.classList.contains('dropdown-open');
-      dropdowns.forEach(d => d.classList.remove('dropdown-open'));
-      if (!isOpen) dropdown.classList.add('dropdown-open');
-    });
-  });
-  document.addEventListener('click', e => {
-    dropdowns.forEach(d => { if (!d.contains(e.target)) d.classList.remove('dropdown-open'); });
   });
 
   // ─────────────────────────────────────────

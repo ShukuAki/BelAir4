@@ -91,6 +91,29 @@ const dom = {
 };
 
 /* ═══════════════════════════════════════════
+   MOBILE DROPDOWN TOGGLE SUPPORT
+═══════════════════════════════════════════ */
+document.addEventListener('DOMContentLoaded', () => {
+  const dropdowns = document.querySelectorAll('.dropdown');
+  dropdowns.forEach(dropdown => {
+    const toggle = dropdown.querySelector('.dropdown-toggle');
+    if (!toggle) return;
+    toggle.addEventListener('click', (e) => {
+      e.preventDefault();
+      const isOpen = dropdown.classList.contains('dropdown-open');
+      dropdowns.forEach(d => d.classList.remove('dropdown-open'));
+      if (!isOpen) dropdown.classList.add('dropdown-open');
+    });
+  });
+
+  document.addEventListener('click', (e) => {
+    dropdowns.forEach(d => {
+      if (!d.contains(e.target)) d.classList.remove('dropdown-open');
+    });
+  });
+});
+
+/* ═══════════════════════════════════════════
    INIT
 ═══════════════════════════════════════════ */
 document.addEventListener('DOMContentLoaded', () => {
@@ -102,7 +125,21 @@ document.addEventListener('DOMContentLoaded', () => {
   bindAnonymousToggle();
   bindConfirmCheckbox();
   bindFormSubmit();
+  setActiveNav();
 });
+
+function setActiveNav() {
+  const currentPath = window.location.pathname;
+  const navLinks = document.querySelectorAll('.nav-link, .dropdown-menu a');
+  navLinks.forEach(link => {
+    const linkHref = link.getAttribute('href');
+    if (linkHref === currentPath ||
+        (currentPath.includes('report-concerns') && linkHref === 'report-concerns.html') ||
+        (currentPath === '/' && linkHref === 'index.html')) {
+      link.classList.add('active');
+    }
+  });
+}
 
 /* ═══════════════════════════════════════════
    TIMESTAMP
@@ -121,7 +158,6 @@ function setFooterYear() {
 function bindLocationToggle() {
   const radios = document.querySelectorAll('input[name="search-type"]');
   radios.forEach(r => r.addEventListener('change', toggleLocationMethod));
-  // Address is default — map not needed on load
 }
 
 function toggleLocationMethod() {
@@ -137,7 +173,7 @@ function toggleLocationMethod() {
   }
 }
 
-// expose for inline onchange (fallback)
+// expose for inline onchange
 window.toggleLocationMethod = toggleLocationMethod;
 
 /* ═══════════════════════════════════════════
@@ -379,13 +415,6 @@ function bindConfirmCheckbox() {
 
 /* ═══════════════════════════════════════════
    FORM SUBMISSION
-   [BACKEND] Replace the LBA4Storage block below with:
-     const record = await fetch('/api/incidents', {
-       method:  'POST',
-       headers: { 'Content-Type': 'application/json' },
-       body:    JSON.stringify(payload),
-     }).then(r => r.json());
-     showSuccess(record.refNumber || record.id);
 ═══════════════════════════════════════════ */
 function bindFormSubmit() {
   dom.form.addEventListener('submit', async e => {
@@ -410,24 +439,18 @@ function bindFormSubmit() {
     // Build NLP-ready payload
     const payload = {
       description,
-      /* Location */
       locationMethod:    searchType,
       address:           searchType === 'address' ? (dom.addressInput.value.trim() || null) : null,
       street:            searchType === 'address' ? (dom.streetInput.value.trim() || null)  : null,
       latitude:          state.lat ? parseFloat(state.lat) : null,
       longitude:         state.lng ? parseFloat(state.lng) : null,
       additionalLocation: dom.additionalLoc.value.trim() || null,
-      /* Broad hint only — NLP assigns final classification */
       categoryHint:      dom.categorySelect.value || null,
-      /* Image */
       imageFilename:     state.photoFile ? state.photoFile.name : null,
-      /* Privacy */
       anonymous:         dom.anonymousChk.checked,
       reporterName:      dom.anonymousChk.checked ? null : ($('f-name').value.trim() || null),
       reporterContact:   dom.anonymousChk.checked ? null : ($('f-contact').value.trim() || null),
       timestamp:         dom.timestampInput.value,
-      /* Fields intentionally omitted — NLP-assigned server-side:
-         priority, type, category (final), visibility              */
     };
 
     setSubmitLoading(true);
@@ -523,7 +546,7 @@ function showToast(message, type = 'info') {
     color: white;
     padding: 13px 22px;
     border-radius: 10px;
-    font-family: var(--font-body, sans-serif);
+    font-family: 'Outfit', system-ui, sans-serif;
     font-size: 14px;
     font-weight: 500;
     display: flex;
@@ -538,13 +561,11 @@ function showToast(message, type = 'info') {
   toast.innerHTML = `<i class="fas ${icons[type]}"></i><span>${message}</span>`;
   document.body.appendChild(toast);
 
-  // Animate in
   requestAnimationFrame(() => {
     toast.style.opacity   = '1';
     toast.style.transform = 'translateX(-50%) translateY(0)';
   });
 
-  // Auto remove
   setTimeout(() => {
     toast.style.opacity   = '0';
     toast.style.transform = 'translateX(-50%) translateY(10px)';

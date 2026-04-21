@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Community Map - Laguna BelAir 4</title>
+<!-- Fonts: Playfair Display + Outfit (matching advertisements) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<!-- Icons -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<!-- Leaflet -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<!-- Leaflet.heat for heatmap layer -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.heat/0.2.0/leaflet-heat.js"></script>
+<!-- LBA4 Storage bridge (shared with staff dashboard + report concerns) -->
+<script src="lba4-storage.js"></script>
+<!-- Styles -->
+<link rel="stylesheet" href="community-map.css">
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════
+  HEADER / NAV (updated to match advertisements style)
+═══════════════════════════════════════ -->
+<div class="top-header-container">
+  <div class="logo-section">
+    <a href="index.html" class="logo-link">
+      <img src="LBAlogo.png" alt="Laguna BelAir 4 Logo" class="logo-image">
+    </a>
+  </div>
+  <div class="header-center-wrapper">
+    <div class="navbar-two-rows">
+      <div class="navbar-top-row">
+        <a href="login.html"><i class="fas fa-sign-in-alt"></i> Login</a>
+        <span class="nav-sep">|</span>
+        <a href="register.html"><i class="fas fa-user-plus"></i> Register</a>
+      </div>
+      <div class="navbar-bottom-row">
+        <a href="./index.html" class="nav-link">Home</a>
+        <div class="dropdown">
+          <a href="#" class="dropdown-toggle">About <i class="fas fa-chevron-down"></i></a>
+          <div class="dropdown-menu">
+            <a href="about-laguna-belair.html">Laguna BelAir 4</a>
+            <a href="committees-bods.html">Committees / BODs</a>
+            <a href="landmarks.html">Landmarks</a>
+            <a href="contacts.html">Contacts</a>
+          </div>
+        </div>
+        <div class="dropdown">
+          <a href="#" class="dropdown-toggle">Community <i class="fas fa-chevron-down"></i></a>
+          <div class="dropdown-menu">
+            <a href="announcement.html">Announcements</a>
+            <a href="forums.html">Forums / Discussions</a>
+            <a href="advertisements.html">Community Exchange</a>
+            <a href="calendars.html">Calendars</a>
+            <a href="meeting-agendas.html">Meeting Records</a>
+            <a href="community-map.html" class="active">Community Map</a>
+          </div>
+        </div>
+        <div class="dropdown">
+          <a href="#" class="dropdown-toggle">Services <i class="fas fa-chevron-down"></i></a>
+          <div class="dropdown-menu">
+            <a href="reserve.html">Reserve Amenities</a>
+            <a href="report-concerns.html">Report an Issue</a>
+          </div>
+        </div>
+        <div class="dropdown">
+          <a href="#" class="dropdown-toggle">Others <i class="fas fa-chevron-down"></i></a>
+          <div class="dropdown-menu">
+            <a href="forms-documents.html">Forms &amp; Documents</a>
+            <a href="vehicle-pet-registration.html">Register Pet/Vehicle</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+  HERO SECTION (matching advertisements style with added <p>)
+═══════════════════════════════════════ -->
+<section class="hero-section">
+  <div class="hero-inner">
+    <h1 class="hero-title">Community Map</h1>
+    <p class="hero-sub">Explore Laguna BelAir 4 - locate landmarks, ongoing projects, <br> and on time incident reports across the village.</p>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════
+  MAIN CONTENT
+═══════════════════════════════════════ -->
+<main class="main-container">
+  <!-- Map Section -->
+  <section class="map-section">
+    <div class="map-outer">
+      <!-- Legend Panel (outside map) -->
+      <div class="map-layers-panel">
+        <div class="layers-panel-head">
+          <i class="fas fa-layer-group"></i>
+          <span>Map Layers</span>
+        </div>
+        <div class="layers-panel-body">
+          <label class="legend-toggle">
+            <input type="checkbox" id="toggleIncidents" checked>
+            <span class="toggle-track"></span>
+            <span class="toggle-content">
+              <span class="legend-dot" style="background:#c0392b"></span>
+              <span>Incidents</span>
+            </span>
+          </label>
+          <label class="legend-toggle">
+            <input type="checkbox" id="toggleConcerns" checked>
+            <span class="toggle-track"></span>
+            <span class="toggle-content">
+              <span class="legend-dot" style="background:#8e44ad"></span>
+              <span>Concerns</span>
+            </span>
+          </label>
+          <label class="legend-toggle">
+            <input type="checkbox" id="toggleProjects" checked>
+            <span class="toggle-track"></span>
+            <span class="toggle-content">
+              <span class="legend-dot" style="background:#c0621a"></span>
+              <span>Projects</span>
+            </span>
+          </label>
+          <label class="legend-toggle">
+            <input type="checkbox" id="toggleLandmarks" checked>
+            <span class="toggle-track"></span>
+            <span class="toggle-content">
+              <span class="legend-dot" style="background:#1a5fa8"></span>
+              <span>Landmarks</span>
+            </span>
+          </label>
+          <div class="layers-divider"></div>
+          <div class="layers-status-key">
+            <div class="layers-key-title">Status Colors</div>
+            <div class="layers-key-row"><span class="layers-key-dot" style="background:#f9a825"></span>Pending</div>
+            <div class="layers-key-row"><span class="layers-key-dot" style="background:#1a5fa8"></span>In Progress</div>
+            <div class="layers-key-row"><span class="layers-key-dot" style="background:#5aaa4f"></span>Resolved</div>
+            <div class="layers-key-row"><span class="layers-key-dot" style="background:#9e9a94"></span>Planned</div>
+            <div class="layers-key-row"><span class="layers-key-dot" style="background:#c0621a"></span>Ongoing</div>
+            <div class="layers-key-row"><span class="layers-key-dot" style="background:#5aaa4f"></span>Completed</div>
+          </div>
+          <div class="layers-divider"></div>
+          <div class="map-live-badge-panel">
+            <span class="live-dot"></span> Live Data
+          </div>
+        </div>
+      </div>
+      <!-- Map -->
+      <div class="map-wrapper">
+        <div id="map" class="leaflet-map"></div>
+      </div>
+    </div><!-- /map-outer -->
+  </section>
+
+  <!-- Detail Modal (popup when clicking a marker) -->
+  <div class="cm-detail-overlay" id="cmDetailOverlay" onclick="closeCmDetail()">
+    <div class="cm-detail-modal" onclick="event.stopPropagation()">
+      <div class="cm-detail-header" id="cmDetailHeader">
+        <div class="cm-detail-title-row">
+          <h3 id="cmDetailTitle">—</h3>
+          <button class="cm-detail-close" onclick="closeCmDetail()"><i class="fas fa-times"></i></button>
+        </div>
+        <div id="cmDetailBadges" class="cm-detail-badges"></div>
+      </div>
+      <div class="cm-detail-body">
+        <p id="cmDetailDescription" class="cm-detail-desc" style="display:none"></p>
+        <div class="cm-detail-info" id="cmDetailInfo"></div>
+        <!-- Before / After photos -->
+        <div class="cm-before-after" id="cmBeforeAfter" style="display:none">
+          <div class="cm-ba-panel" id="cmBeforePanel">
+            <div class="cm-ba-label cm-ba-before-lbl">Before</div>
+            <img id="cmBeforeImg" src="" alt="Before photo" class="cm-ba-img">
+          </div>
+          <div class="cm-ba-panel" id="cmAfterPanel">
+            <div class="cm-ba-label cm-ba-after-lbl">After</div>
+            <img id="cmAfterImg" src="" alt="After photo" class="cm-ba-img">
+          </div>
+        </div>
+        <div class="cm-detail-no-image" id="cmNoImage" style="display:none">
+          <i class="fas fa-image"></i><span>No photo attached</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Legend Reference -->
+  <section class="legend-section">
+    <h2 class="section-title"><i class="fas fa-info-circle"></i> Map Legend</h2>
+    <div class="legend-reference-grid">
+      <div class="legend-ref-item">
+        <div class="legend-ref-icon">
+          <div class="lba4-pin lba4-pin-landmark lba4-pin-sm" style="background:#c0392b"><i class="fas fa-exclamation-circle"></i></div>
+        </div>
+        <div>
+          <strong>Incident / Concern</strong>
+          <p>Reported concern or incident. Status: Pending, In Progress, or Resolved.</p>
+        </div>
+      </div>
+      <div class="legend-ref-item">
+        <div class="legend-ref-icon">
+          <div class="lba4-pin lba4-pin-landmark lba4-pin-sm" style="background:#c0621a"><i class="fas fa-hard-hat"></i></div>
+        </div>
+        <div>
+          <strong>Project / Maintenance</strong>
+          <p>HOA project or maintenance work. Status: Planned, Ongoing, or Completed.</p>
+        </div>
+      </div>
+      <div class="legend-ref-item">
+        <div class="legend-ref-icon">
+          <div class="lba4-pin lba4-pin-landmark lba4-pin-sm" style="background:#1a5fa8"><i class="fas fa-map-marker-alt"></i></div>
+        </div>
+        <div>
+          <strong>Landmark</strong>
+          <p>Permanent village location: gates, clubhouse, courts, parks, and other facilities.</p>
+        </div>
+      </div>
+    </div>
+    <p class="privacy-notice">
+      <i class="fas fa-shield-alt"></i>
+      Incident locations are shown by general area only to protect resident privacy. Exact addresses are never disclosed on the public map.
+    </p>
+  </section>
+
+  <!-- Stats Section -->
+  <section class="summary-section">
+    <h2 class="section-title"><i class="fas fa-chart-bar"></i> Community at a Glance</h2>
+    <div class="stats-grid">
+      <div class="stat-card stat-red">
+        <div class="stat-icon"><i class="fas fa-exclamation-triangle"></i></div>
+        <div class="stat-content">
+          <div class="stat-value" id="stat-incidents">—</div>
+          <div class="stat-label">Incidents / Concerns</div>
+        </div>
+      </div>
+      <div class="stat-card stat-green">
+        <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
+        <div class="stat-content">
+          <div class="stat-value" id="stat-resolved">—</div>
+          <div class="stat-label">Resolved</div>
+        </div>
+      </div>
+      <div class="stat-card stat-orange">
+        <div class="stat-icon"><i class="fas fa-hard-hat"></i></div>
+        <div class="stat-content">
+          <div class="stat-value" id="stat-projects">—</div>
+          <div class="stat-label">Projects / Maintenance</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="cta-section">
+    <div class="cta-card">
+      <div class="cta-content">
+        <h3><i class="fas fa-bullhorn"></i> Help Keep Our Community Safe</h3>
+        <p>Spotted something that needs attention? Report it directly to the HOA.</p>
+        <a href="report-concerns.html" class="cta-button">
+          <i class="fas fa-flag"></i> Report a Concern or Incident
+        </a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- ═══════════════════════════════════════
+  FOOTER
+═══════════════════════════════════════ -->
+<footer class="footer">
+  <div class="footer-content">
+    <div class="footer-section footer-logo-section">
+      <a href="index.html" class="footer-logo-link">
+        <img src="LBAlogo.png" alt="Bel-Air Village Logo" class="footer-logo">
+      </a>
+    </div>
+    <div class="footer-section">
+      <h3>Contact Us</h3>
+      <ul class="footer-links">
+        <li><i class="fas fa-map-marker-alt"></i> P3 B15 Alpine St. LBA4, Brgy. Don Jose, Sta. Rosa, Laguna 4026</li>
+        <li><i class="fas fa-phone"></i> (+63) 09398588138</li>
+        <li><i class="fas fa-phone"></i> 0495603050</li>
+      </ul>
+    </div>
+    <div class="footer-section">
+      <h3>Quick Links</h3>
+      <ul class="footer-links">
+        <li><a href="about-laguna-belair.html">About Us</a></li>
+        <li><a href="contacts.html">Contact Us</a></li>
+        <li><a href="faq.html">FAQs</a></li>
+        <li><a href="privacy-policy.html">Privacy Policy</a></li>
+      </ul>
+    </div>
+    <div class="footer-section">
+      <h3>Site Links</h3>
+      <ul class="footer-links">
+        <li><a href="announcement.html">Announcements</a></li>
+        <li><a href="calendars.html">Community Calendar</a></li>
+        <li><a href="forms-documents.html">Forms &amp; Documents</a></li>
+        <li><a href="report-concerns.html">Report a Concern</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <p>&copy; <span id="current-year"></span> Laguna BelAir 4. All rights reserved.</p>
+  </div>
+</footer>
+
+<!-- JavaScript -->
+<script src="community-map.js"></script>
+<script>
+  // Set current year in footer
+  document.getElementById('current-year').textContent = new Date().getFullYear();
+  // Mobile dropdown toggle support
+  document.querySelectorAll('.dropdown').forEach(dropdown => {
+    const toggle = dropdown.querySelector('.dropdown-toggle');
+    if (!toggle) return;
+    toggle.addEventListener('click', (e) => {
+      e.preventDefault();
+      const isOpen = dropdown.classList.contains('dropdown-open');
+      document.querySelectorAll('.dropdown').forEach(d => d.classList.remove('dropdown-open'));
+      if (!isOpen) dropdown.classList.add('dropdown-open');
+    });
+  });
+  document.addEventListener('click', (e) => {
+    document.querySelectorAll('.dropdown').forEach(d => {
+      if (!d.contains(e.target)) d.classList.remove('dropdown-open');
+    });
+  });
+</script>
+</body>
+</html>

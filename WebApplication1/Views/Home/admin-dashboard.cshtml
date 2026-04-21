@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Panel — Laguna BelAir 4</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Nunito:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="admin-dashboard.css">
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+  <div class="sb-brand">
+    <div class="sb-logo-wrap"><i class="fas fa-shield-alt"></i></div>
+    <div class="sb-brand-text">
+      <span class="site-name">Laguna BelAir 4</span>
+      <span class="site-sub">Admin Control Panel</span>
+    </div>
+  </div>
+  <div class="sb-user">
+    <div class="sb-avatar admin-av">A</div>
+    <div class="sb-user-info">
+      <div class="u-name">System Administrator</div>
+      <div class="u-role"><i class="fas fa-crown"></i> Admin</div>
+    </div>
+    <div class="online-dot"></div>
+  </div>
+  <nav class="sb-nav">
+    <div class="nav-group-label">Overview</div>
+    <div class="nav-link active" onclick="showPage('overview',this)"><i class="fas fa-tachometer-alt"></i> Admin Overview</div>
+    <div class="nav-link" onclick="showPage('auditlog',this)"><i class="fas fa-history"></i> Audit Log<span class="nav-badge">New</span></div>
+
+    <div class="nav-group-label">User Management</div>
+    <div class="nav-link" onclick="showPage('staffaccounts',this)"><i class="fas fa-user-cog"></i> Staff Accounts<span class="nav-badge yellow">1</span></div>
+    <div class="nav-link" onclick="showPage('roles',this)"><i class="fas fa-key"></i> Roles & Permissions</div>
+    <div class="nav-link" onclick="showPage('allresidents',this)"><i class="fas fa-users"></i> Residents & Banned<span class="nav-badge">2</span></div>
+
+    <div class="nav-group-label">System Configuration</div>
+    <div class="nav-link" onclick="showPage('appsettings',this)"><i class="fas fa-sliders-h"></i> App Settings</div>
+    <div class="nav-link" onclick="showPage('wordbank',this)"><i class="fas fa-brain"></i> Word Bank Config</div>
+    <div class="nav-link" onclick="showPage('integrations',this)"><i class="fas fa-plug"></i> Integrations</div>
+
+    <div class="nav-group-label">Data</div>
+    <div class="nav-link" onclick="showPage('dataexport',this)"><i class="fas fa-file-export"></i> Data Export</div>
+    <div class="nav-link" onclick="showPage('backups',this)"><i class="fas fa-database"></i> Backups</div>
+
+    <div class="nav-group-label">Navigate</div>
+    <div class="nav-link staff-switch-link" onclick="window.location.href='staff-dashboard.html'">
+      <i class="fas fa-arrow-left"></i> Staff Dashboard
+      <span class="nav-badge" style="background:var(--accent);color:var(--navy-dark);animation:none">↗</span>
+    </div>
+  </nav>
+  <div class="sb-footer" onclick="window.location.href='index.html'">
+    <i class="fas fa-sign-out-alt"></i> Sign Out
+  </div>
+</aside>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <button class="sidebar-toggle" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
+  <div>
+    <div class="topbar-title" id="topbar-title">Admin Overview</div>
+    <div class="topbar-breadcrumb">
+      <i class="fas fa-shield-alt"></i> Admin Panel <i class="fas fa-chevron-right"></i>
+      <span id="breadcrumb-label">Overview</span>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <div class="role-badge admin-role-badge"><i class="fas fa-crown"></i> Admin</div>
+
+    <!-- Notification Bell with Dropdown -->
+    <div class="notif-wrap" id="notifWrap">
+      <button class="icon-btn notif-btn" id="notifBtn" title="System Alerts" onclick="toggleNotifDropdown()">
+        <i class="fas fa-bell"></i>
+        <div class="notif-dot" id="notifDot"></div>
+      </button>
+      <div class="notif-dropdown" id="notifDropdown">
+        <div class="notif-dropdown-head">
+          <span><i class="fas fa-exclamation-triangle"></i> System Alerts</span>
+          <button class="notif-dismiss-all" onclick="dismissAllAlerts()">Dismiss All</button>
+        </div>
+        <div class="notif-dropdown-body" id="notifDropdownBody">
+          <div class="notif-item notif-critical" id="alert-storage">
+            <div class="notif-item-icon"><i class="fas fa-database"></i></div>
+            <div class="notif-item-body">
+              <div class="notif-item-title">Database storage at 78% capacity</div>
+              <div class="notif-item-meta">Estimated full in 14 days · Auto-backup enabled</div>
+            </div>
+            <button class="notif-item-dismiss" onclick="dismissAlert('alert-storage',event)"><i class="fas fa-times"></i></button>
+          </div>
+          <div class="notif-item notif-warn" id="alert-login">
+            <div class="notif-item-icon"><i class="fas fa-user-times"></i></div>
+            <div class="notif-item-body">
+              <div class="notif-item-title">Login anomaly — Rodel L.</div>
+              <div class="notif-item-meta">5 failed login attempts · Feb 18, 2:14 AM</div>
+            </div>
+            <button class="notif-item-dismiss" onclick="dismissAlert('alert-login',event)"><i class="fas fa-times"></i></button>
+          </div>
+          <div class="notif-item notif-info" id="alert-notif">
+            <div class="notif-item-icon"><i class="fas fa-bell"></i></div>
+            <div class="notif-item-body">
+              <div class="notif-item-title">Push notification service expiring in 7 days</div>
+              <div class="notif-item-meta">Renewal required by Mar 1</div>
+            </div>
+            <button class="notif-item-dismiss" onclick="dismissAlert('alert-notif',event)"><i class="fas fa-times"></i></button>
+          </div>
+        </div>
+        <div class="notif-dropdown-foot">
+          <button onclick="showPage('auditlog',document.querySelector('[onclick*=auditlog]'));closeNotifDropdown()">
+            <i class="fas fa-history"></i> View Audit Log
+          </button>
+        </div>
+      </div>
+    </div>
+    <!-- End Notification -->
+
+  </div>
+</div>
+
+<!-- MAIN -->
+<main class="main" id="main-content">
+
+  <!-- ADMIN OVERVIEW -->
+  <div class="page active" id="page-overview">
+    <div class="admin-alert-bar">
+      <i class="fas fa-crown"></i>
+      <strong>Admin Control Panel</strong> — You have elevated system access. All actions are logged in the audit trail.
+    </div>
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-icon si-navy"><i class="fas fa-users-cog"></i></div><div class="stat-info"><div class="stat-val">5</div><div class="stat-label">Active Staff Accounts</div><div class="stat-sub sub-up"><i class="fas fa-user-plus"></i> 1 pending invite</div></div></div>
+      <div class="stat-card"><div class="stat-icon si-red"><i class="fas fa-exclamation-triangle"></i></div><div class="stat-info"><div class="stat-val" id="overview-alert-count">3</div><div class="stat-label">System Alerts</div><div class="stat-sub sub-down"><i class="fas fa-clock"></i> Requires attention</div></div></div>
+      <div class="stat-card"><div class="stat-icon si-gold"><i class="fas fa-users"></i></div><div class="stat-info"><div class="stat-val">347</div><div class="stat-label">Total Residents</div><div class="stat-sub sub-up"><i class="fas fa-check"></i> 342 verified</div></div></div>
+      <div class="stat-card"><div class="stat-icon si-green"><i class="fas fa-plug"></i></div><div class="stat-info"><div class="stat-val">1/1</div><div class="stat-label">Integration Active</div><div class="stat-sub sub-up"><i class="fas fa-check-circle"></i> Push Notifications</div></div></div>
+    </div>
+    <div class="grid-60-40">
+      <div class="card">
+        <div class="card-header"><h3><i class="fas fa-exclamation-triangle"></i> System Alerts & Flags</h3></div>
+        <div class="alert-item alert-critical">
+          <div class="alert-icon"><i class="fas fa-database"></i></div>
+          <div class="alert-body"><div class="alert-title">Database storage at 78% capacity</div><div class="alert-meta">Estimated full in 14 days · Auto-backup enabled</div></div>
+          <div class="alert-actions"><button class="btn btn-outline btn-sm" onclick="showPage('backups',document.querySelector('[onclick*=backups]'))">Manage</button></div>
+        </div>
+        <div class="alert-item alert-warn">
+          <div class="alert-icon"><i class="fas fa-user-times"></i></div>
+          <div class="alert-body"><div class="alert-title">Staff account login anomaly — Rodel L.</div><div class="alert-meta">5 failed login attempts · Feb 18, 2:14 AM</div></div>
+          <div class="alert-actions"><button class="btn btn-outline btn-sm" onclick="showPage('staffaccounts',document.querySelector('[onclick*=staffaccounts]'))">Review</button></div>
+        </div>
+        <div class="alert-item alert-info">
+          <div class="alert-icon"><i class="fas fa-key"></i></div>
+          <div class="alert-body"><div class="alert-title">Push notification service expiring in 7 days</div><div class="alert-meta">Subscriber notification integration — renewal required</div></div>
+          <div class="alert-actions"><button class="btn btn-primary btn-sm" onclick="showPage('integrations',document.querySelector('[onclick*=integrations]'))">Renew</button></div>
+        </div>
+      </div>
+      <div class="flex-col gap-16">
+        <div class="card">
+          <div class="card-header"><h3><i class="fas fa-chart-line"></i> Platform Metrics (Feb 2026)</h3></div>
+          <div class="card-body">
+            <div class="metric-row"><div class="metric-label">Total Logins</div><div class="metric-val">1,284</div><div class="metric-trend up">↑ 8%</div></div>
+            <div class="metric-row"><div class="metric-label">Reports Filed</div><div class="metric-val">48</div><div class="metric-trend up">↑ 18%</div></div>
+            <div class="metric-row"><div class="metric-label">Data Exported</div><div class="metric-val">12 files</div><div class="metric-trend neutral">—</div></div>
+            <div class="metric-row"><div class="metric-label">Avg. Response Time</div><div class="metric-val">1.8 hrs</div><div class="metric-trend up">↓ Better</div></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><h3><i class="fas fa-clock"></i> Recent Admin Actions</h3><button class="see-all" onclick="showPage('auditlog',document.querySelector('[onclick*=auditlog]'))">Full Log</button></div>
+          <div class="scroll-y" style="max-height:160px">
+            <div class="activity-item"><div class="act-dot" style="background:var(--navy)"></div><div class="act-body"><p><strong>Admin</strong> updated role permissions for <em>Staff</em></p><div class="act-time">Today, 9:00 AM</div></div></div>
+            <div class="activity-item"><div class="act-dot" style="background:var(--gold)"></div><div class="act-body"><p><strong>Admin</strong> exported resident data (CSV)</p><div class="act-time">Today, 8:30 AM</div></div></div>
+            <div class="activity-item"><div class="act-dot" style="background:var(--red)"></div><div class="act-body"><p><strong>Admin</strong> banned user <em>TestAccount01</em></p><div class="act-time">Feb 17</div></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-header"><h3><i class="fas fa-users-cog"></i> Staff Accounts</h3><button class="see-all" onclick="showPage('staffaccounts',document.querySelector('[onclick*=staffaccounts]'))">Manage</button></div>
+        <div class="staff-mini-item"><div class="staff-av" style="background:linear-gradient(135deg,#0a4d3c,#1a7a58)">MS</div><div class="staff-info"><div class="staff-name">Maria Santos</div><div class="staff-role">Staff</div></div><span class="status-pill sp-active">Online</span></div>
+        <div class="staff-mini-item"><div class="staff-av" style="background:linear-gradient(135deg,#1a3fa8,#3a60e2)">JT</div><div class="staff-info"><div class="staff-name">Jess Torres</div><div class="staff-role">Staff</div></div><span class="status-pill sp-resolved">Active</span></div>
+        <div class="staff-mini-item"><div class="staff-av" style="background:linear-gradient(135deg,#7a3a10,#c06418)">RL</div><div class="staff-info"><div class="staff-name">Rodel Lim</div><div class="staff-role">Staff</div></div><span class="status-pill sp-pending">Away</span></div>
+        <div class="staff-mini-item"><div class="staff-av" style="background:linear-gradient(135deg,#333,#666)">CP</div><div class="staff-info"><div class="staff-name">Carlo Padilla</div><div class="staff-role">Staff</div></div><span class="status-pill sp-resolved">Active</span></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><h3><i class="fas fa-bolt"></i> Admin Quick Actions</h3></div>
+        <div class="qa-grid">
+          <div class="qa-item" onclick="openModal('inviteStaff')"><div class="qa-emoji">👤</div><div class="qa-label">Invite Staff</div><div class="qa-sub">New account</div></div>
+          <div class="qa-item" onclick="showPage('dataexport',document.querySelector('[onclick*=dataexport]'))"><div class="qa-emoji">📤</div><div class="qa-label">Export Data</div><div class="qa-sub">CSV / Excel</div></div>
+          <div class="qa-item" onclick="showPage('backups',document.querySelector('[onclick*=backups]'))"><div class="qa-emoji">💾</div><div class="qa-label">Backup Now</div><div class="qa-sub">Manual backup</div></div>
+          <div class="qa-item" onclick="showPage('roles',document.querySelector('[onclick*=roles]'))"><div class="qa-emoji">🔑</div><div class="qa-label">Permissions</div><div class="qa-sub">Role config</div></div>
+          <div class="qa-item" onclick="showPage('auditlog',document.querySelector('[onclick*=auditlog]'))"><div class="qa-emoji">📋</div><div class="qa-label">Audit Log</div><div class="qa-sub">Full history</div></div>
+          <div class="qa-item" onclick="showPage('appsettings',document.querySelector('[onclick*=appsettings]'))"><div class="qa-emoji">⚙️</div><div class="qa-label">App Config</div><div class="qa-sub">System settings</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AUDIT LOG -->
+  <div class="page" id="page-auditlog">
+    <div class="sec-header"><h2><i class="fas fa-history"></i> Audit Log</h2>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-outline btn-sm"><i class="fas fa-filter"></i> Filter</button>
+        <button class="btn btn-primary btn-sm" id="exportLogBtn"><i class="fas fa-download"></i> Export Log</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <h3><i class="fas fa-list"></i> All System Actions</h3>
+        <div class="chip-row">
+          <div class="chip active">All</div><div class="chip">Auth</div><div class="chip">Data Changes</div><div class="chip">Approvals</div><div class="chip">System</div>
+        </div>
+      </div>
+      <div class="tbl-wrap"><table><thead><tr><th>Timestamp</th><th>User</th><th>Role</th><th>Action</th><th>Target</th><th>IP Address</th><th>Outcome</th></tr></thead><tbody id="audit-tbody">
+        <tr><td class="mono">2026-02-18 09:14:22</td><td><strong>Admin</strong></td><td><span class="tag tag-navy">Admin</span></td><td>Updated permissions</td><td>Staff Role</td><td class="mono">192.168.1.1</td><td><span class="status-pill sp-approved">Success</span></td></tr>
+        <tr><td class="mono">2026-02-18 09:00:01</td><td><strong>Admin</strong></td><td><span class="tag tag-navy">Admin</span></td><td>Exported resident CSV</td><td>residents_feb2026.csv</td><td class="mono">192.168.1.1</td><td><span class="status-pill sp-approved">Success</span></td></tr>
+        <tr><td class="mono">2026-02-18 08:12:05</td><td><strong>Maria Santos</strong></td><td><span class="tag tag-blue">Staff</span></td><td>Escalated incident</td><td>#INC-087 → Critical</td><td class="mono">192.168.1.22</td><td><span class="status-pill sp-approved">Success</span></td></tr>
+        <tr><td class="mono">2026-02-18 02:14:33</td><td><strong>Rodel Lim</strong></td><td><span class="tag tag-blue">Staff</span></td><td>Failed login (x5)</td><td>Auth endpoint</td><td class="mono">192.168.1.34</td><td><span class="status-pill sp-open">Blocked</span></td></tr>
+        <tr><td class="mono">2026-02-17 16:45:12</td><td><strong>Jess Torres</strong></td><td><span class="tag tag-blue">Staff</span></td><td>Approved advertisement</td><td>Pedro Cruz — Lunch Boxes</td><td class="mono">192.168.1.15</td><td><span class="status-pill sp-approved">Success</span></td></tr>
+        <tr><td class="mono">2026-02-17 14:30:08</td><td><strong>Maria Santos</strong></td><td><span class="tag tag-blue">Staff</span></td><td>Verified resident</td><td>Sofia Mendez — Block A</td><td class="mono">192.168.1.22</td><td><span class="status-pill sp-approved">Success</span></td></tr>
+        <tr><td class="mono">2026-02-17 11:20:44</td><td><strong>Admin</strong></td><td><span class="tag tag-navy">Admin</span></td><td>Banned user account</td><td>TestAccount01</td><td class="mono">192.168.1.1</td><td><span class="status-pill sp-approved">Success</span></td></tr>
+        <tr><td class="mono">2026-02-15 09:05:19</td><td><strong>Carlo Padilla</strong></td><td><span class="tag tag-blue">Staff</span></td><td>Removed forum post</td><td>Post #FRM-234 (Spam)</td><td class="mono">192.168.1.30</td><td><span class="status-pill sp-approved">Success</span></td></tr>
+      </tbody></table></div>
+    </div>
+  </div>
+
+  <!-- STAFF ACCOUNTS -->
+  <div class="page" id="page-staffaccounts">
+    <div class="sec-header"><h2><i class="fas fa-users-cog"></i> Staff Account Management</h2>
+      <button class="btn btn-primary" onclick="openModal('inviteStaff')"><i class="fas fa-user-plus"></i> Invite Staff</button>
+    </div>
+    <div class="card" style="margin-bottom:18px">
+      <div class="card-header"><h3><i class="fas fa-user-clock"></i> Pending Invitation (1)</h3></div>
+      <div class="tbl-wrap"><table><thead><tr><th>Email</th><th>Role</th><th>Invited By</th><th>Date Sent</th><th>Expires</th><th>Actions</th></tr></thead><tbody id="pending-invites-tbody">
+        <tr><td><strong>newstaff@lba4.com</strong></td><td><span class="tag tag-blue">Staff</span></td><td>Admin</td><td>Feb 17</td><td>Feb 24</td><td>
+          <button class="btn btn-outline btn-sm" onclick="resendInvite(this)"><i class="fas fa-redo"></i> Resend</button>
+          <button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="cancelInvite(this)"><i class="fas fa-times"></i> Cancel</button>
+        </td></tr>
+      </tbody></table></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><h3><i class="fas fa-users"></i> Active Staff</h3></div>
+      <div class="tbl-wrap"><table><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Last Login</th><th>Status</th><th>Actions</th></tr></thead><tbody id="staff-tbody">
+        <tr data-protected="true"><td><strong>System Administrator</strong></td><td>admin@lba4.com</td><td><span class="tag tag-navy">Admin</span></td><td>Today, 9:00 AM</td><td><span class="status-pill sp-active">Active</span></td><td><span style="color:var(--gray-400);font-size:12px;font-style:italic">Protected</span></td></tr>
+        <tr><td><strong>Maria Santos</strong></td><td>maria@lba4.com</td><td><span class="tag tag-blue">Staff</span></td><td>Today, 8:12 AM</td><td><span class="status-pill sp-active">Online</span></td><td>
+          <button class="btn btn-outline btn-sm" onclick="openEditStaff(this)"><i class="fas fa-edit"></i></button>
+          <button class="btn btn-outline btn-sm" style="color:var(--red)" title="Remove account" onclick="removeStaff(this)"><i class="fas fa-trash"></i></button>
+        </td></tr>
+        <tr><td><strong>Jess Torres</strong></td><td>jess@lba4.com</td><td><span class="tag tag-blue">Staff</span></td><td>Feb 17, 3:45 PM</td><td><span class="status-pill sp-resolved">Active</span></td><td>
+          <button class="btn btn-outline btn-sm" onclick="openEditStaff(this)"><i class="fas fa-edit"></i></button>
+          <button class="btn btn-outline btn-sm" style="color:var(--red)" title="Remove account" onclick="removeStaff(this)"><i class="fas fa-trash"></i></button>
+        </td></tr>
+        <tr><td><strong>Rodel Lim</strong></td><td>rodel@lba4.com</td><td><span class="tag tag-blue">Staff</span></td><td>Feb 17, 2:10 AM</td><td><span class="status-pill sp-pending">⚠ Flagged</span></td><td>
+          <button class="btn btn-outline btn-sm" onclick="openEditStaff(this)"><i class="fas fa-edit"></i></button>
+          <button class="btn btn-outline btn-sm" style="color:var(--red)" title="Remove account" onclick="removeStaff(this)"><i class="fas fa-trash"></i></button>
+        </td></tr>
+        <tr><td><strong>Carlo Padilla</strong></td><td>carlo@lba4.com</td><td><span class="tag tag-blue">Staff</span></td><td>Feb 17, 11:30 AM</td><td><span class="status-pill sp-resolved">Active</span></td><td>
+          <button class="btn btn-outline btn-sm" onclick="openEditStaff(this)"><i class="fas fa-edit"></i></button>
+          <button class="btn btn-outline btn-sm" style="color:var(--red)" title="Remove account" onclick="removeStaff(this)"><i class="fas fa-trash"></i></button>
+        </td></tr>
+      </tbody></table></div>
+    </div>
+  </div>
+
+  <!-- ROLES & PERMISSIONS -->
+  <div class="page" id="page-roles">
+    <div class="sec-header">
+      <h2><i class="fas fa-key"></i> Roles & Permissions</h2>
+      <button class="btn btn-primary" onclick="openModal('addRole')"><i class="fas fa-plus"></i> Add Role</button>
+    </div>
+    <div class="info-banner" style="background:#f0e8ff;border-color:#7c3aed;color:#4c1d95">
+      <i class="fas fa-lock"></i> <strong>Admin</strong> always has full access and cannot be edited. Create custom roles and configure exactly what each one can see and do.
+    </div>
+    <div class="roles-layout">
+      <div class="card roles-list-card">
+        <div class="card-header"><h3><i class="fas fa-shield-alt"></i> All Roles</h3></div>
+        <div id="roles-list">
+          <div class="role-list-item active-role" data-role-id="admin" onclick="selectRole('admin',this)">
+            <div class="rli-icon rli-admin"><i class="fas fa-crown"></i></div>
+            <div class="rli-body">
+              <div class="rli-name">Admin</div>
+              <div class="rli-desc">Full system access — protected</div>
+              <div class="rli-count">1 user</div>
+            </div>
+            <span class="role-lock-badge"><i class="fas fa-lock"></i></span>
+          </div>
+          <div class="role-list-item" data-role-id="staff" onclick="selectRole('staff',this)">
+            <div class="rli-icon rli-staff"><i class="fas fa-user-shield"></i></div>
+            <div class="rli-body">
+              <div class="rli-name">Staff</div>
+              <div class="rli-desc">Operational access — day-to-day tasks</div>
+              <div class="rli-count" id="staff-role-count">4 users</div>
+            </div>
+            <div class="rli-actions">
+              <button class="btn btn-outline btn-sm" onclick="event.stopPropagation();openRenameRole('staff')" title="Rename"><i class="fas fa-pen"></i></button>
+              <button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="event.stopPropagation();deleteRole('staff')" title="Delete"><i class="fas fa-trash"></i></button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card roles-editor-card">
+        <div class="card-header">
+          <h3><i class="fas fa-sliders-h"></i> Permissions — <span id="perm-role-name">Admin</span></h3>
+          <div id="perm-editor-actions" style="display:none;gap:6px">
+            <button class="btn btn-outline btn-sm" onclick="setAllPerms('full')">All Full</button>
+            <button class="btn btn-outline btn-sm" onclick="setAllPerms('none')">Clear All</button>
+            <button class="btn btn-primary btn-sm" onclick="savePermissions()"><i class="fas fa-save"></i> Save</button>
+          </div>
+          <div id="perm-admin-notice" style="font-size:11.5px;color:var(--gray-400);font-style:italic">Read-only — Admin always has full access</div>
+        </div>
+        <div class="perm-editor-body" id="perm-editor-body"></div>
+        <div class="perm-legend">
+          <span class="perm-legend-item"><span class="perm-pill perm-pill-full">Full</span> Create, edit, delete</span>
+          <span class="perm-legend-item"><span class="perm-pill perm-pill-view">View</span> Read only</span>
+          <span class="perm-legend-item"><span class="perm-pill perm-pill-none">None</span> No access</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ALL RESIDENTS + BANNED (COMBINED) -->
+  <div class="page" id="page-allresidents">
+    <div class="sec-header"><h2><i class="fas fa-users"></i> Residents & Banned — Admin View</h2>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-outline btn-sm" onclick="exportResidents()"><i class="fas fa-download"></i> Export</button>
+        <button class="btn btn-primary" onclick="openModal('addResident')"><i class="fas fa-plus"></i> Add Resident</button>
+      </div>
+    </div>
+    <div class="stats-row" style="grid-template-columns:repeat(4,1fr)">
+      <div class="stat-card"><div class="stat-icon si-green"><i class="fas fa-user-check"></i></div><div class="stat-info"><div class="stat-val" id="stat-verified">342</div><div class="stat-label">Verified</div></div></div>
+      <div class="stat-card"><div class="stat-icon si-yellow"><i class="fas fa-user-clock"></i></div><div class="stat-info"><div class="stat-val" id="stat-pending">3</div><div class="stat-label">Pending</div></div></div>
+      <div class="stat-card"><div class="stat-icon si-red"><i class="fas fa-ban"></i></div><div class="stat-info"><div class="stat-val" id="stat-banned-count">2</div><div class="stat-label">Banned</div></div></div>
+      <div class="stat-card"><div class="stat-icon si-navy"><i class="fas fa-home"></i></div><div class="stat-info"><div class="stat-val">180</div><div class="stat-label">Total Units</div></div></div>
+    </div>
+
+    <!-- Resident Directory -->
+    <div class="card" style="margin-bottom:18px">
+      <div class="card-header"><h3><i class="fas fa-list"></i> Resident Directory</h3>
+        <div class="chip-row" id="resident-chips">
+          <div class="chip active" onclick="filterResidents('all',this)">All</div>
+          <div class="chip" onclick="filterResidents('Verified',this)">Verified</div>
+          <div class="chip" onclick="filterResidents('Pending',this)">Pending</div>
+          <div class="chip" onclick="filterResidents('Banned',this)">Banned</div>
+        </div>
+      </div>
+      <div class="tbl-wrap"><table><thead><tr><th>Name</th><th>Unit</th><th>Block</th><th>Contact</th><th>Email</th><th>Verified</th><th>Status</th><th>Actions</th></tr></thead><tbody id="residents-tbody">
+        <tr data-status="Verified"><td><strong>Juan dela Cruz</strong></td><td>House 5</td><td>Block C</td><td>09171234567</td><td>juan@email.com</td><td>Jan 10</td><td><span class="status-pill sp-approved">Verified</span></td><td>
+          <button class="btn btn-outline btn-sm" onclick="editResident(this)" title="Edit"><i class="fas fa-edit"></i></button>
+          <button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="banResident(this)" title="Ban"><i class="fas fa-ban"></i></button>
+          <button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="removeResident(this)" title="Remove"><i class="fas fa-trash"></i></button>
+        </td></tr>
+        <tr data-status="Verified"><td><strong>Ana Reyes</strong></td><td>House 3</td><td>Block D</td><td>09181234567</td><td>ana@email.com</td><td>Jan 12</td><td><span class="status-pill sp-approved">Verified</span></td><td>
+          <button class="btn btn-outline btn-sm" onclick="editResident(this)" title="Edit"><i class="fas fa-edit"></i></button>
+          <button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="banResident(this)" title="Ban"><i class="fas fa-ban"></i></button>
+          <button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="removeResident(this)" title="Remove"><i class="fas fa-trash"></i></button>
+        </td></tr>
+        <tr data-status="Verified"><td><strong>Maria Lopez</strong></td><td>House 4</td><td>Block A</td><td>09191234567</td><td>mlopez@email.com</td><td>Feb 17</td><td><span class="status-pill sp-approved">Verified</span></td><td>
+          <button class="btn btn-outline btn-sm" onclick="editResident(this)" title="Edit"><i class="fas fa-edit"></i></button>
+          <button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="banResident(this)" title="Ban"><i class="fas fa-ban"></i></button>
+          <button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="removeResident(this)" title="Remove"><i class="fas fa-trash"></i></button>
+        </td></tr>
+        <tr data-status="Pending"><td><strong>Sofia Mendez</strong></td><td>House 7</td><td>Block B</td><td>09201234567</td><td>sofia@email.com</td><td>—</td><td><span class="status-pill sp-pending">Pending</span></td><td>
+          <button class="btn btn-outline btn-sm" onclick="editResident(this)" title="Edit"><i class="fas fa-edit"></i></button>
+          <button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="removeResident(this)" title="Remove"><i class="fas fa-trash"></i></button>
+        </td></tr>
+        <tr data-status="Banned"><td><strong>TestAccount01</strong></td><td>—</td><td>—</td><td>—</td><td>fake@test.com</td><td>—</td><td><span class="status-pill sp-open">Banned</span></td><td>
+          <button class="btn btn-outline btn-sm" onclick="viewBannedDetails(this,'TestAccount01','Fake account, spam posts','Feb 17','Permanent','fake@test.com')"><i class="fas fa-eye"></i> Details</button>
+          <button class="btn btn-outline btn-sm" onclick="unbanResident(this)"><i class="fas fa-undo"></i> Unban</button>
+          <button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="removeResident(this)" title="Remove"><i class="fas fa-trash"></i></button>
+        </td></tr>
+      </tbody></table></div>
+    </div>
+
+    <!-- Banned Users Detail Panel -->
+    <div class="card">
+      <div class="card-header">
+        <h3><i class="fas fa-ban"></i> Banned Users Detail</h3>
+        <span id="banned-count-label" style="font-size:12px;color:var(--gray-400);font-weight:700">2 currently banned</span>
+      </div>
+      <div class="tbl-wrap"><table><thead><tr><th>Name / Account</th><th>Reason</th><th>Banned By</th><th>Date</th><th>Duration</th><th>Actions</th></tr></thead><tbody id="banned-tbody">
+        <tr>
+          <td><strong>TestAccount01</strong></td><td>Fake account, spam posts</td><td>Admin</td><td>Feb 17</td><td>Permanent</td>
+          <td>
+            <button class="btn btn-outline btn-sm" onclick="viewBannedDetails(this,'TestAccount01','Fake account, spam posts','Feb 17','Permanent','fake@test.com')"><i class="fas fa-eye"></i> View</button>
+            <button class="btn btn-outline btn-sm" onclick="unbanFromBannedTable(this)"><i class="fas fa-undo"></i> Unban</button>
+          </td>
+        </tr>
+        <tr>
+          <td><strong>Rina Dela Rosa</strong></td><td>Repeated spam, unsolicited ads in forum</td><td>Carlo P.</td><td>Feb 16</td><td>30 days</td>
+          <td>
+            <button class="btn btn-outline btn-sm" onclick="viewBannedDetails(this,'Rina Dela Rosa','Repeated spam, unsolicited ads in forum','Feb 16','30 days','rina@email.com')"><i class="fas fa-eye"></i> View</button>
+            <button class="btn btn-outline btn-sm" onclick="unbanFromBannedTable(this)"><i class="fas fa-undo"></i> Unban</button>
+          </td>
+        </tr>
+      </tbody></table></div>
+    </div>
+  </div>
+
+  <!-- APP SETTINGS -->
+  <div class="page" id="page-appsettings">
+    <div class="sec-header"><h2><i class="fas fa-sliders-h"></i> Application Settings</h2>
+      <button class="btn btn-primary" id="saveSettingsBtn"><i class="fas fa-save"></i> Save Changes</button>
+    </div>
+    <div class="info-banner"><i class="fas fa-info-circle"></i> <strong>What does this do?</strong> App Settings controls the core configuration of the Laguna BelAir 4 HOA platform — village info, resident fees, which features are active for residents, and security policies for staff logins. Changes here affect all residents and staff immediately.</div>
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-header"><h3><i class="fas fa-cog"></i> General Settings</h3></div>
+        <div class="card-body">
+          <div class="form-group"><label>Village Name</label><input type="text" value="Laguna BelAir 4" id="setting-village-name"></div>
+          <div class="form-group"><label>HOA Email</label><input type="email" value="lba4hoa@email.com" id="setting-hoa-email"></div>
+          <div class="form-group"><label>HOA Phone</label><input type="tel" value="0495603050" id="setting-hoa-phone"></div>
+          <div class="form-group"><label>Ad Listing Fee (₱)</label><input type="number" value="150" id="setting-ad-fee"></div>
+          <div class="form-group"><label>Monthly Dues Rate (₱)</label><input type="number" value="200" id="setting-dues-rate"></div>
+          <div class="form-group"><label>Resident Verification Mode</label>
+            <select id="setting-verification-mode">
+              <option>Manual Review (Default)</option>
+              <option>Auto-approve (not recommended)</option>
+              <option>Admin-only approval</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><h3><i class="fas fa-toggle-on"></i> Feature Toggles</h3></div>
+        <div class="card-body">
+          <div class="toggle-row"><div class="toggle-label"><strong>Forum Enabled</strong><div class="toggle-desc">Residents can post & comment in the community forum</div></div><label class="toggle-switch"><input type="checkbox" checked><span class="toggle-slider"></span></label></div>
+          <div class="toggle-row"><div class="toggle-label"><strong>Marketplace / Ads</strong><div class="toggle-desc">Residents can list products & services for sale</div></div><label class="toggle-switch"><input type="checkbox" checked><span class="toggle-slider"></span></label></div>
+          <div class="toggle-row"><div class="toggle-label"><strong>Incident Reports</strong><div class="toggle-desc">Residents can file and track incident reports</div></div><label class="toggle-switch"><input type="checkbox" checked><span class="toggle-slider"></span></label></div>
+          <div class="toggle-row"><div class="toggle-label"><strong>Amenity Reservations</strong><div class="toggle-desc">Residents can book amenities online</div></div><label class="toggle-switch"><input type="checkbox" checked><span class="toggle-slider"></span></label></div>
+          <div class="toggle-row"><div class="toggle-label"><strong>Push Notifications</strong><div class="toggle-desc">Send push alerts to subscribed residents</div></div><label class="toggle-switch"><input type="checkbox" checked><span class="toggle-slider"></span></label></div>
+          <div class="toggle-row"><div class="toggle-label"><strong>Maintenance Mode</strong><div class="toggle-desc">Show maintenance page to residents (staff can still access)</div></div><label class="toggle-switch"><input type="checkbox"><span class="toggle-slider"></span></label></div>
+          <div class="toggle-row"><div class="toggle-label"><strong>Two-Factor Auth Required</strong><div class="toggle-desc">Require 2FA for all staff logins</div></div><label class="toggle-switch"><input type="checkbox" checked><span class="toggle-slider"></span></label></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- WORD BANK CONFIG -->
+  <div class="page" id="page-wordbank">
+    <div class="sec-header"><h2><i class="fas fa-brain"></i> Word Bank Configuration</h2>
+      <button class="btn btn-primary" onclick="openModal('addKeyword')"><i class="fas fa-plus"></i> Add Keyword</button>
+    </div>
+    <div class="info-banner"><i class="fas fa-info-circle"></i> <strong>Admin Access:</strong> Add, edit, or delete keywords that drive automatic incident priority detection. Changes take effect immediately across the platform.</div>
+    <div class="card">
+      <div class="card-header"><h3><i class="fas fa-list"></i> Keyword Registry</h3>
+        <div class="chip-row" id="wb-chips">
+          <div class="chip active" onclick="filterKeywords('all',this)">All</div>
+          <div class="chip" onclick="filterKeywords('Critical',this)">Critical</div>
+          <div class="chip" onclick="filterKeywords('High',this)">High</div>
+          <div class="chip" onclick="filterKeywords('Medium',this)">Medium</div>
+          <div class="chip" onclick="filterKeywords('Low',this)">Low</div>
+        </div>
+      </div>
+      <div class="tbl-wrap"><table><thead><tr><th>Keyword</th><th>Translation</th><th>Severity</th><th>Weight Score</th><th>Times Triggered</th><th>Last Updated</th><th>Actions</th></tr></thead><tbody id="wordbank-tbody">
+        <tr data-severity="Critical"><td><strong>tubig</strong></td><td>water</td><td><span class="priority p-critical">Critical</span></td><td>10</td><td>14</td><td>Feb 10</td><td>
+          <button class="btn btn-outline btn-sm" onclick="editKeyword(this)"><i class="fas fa-edit"></i></button>
+          <button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="deleteKeyword(this)"><i class="fas fa-trash"></i></button>
+        </td></tr>
+        <tr data-severity="Critical"><td><strong>baha</strong></td><td>flood</td><td><span class="priority p-critical">Critical</span></td><td>10</td><td>9</td><td>Feb 10</td><td>
+          <button class="btn btn-outline btn-sm" onclick="editKeyword(this)"><i class="fas fa-edit"></i></button>
+          <button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="deleteKeyword(this)"><i class="fas fa-trash"></i></button>
+        </td></tr>
+        <tr data-severity="Critical"><td><strong>sunog</strong></td><td>fire</td><td><span class="priority p-critical">Critical</span></td><td>10</td><td>3</td><td>Jan 20</td><td>
+          <button class="btn btn-outline btn-sm" onclick="editKeyword(this)"><i class="fas fa-edit"></i></button>
+          <button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="deleteKeyword(this)"><i class="fas fa-trash"></i></button>
+        </td></tr>
+        <tr data-severity="High"><td><strong>aso</strong></td><td>dog</td><td><span class="priority p-high">High</span></td><td>8</td><td>8</td><td>Feb 12</td><td>
+          <button class="btn btn-outline btn-sm" onclick="editKeyword(this)"><i class="fas fa-edit"></i></button>
+          <button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="deleteKeyword(this)"><i class="fas fa-trash"></i></button>
+        </td></tr>
+        <tr data-severity="Medium"><td><strong>ilaw</strong></td><td>light</td><td><span class="priority p-medium">Medium</span></td><td>5</td><td>6</td><td>Feb 5</td><td>
+          <button class="btn btn-outline btn-sm" onclick="editKeyword(this)"><i class="fas fa-edit"></i></button>
+          <button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="deleteKeyword(this)"><i class="fas fa-trash"></i></button>
+        </td></tr>
+        <tr data-severity="Low"><td><strong>parking</strong></td><td>parking</td><td><span class="priority p-low">Low</span></td><td>2</td><td>5</td><td>Jan 15</td><td>
+          <button class="btn btn-outline btn-sm" onclick="editKeyword(this)"><i class="fas fa-edit"></i></button>
+          <button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="deleteKeyword(this)"><i class="fas fa-trash"></i></button>
+        </td></tr>
+      </tbody></table></div>
+    </div>
+  </div>
+
+  <!-- INTEGRATIONS -->
+  <div class="page" id="page-integrations">
+    <div class="sec-header"><h2><i class="fas fa-plug"></i> Third-Party Integrations</h2></div>
+    <div class="info-banner"><i class="fas fa-info-circle"></i> Manage external services connected to the platform.</div>
+    <div class="grid-2">
+      <div class="integration-card int-active">
+        <div class="int-logo"><i class="fas fa-bell" style="color:var(--gold)"></i></div>
+        <div class="int-body">
+          <div class="int-name">Subscribe Notification (Push Alerts)</div>
+          <div class="int-desc">Residents can subscribe to receive push notifications for announcements, incidents, and HOA alerts directly to their devices.</div>
+          <div class="int-meta"><span class="status-pill sp-approved">Connected</span> · 214 active subscribers · Renews Mar 1</div>
+          <div class="int-stats" style="margin-top:10px;display:flex;gap:16px;flex-wrap:wrap">
+            <div style="font-size:11.5px;color:var(--gray-600)"><strong style="font-size:15px;color:var(--navy)">214</strong><br>Subscribers</div>
+            <div style="font-size:11.5px;color:var(--gray-600)"><strong style="font-size:15px;color:var(--navy)">1,842</strong><br>Sent this month</div>
+            <div style="font-size:11.5px;color:var(--gray-600)"><strong style="font-size:15px;color:var(--navy)">78%</strong><br>Open rate</div>
+          </div>
+        </div>
+        <div class="int-actions" style="display:flex;flex-direction:column;gap:8px">
+          <button class="btn btn-outline btn-sm" onclick="openModal('manageNotifIntegration')"><i class="fas fa-cog"></i> Configure</button>
+          <button class="btn btn-outline btn-sm" onclick="testNotification()"><i class="fas fa-paper-plane"></i> Send Test</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DATA EXPORT -->
+  <div class="page" id="page-dataexport">
+    <div class="sec-header"><h2><i class="fas fa-file-export"></i> Data Export</h2></div>
+    <div class="info-banner"><i class="fas fa-lock"></i> <strong>Admin Only.</strong> All exports are logged in the audit trail with your account name, timestamp, and IP address.</div>
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-header"><h3><i class="fas fa-database"></i> Export Datasets</h3></div>
+        <div class="export-row">
+          <div class="export-icon"><i class="fas fa-users"></i></div>
+          <div class="export-body"><div class="export-title">Resident Directory</div><div class="export-desc">All verified residents with contact info, block, unit, verification dates</div></div>
+          <div class="export-actions">
+            <button class="btn btn-outline btn-sm export-btn" data-dataset="Resident Directory" data-format="CSV"><i class="fas fa-file-csv"></i> CSV</button>
+            <button class="btn btn-outline btn-sm export-btn" data-dataset="Resident Directory" data-format="XLSX"><i class="fas fa-file-excel"></i> XLSX</button>
+          </div>
+        </div>
+        <div class="export-row">
+          <div class="export-icon"><i class="fas fa-exclamation-circle"></i></div>
+          <div class="export-body"><div class="export-title">Incident Reports</div><div class="export-desc">All incidents with priority, status, location, reporter, dates</div></div>
+          <div class="export-actions">
+            <button class="btn btn-outline btn-sm export-btn" data-dataset="Incident Reports" data-format="CSV"><i class="fas fa-file-csv"></i> CSV</button>
+            <button class="btn btn-outline btn-sm export-btn" data-dataset="Incident Reports" data-format="PDF"><i class="fas fa-file-pdf"></i> PDF</button>
+          </div>
+        </div>
+        <div class="export-row">
+          <div class="export-icon"><i class="fas fa-history"></i></div>
+          <div class="export-body"><div class="export-title">Audit Log</div><div class="export-desc">All system actions, user activity, IP addresses, timestamps</div></div>
+          <div class="export-actions">
+            <button class="btn btn-outline btn-sm export-btn" data-dataset="Audit Log" data-format="CSV"><i class="fas fa-file-csv"></i> CSV</button>
+            <button class="btn btn-primary btn-sm export-btn" data-dataset="Audit Log" data-format="ALL"><i class="fas fa-download"></i> Export All</button>
+          </div>
+        </div>
+        <div class="export-row">
+          <div class="export-icon"><i class="fas fa-users-cog"></i></div>
+          <div class="export-body"><div class="export-title">Staff Activity</div><div class="export-desc">Login history, actions performed, response times by staff member</div></div>
+          <div class="export-actions">
+            <button class="btn btn-outline btn-sm export-btn" data-dataset="Staff Activity" data-format="CSV"><i class="fas fa-file-csv"></i> CSV</button>
+            <button class="btn btn-outline btn-sm export-btn" data-dataset="Staff Activity" data-format="XLSX"><i class="fas fa-file-excel"></i> XLSX</button>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><h3><i class="fas fa-clock"></i> Recent Exports</h3><span class="export-live-badge"><i class="fas fa-circle" style="color:var(--green);font-size:8px"></i> Live</span></div>
+        <div class="tbl-wrap"><table><thead><tr><th>File</th><th>Exported By</th><th>Date</th><th>Size</th></tr></thead><tbody id="recent-exports-tbody">
+          <tr><td><strong>residents_feb2026.csv</strong></td><td>Admin</td><td>Today 8:30 AM</td><td>48 KB</td></tr>
+          <tr><td><strong>incidents_jan2026.pdf</strong></td><td>Maria Santos</td><td>Feb 10</td><td>210 KB</td></tr>
+          <tr><td><strong>audit_log_feb2026.csv</strong></td><td>Admin</td><td>Feb 8</td><td>125 KB</td></tr>
+        </tbody></table></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BACKUPS -->
+  <div class="page" id="page-backups">
+    <div class="sec-header"><h2><i class="fas fa-database"></i> Backup Management</h2>
+      <button class="btn btn-primary" id="mainBackupBtn"><i class="fas fa-play"></i> Run Manual Backup</button>
+    </div>
+    <div class="card">
+      <div class="card-header"><h3><i class="fas fa-list"></i> Backup History (Last 10)</h3></div>
+      <div class="tbl-wrap"><table><thead><tr><th>Backup ID</th><th>Date & Time</th><th>Type</th><th>Size</th><th>Status</th><th>Actions</th></tr></thead><tbody id="backup-tbody">
+        <tr><td class="mono">BKP-0234</td><td>Feb 18, 3:00 AM</td><td>Auto</td><td>1.2 GB</td><td><span class="status-pill sp-approved">Success</span></td><td><button class="btn btn-outline btn-sm" onclick="downloadBackup(this)"><i class="fas fa-download"></i></button> <button class="btn btn-outline btn-sm" onclick="restoreBackup(this)"><i class="fas fa-undo"></i> Restore</button></td></tr>
+        <tr><td class="mono">BKP-0233</td><td>Feb 17, 3:00 AM</td><td>Auto</td><td>1.19 GB</td><td><span class="status-pill sp-approved">Success</span></td><td><button class="btn btn-outline btn-sm" onclick="downloadBackup(this)"><i class="fas fa-download"></i></button> <button class="btn btn-outline btn-sm" onclick="restoreBackup(this)"><i class="fas fa-undo"></i> Restore</button></td></tr>
+        <tr><td class="mono">BKP-0232</td><td>Feb 16, 3:00 AM</td><td>Auto</td><td>1.18 GB</td><td><span class="status-pill sp-approved">Success</span></td><td><button class="btn btn-outline btn-sm" onclick="downloadBackup(this)"><i class="fas fa-download"></i></button> <button class="btn btn-outline btn-sm" onclick="restoreBackup(this)"><i class="fas fa-undo"></i> Restore</button></td></tr>
+        <tr><td class="mono">BKP-0231</td><td>Feb 12, 10:45 AM</td><td>Manual</td><td>1.17 GB</td><td><span class="status-pill sp-approved">Success</span></td><td><button class="btn btn-outline btn-sm" onclick="downloadBackup(this)"><i class="fas fa-download"></i></button> <button class="btn btn-outline btn-sm" onclick="restoreBackup(this)"><i class="fas fa-undo"></i> Restore</button></td></tr>
+      </tbody></table></div>
+    </div>
+  </div>
+
+</main>
+
+<!-- ===================== MODALS ===================== -->
+
+<!-- Invite Staff -->
+<div class="modal-overlay" id="modal-inviteStaff">
+  <div class="modal">
+    <div class="modal-head"><h3><i class="fas fa-user-plus"></i> Invite Staff Member</h3><button class="modal-close" onclick="closeModal('inviteStaff')"><i class="fas fa-times"></i></button></div>
+    <div class="form-row">
+      <div class="form-group"><label>Full Name</label><input type="text" id="invite-name" placeholder="First Last"></div>
+      <div class="form-group"><label>Email Address</label><input type="email" id="invite-email" placeholder="staff@lba4.com"></div>
+    </div>
+    <div class="form-group"><label>Role</label>
+      <select id="invite-role"><option value="Staff">Staff</option></select>
+    </div>
+    <div class="form-group"><label>Personal Message (optional)</label><textarea id="invite-msg" placeholder="Welcome message for invite email…"></textarea></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('inviteStaff')">Cancel</button>
+      <button class="btn btn-primary" onclick="sendInvite()"><i class="fas fa-paper-plane"></i> Send Invite</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Staff -->
+<div class="modal-overlay" id="modal-editStaff">
+  <div class="modal">
+    <div class="modal-head"><h3>Edit Staff Account</h3><button class="modal-close" onclick="closeModal('editStaff')"><i class="fas fa-times"></i></button></div>
+    <div class="form-row">
+      <div class="form-group"><label>Full Name</label><input type="text" id="edit-staff-name"></div>
+      <div class="form-group"><label>Email</label><input type="email" id="edit-staff-email"></div>
+    </div>
+    <div class="form-group"><label>Role</label>
+      <select id="edit-staff-role"><option value="Staff">Staff</option></select>
+    </div>
+    <div class="form-group"><label>Account Status</label>
+      <select id="edit-staff-status"><option>Active</option><option>Suspended</option></select>
+    </div>
+    <input type="hidden" id="edit-staff-row-ref">
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('editStaff')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveStaffEdit()"><i class="fas fa-save"></i> Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Resident -->
+<div class="modal-overlay" id="modal-addResident">
+  <div class="modal">
+    <div class="modal-head"><h3><i class="fas fa-user-plus"></i> Add Resident</h3><button class="modal-close" onclick="closeModal('addResident')"><i class="fas fa-times"></i></button></div>
+    <div class="form-row">
+      <div class="form-group"><label>Full Name</label><input type="text" id="res-name" placeholder="Full name"></div>
+      <div class="form-group"><label>Email</label><input type="email" id="res-email" placeholder="resident@email.com"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Block</label><select id="res-block"><option>Block A</option><option>Block B</option><option>Block C</option><option>Block D</option></select></div>
+      <div class="form-group"><label>Unit / House No.</label><input type="text" id="res-unit" placeholder="e.g. House 5"></div>
+    </div>
+    <div class="form-group"><label>Contact Number</label><input type="tel" id="res-contact" placeholder="09XXXXXXXXX"></div>
+    <div class="form-group"><label>Status</label>
+      <select id="res-status"><option value="Pending">Pending (needs verification)</option><option value="Verified">Verified</option></select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('addResident')">Cancel</button>
+      <button class="btn btn-primary" onclick="addResident()"><i class="fas fa-plus"></i> Add Resident</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Resident -->
+<div class="modal-overlay" id="modal-editResident">
+  <div class="modal">
+    <div class="modal-head"><h3>Edit Resident</h3><button class="modal-close" onclick="closeModal('editResident')"><i class="fas fa-times"></i></button></div>
+    <div class="form-row">
+      <div class="form-group"><label>Full Name</label><input type="text" id="edit-res-name"></div>
+      <div class="form-group"><label>Email</label><input type="email" id="edit-res-email"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Block</label><input type="text" id="edit-res-block"></div>
+      <div class="form-group"><label>Unit</label><input type="text" id="edit-res-unit"></div>
+    </div>
+    <div class="form-group"><label>Contact</label><input type="tel" id="edit-res-contact"></div>
+    <div class="form-group"><label>Status</label>
+      <select id="edit-res-status"><option value="Verified">Verified</option><option value="Pending">Pending</option></select>
+    </div>
+    <input type="hidden" id="edit-res-row-ref">
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('editResident')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveResidentEdit()"><i class="fas fa-save"></i> Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- View Banned User Details -->
+<div class="modal-overlay" id="modal-viewBanned">
+  <div class="modal">
+    <div class="modal-head"><h3><i class="fas fa-ban"></i> Banned User Details</h3><button class="modal-close" onclick="closeModal('viewBanned')"><i class="fas fa-times"></i></button></div>
+    <div class="form-group"><div class="field-label">Account Name</div><div class="text-display" id="view-banned-name">—</div></div>
+    <div class="form-group"><div class="field-label">Email</div><div class="text-display" id="view-banned-email">—</div></div>
+    <div class="form-group"><div class="field-label">Reason for Ban</div><div class="text-display" id="view-banned-reason">—</div></div>
+    <div class="form-row">
+      <div class="form-group"><div class="field-label">Date Banned</div><div class="text-display" id="view-banned-date">—</div></div>
+      <div class="form-group"><div class="field-label">Duration</div><div class="text-display" id="view-banned-duration">—</div></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('viewBanned')">Close</button>
+      <button class="btn btn-primary" style="background:var(--red)" id="view-banned-unban-btn"><i class="fas fa-undo"></i> Unban This User</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Keyword -->
+<div class="modal-overlay" id="modal-addKeyword">
+  <div class="modal">
+    <div class="modal-head"><h3>Add Keyword</h3><button class="modal-close" onclick="closeModal('addKeyword')"><i class="fas fa-times"></i></button></div>
+    <div class="form-row">
+      <div class="form-group"><label>Keyword (Tagalog/English)</label><input type="text" id="kw-word" placeholder="e.g. sinasalakay"></div>
+      <div class="form-group"><label>Translation</label><input type="text" id="kw-translation" placeholder="e.g. being attacked"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Severity Level</label><select id="kw-severity"><option>Critical</option><option>High</option><option>Medium</option><option>Low</option></select></div>
+      <div class="form-group"><label>Weight Score (1–10)</label><input type="number" id="kw-weight" min="1" max="10" value="5"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('addKeyword')">Cancel</button>
+      <button class="btn btn-primary" onclick="addKeyword()"><i class="fas fa-plus"></i> Add Keyword</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Keyword -->
+<div class="modal-overlay" id="modal-editKeyword">
+  <div class="modal">
+    <div class="modal-head"><h3>Edit Keyword</h3><button class="modal-close" onclick="closeModal('editKeyword')"><i class="fas fa-times"></i></button></div>
+    <div class="form-row">
+      <div class="form-group"><label>Keyword</label><input type="text" id="edit-kw-word"></div>
+      <div class="form-group"><label>Translation</label><input type="text" id="edit-kw-translation"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Severity Level</label><select id="edit-kw-severity"><option>Critical</option><option>High</option><option>Medium</option><option>Low</option></select></div>
+      <div class="form-group"><label>Weight Score (1–10)</label><input type="number" id="edit-kw-weight" min="1" max="10"></div>
+    </div>
+    <input type="hidden" id="edit-kw-row-ref">
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('editKeyword')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveKeywordEdit()"><i class="fas fa-save"></i> Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- Manage Push Notification Integration -->
+<div class="modal-overlay" id="modal-manageNotifIntegration">
+  <div class="modal">
+    <div class="modal-head"><h3><i class="fas fa-bell"></i> Push Notification Configuration</h3><button class="modal-close" onclick="closeModal('manageNotifIntegration')"><i class="fas fa-times"></i></button></div>
+    <div class="form-group"><label>Service Provider</label><input type="text" value="Firebase Cloud Messaging (FCM)"></div>
+    <div class="form-group"><label>API Key</label><input type="password" value="AIzaSyBxxxxxxxxxxxxxxxxxxx" placeholder="Firebase API key"></div>
+    <div class="form-group"><label>Project ID</label><input type="text" value="lba4-hoa-notifications"></div>
+    <div class="form-group"><label>Notify Residents On</label>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:4px">
+        <label style="display:flex;align-items:center;gap:8px;font-weight:600;text-transform:none;letter-spacing:0"><input type="checkbox" checked> New Announcement published</label>
+        <label style="display:flex;align-items:center;gap:8px;font-weight:600;text-transform:none;letter-spacing:0"><input type="checkbox" checked> Critical incident in village</label>
+        <label style="display:flex;align-items:center;gap:8px;font-weight:600;text-transform:none;letter-spacing:0"><input type="checkbox" checked> New event added to calendar</label>
+        <label style="display:flex;align-items:center;gap:8px;font-weight:600;text-transform:none;letter-spacing:0"><input type="checkbox"> New forum post (can be noisy)</label>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('manageNotifIntegration')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveIntegration()"><i class="fas fa-save"></i> Save Configuration</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Role Modal -->
+<div class="modal-overlay" id="modal-addRole">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-head"><h3><i class="fas fa-plus"></i> Create New Role</h3><button class="modal-close" onclick="closeModal('addRole')"><i class="fas fa-times"></i></button></div>
+    <div class="form-group"><label>Role Name</label><input type="text" id="add-role-name" placeholder="e.g. Security Officer, Finance Officer…"></div>
+    <div class="form-group"><label>Description</label><textarea id="add-role-desc" placeholder="Brief description of what this role does…" style="min-height:60px"></textarea></div>
+    <div class="form-group"><label>Starting Permissions</label>
+      <select id="add-role-template">
+        <option value="none">Start blank — no access</option>
+        <option value="staff">Copy from Staff</option>
+        <option value="view-only">View only everywhere</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('addRole')">Cancel</button>
+      <button class="btn btn-primary" onclick="createRole()"><i class="fas fa-plus"></i> Create Role</button>
+    </div>
+  </div>
+</div>
+
+<!-- Rename Role Modal -->
+<div class="modal-overlay" id="modal-renameRole">
+  <div class="modal" style="max-width:380px">
+    <div class="modal-head"><h3><i class="fas fa-pen"></i> Rename Role</h3><button class="modal-close" onclick="closeModal('renameRole')"><i class="fas fa-times"></i></button></div>
+    <div class="form-group"><label>Role Name</label><input type="text" id="rename-role-input" placeholder="New role name…"></div>
+    <div class="form-group"><label>Description</label><textarea id="rename-role-desc" style="min-height:60px"></textarea></div>
+    <input type="hidden" id="rename-role-id">
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('renameRole')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveRoleRename()"><i class="fas fa-save"></i> Save</button>
+    </div>
+  </div>
+</div>
+
+<script src="admin-dashboard.js"></script>
+</body>
+</html>

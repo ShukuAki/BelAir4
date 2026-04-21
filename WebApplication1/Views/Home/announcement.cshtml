@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Home - Laguna BelAir 4</title>
+<title>Announcements - Laguna BelAir 4</title>
 <!-- Fonts: Playfair Display + Outfit (matching advertisements) -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -11,7 +11,7 @@
 <!-- Icons -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <!-- Styles -->
-<link rel="stylesheet" href="index.css">
+<link rel="stylesheet" href="announcement.css">
 </head>
 <body>
 
@@ -32,7 +32,7 @@
         <a href="register.html"><i class="fas fa-user-plus"></i> Register</a>
       </div>
       <div class="navbar-bottom-row">
-        <a href="./index.html" class="nav-link active">Home</a>
+        <a href="./index.html" class="nav-link">Home</a>
         <div class="dropdown">
           <a href="#" class="dropdown-toggle">About <i class="fas fa-chevron-down"></i></a>
           <div class="dropdown-menu">
@@ -45,7 +45,7 @@
         <div class="dropdown">
           <a href="#" class="dropdown-toggle">Community <i class="fas fa-chevron-down"></i></a>
           <div class="dropdown-menu">
-            <a href="announcement.html">Announcements</a>
+            <a href="announcement.html" class="active">Announcements</a>
             <a href="forums.html">Forums / Discussions</a>
             <a href="advertisements.html">Community Exchange</a>
             <a href="calendars.html">Calendars</a>
@@ -73,169 +73,41 @@
 </div>
 
 <!-- ═══════════════════════════════════════
-  HERO SECTION (updated with subtitle paragraph)
+  HERO SECTION (matching advertisements style)
 ═══════════════════════════════════════ -->
 <section class="hero-section">
-  <div class="background-image"></div>
-  <div class="hero-overlay">
-    <div class="hero-content">
-      <h1 class="hero-title">
-        <span class="hero-line">WELCOME TO</span>
-        <span class="hero-name">BEL-AIR VILLAGE 4</span>
-      </h1>
-      <p class="hero-subtitle">A premier residential community in Santa Rosa, Laguna <br> where safety, harmony, and active living thrive.</p>
-      <div class="search-container">
-        <input type="text" placeholder="Search site..." class="search-input">
-        <button class="search-button">
-          <i class="fas fa-search"></i>
-        </button>
-      </div>
-    </div>
+  <div class="hero-inner">
+    <h1 class="hero-title">Announcements</h1>
+    <p class="hero-sub">Stay updated with the latest news, events, and important reminders <br> from your homeowners association.</p>
   </div>
 </section>
 
 <!-- ═══════════════════════════════════════
-  MAIN CONTENT CONTAINER
+  MAIN CONTENT - ANNOUNCEMENT CARDS
 ═══════════════════════════════════════ -->
-<div class="main-container">
-  <!-- Quick Action Circles -->
-  <section class="quick-actions">
-    <div class="action-circle">
-      <a href="report-concerns.html" style="text-decoration: none; color: inherit;">
-        <div class="circle-icon">
-          <i class="fas fa-exclamation-triangle"></i>
-        </div>
-        <p>Report a Concern</p>
-      </a>
-    </div>
-    <div class="action-circle">
-      <a href="reserve.html" style="text-decoration: none; color: inherit;">
-        <div class="circle-icon">
-          <i class="fas fa-calendar-check"></i>
-        </div>
-        <p>Reserve Amenities</p>
-      </a>
-    </div>
-    <div class="action-circle">
-      <a href="calendars.html" style="text-decoration: none; color: inherit;">
-        <div class="circle-icon">
-          <i class="fas fa-calendar-alt"></i>
-        </div>
-        <p>Community Calendar</p>
-      </a>
-    </div>
-    <div class="action-circle">
-      <a href="forums.html" style="text-decoration: none; color: inherit;">
-        <div class="circle-icon">
-          <i class="fas fa-comments"></i>
-        </div>
-        <p>Forums & Discussions</p>
-      </a>
-    </div>
-    <div class="action-circle">
-      <a href="contacts.html" style="text-decoration: none; color: inherit;">
-        <div class="circle-icon">
-          <i class="fas fa-phone-alt"></i>
-        </div>
-        <p>Contact Us</p>
-      </a>
-    </div>
-  </section>
-
-  <!-- Quick Links Grid - 5 Items Only -->
-  <section class="links-section">
-    <h2 class="section-title">QUICK LINKS</h2>
-    <div class="links-grid">
-      <div class="link-box">
-        <a href="announcement.html" style="text-decoration: none; color: inherit;">
-          <div class="link-icon">
-            <i class="fas fa-newspaper"></i>
-          </div>
-          <h3>News & Notices</h3>
-          <p>Stay updated with community announcements</p>
-        </a>
-      </div>
-      <div class="link-box">
-        <a href="meeting-agendas.html" style="text-decoration: none; color: inherit;">
-          <div class="link-icon">
-            <i class="fas fa-clipboard-list"></i>
-          </div>
-          <h3>Meeting Minutes & Agendas</h3>
-          <p>Access board meeting records</p>
-        </a>
-      </div>
-      <div class="link-box">
-        <a href="committees-bods.html" style="text-decoration: none; color: inherit;">
-          <div class="link-icon">
-            <i class="fas fa-users"></i>
-          </div>
-          <h3>Board of Directors</h3>
-          <p>Learn about our leadership</p>
-        </a>
-      </div>
-      <div class="link-box">
-        <a href="landmarks.html" style="text-decoration: none; color: inherit;">
-          <div class="link-icon">
-            <i class="fas fa-map-marked-alt"></i>
-          </div>
-          <h3>Landmarks</h3>
-          <p>Explore our village landmarks</p>
-        </a>
-      </div>
-      <div class="link-box">
-        <a href="advertisements.html" style="text-decoration: none; color: inherit;">
-          <div class="link-icon">
-            <i class="fas fa-store"></i>
-          </div>
-          <h3>Marketplace/Classifieds</h3>
-          <p>Buy, sell, and connect locally</p>
-        </a>
-      </div>
-    </div>
-  </section>
-
-  <!-- Calendar Section -->
-  <section id="community-calendar" class="calendar-section">
-    <h2 class="section-title">Community Calendar</h2>
-    <div class="calendar-container">
-      <!-- Left Side: Events List -->
-      <div class="events-side">
-        <div class="selected-date-display">
-          <h3 id="current-date">Today's Date</h3>
-        </div>
-        <div class="events-list">
-          <h4>Events for <span id="display-date">Today</span></h4>
-          <div class="events-container" id="events-container">
-            <div class="no-events">
-              <i class="fas fa-calendar-day"></i>
-              <p>No events scheduled for today</p>
-            </div>
-          </div>
-        </div>
-      </div>
-      <!-- Right Side: Interactive Calendar -->
-      <div class="calendar-side">
-        <div class="calendar-header">
-          <button id="prev-month"><i class="fas fa-chevron-left"></i></button>
-          <h3 id="current-month-year">Month Year</h3>
-          <button id="next-month"><i class="fas fa-chevron-right"></i></button>
-        </div>
-        <div class="calendar-weekdays">
-          <div>Sun</div>
-          <div>Mon</div>
-          <div>Tue</div>
-          <div>Wed</div>
-          <div>Thu</div>
-          <div>Fri</div>
-          <div>Sat</div>
-        </div>
-        <div class="calendar-days" id="calendar-days">
-          <!-- Calendar days will be generated by JavaScript -->
-        </div>
-      </div>
-    </div>
-  </section>
-</div>
+<main class="announcements">
+  <!-- First announcement card -->
+  <div class="announcement-card">
+    <img src="LBAlogo.png" alt="Laguna BelAir Logo">
+    <h2>Laguna BelAir 4</h2>
+    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer non lacinia nibh, ut vulputate libero. Suspendisse augue augue, maximus eget risus quis, venenatis placerat nunc.</p>
+    <a href="#" class="read-more">Read More</a>
+  </div>
+  <!-- Second announcement card -->
+  <div class="announcement-card">
+    <img src="LBAlogo.png" alt="Laguna BelAir Logo">
+    <h2>Laguna BelAir 4</h2>
+    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer non lacinia nibh, ut vulputate libero. Suspendisse augue augue, maximus eget risus quis, venenatis placerat nunc.</p>
+    <a href="#" class="read-more">Read More</a>
+  </div>
+  <!-- Third announcement card -->
+  <div class="announcement-card">
+    <img src="LBAlogo.png" alt="Laguna BelAir Logo">
+    <h2>Laguna BelAir 4</h2>
+    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer non lacinia nibh, ut vulputate libero. Suspendisse augue augue, maximus eget risus quis, venenatis placerat nunc.</p>
+    <a href="#" class="read-more">Read More</a>
+  </div>
+</main>
 
 <!-- ═══════════════════════════════════════
   FOOTER
@@ -279,8 +151,7 @@
   </div>
 </footer>
 
-<!-- JavaScript -->
-<script src="index.js"></script>
+<script src="announcement.js"></script>
 <script>
   // Set current year in footer
   document.getElementById('current-year').textContent = new Date().getFullYear();

@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Report an Issue — Laguna BelAir 4</title>
+
+  <!-- Fonts: Playfair Display + Outfit (matching advertisements) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- Leaflet -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="report-concerns.css">
+
+  <!-- localStorage bridge (keep for now; swap with API later) -->
+  <script src="lba4-storage.js"></script>
+</head>
+<body>
+
+  <!-- ═══════════════════════════════════════
+       HEADER / NAV (updated to match advertisements style)
+  ═══════════════════════════════════════ -->
+  <div class="top-header-container">
+    <div class="logo-section">
+      <a href="index.html" class="logo-link">
+        <img src="LBAlogo.png" alt="Laguna BelAir 4 Logo" class="logo-image">
+      </a>
+    </div>
+    <div class="header-center-wrapper">
+      <div class="navbar-two-rows">
+        <div class="navbar-top-row">
+          <a href="login.html"><i class="fas fa-sign-in-alt"></i> Login</a>
+          <span class="nav-sep">|</span>
+          <a href="register.html"><i class="fas fa-user-plus"></i> Register</a>
+        </div>
+        <div class="navbar-bottom-row">
+          <a href="./index.html" class="nav-link">Home</a>
+          <div class="dropdown">
+            <a href="#" class="dropdown-toggle">About <i class="fas fa-chevron-down"></i></a>
+            <div class="dropdown-menu">
+              <a href="about-laguna-belair.html">Laguna BelAir 4</a>
+              <a href="committees-bods.html">Committees / BODs</a>
+              <a href="landmarks.html">Landmarks</a>
+              <a href="contacts.html">Contacts</a>
+            </div>
+          </div>
+          <div class="dropdown">
+            <a href="#" class="dropdown-toggle">Community <i class="fas fa-chevron-down"></i></a>
+            <div class="dropdown-menu">
+              <a href="announcement.html">Announcements</a>
+              <a href="forums.html">Forums / Discussions</a>
+              <a href="advertisements.html">Community Exchange</a>
+              <a href="calendars.html">Calendars</a>
+              <a href="meeting-agendas.html">Meeting Records</a>
+              <a href="community-map.html">Community Map</a>
+            </div>
+          </div>
+          <div class="dropdown">
+            <a href="#" class="dropdown-toggle">Services <i class="fas fa-chevron-down"></i></a>
+            <div class="dropdown-menu">
+              <a href="reserve.html">Reserve Amenities</a>
+              <a href="report-concerns.html" class="active">Report an Issue</a>
+            </div>
+          </div>
+          <div class="dropdown">
+            <a href="#" class="dropdown-toggle">Others <i class="fas fa-chevron-down"></i></a>
+            <div class="dropdown-menu">
+              <a href="forms-documents.html">Forms &amp; Documents</a>
+              <a href="vehicle-pet-registration.html">Register Pet/Vehicle</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       HERO SECTION (matching advertisements style with added <p>)
+  ═══════════════════════════════════════ -->
+  <section class="hero-section">
+    <div class="hero-inner">
+      <h1 class="hero-title">Report an Issue</h1>
+      <p class="hero-sub">Help us keep Laguna BelAir 4 safe and well-maintained <br> by reporting concerns or incidents you've observed.</p>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════
+       MAIN CONTENT
+  ═══════════════════════════════════════ -->
+  <main class="page-main">
+
+    <!-- Important Notice -->
+    <div class="notice-section">
+      <h2><i class="fas fa-exclamation-circle"></i> Important Notice</h2>
+      <p>This form is intended for reporting non-emergency concerns or incidents within the village.</p>
+      <p class="emergency-notice">If the situation involves an immediate threat to life, safety, or property, please contact emergency services right away.</p>
+      <div class="emergency-contacts">
+        <p><strong>Emergency Contacts:</strong></p>
+        <ul>
+          <li>National Emergency Hotline: 911</li>
+          <li>Village Security Office: xxx-xxx-xxx</li>
+        </ul>
+      </div>
+      <p class="submission-note">Submitted reports are reviewed during regular office hours and will be handled according to village policies and available resources.</p>
+    </div>
+
+    <!-- FORM -->
+    <form class="report-form" id="reportForm" novalidate>
+
+      <!-- Hidden fields populated by JS -->
+      <input type="hidden" id="f-timestamp"  name="timestamp">
+      <input type="hidden" id="f-latitude"   name="latitude">
+      <input type="hidden" id="f-longitude"  name="longitude">
+
+      <!-- ─── DESCRIBE ─── -->
+      <div class="form-card" data-section="1">
+        <div class="card-header">
+          <div>
+            <h2>Describe the Issue</h2>
+            <p class="card-hint">Be as specific as possible - what happened, when, and what you observed.</p>
+          </div>
+        </div>
+
+        <div class="field-block">
+          <label for="f-description" class="field-label">
+            What's happening? <span class="req" aria-label="required">*</span>
+          </label>
+          <div class="textarea-wrap">
+            <textarea
+              id="f-description"
+              name="description"
+              class="field-textarea"
+              rows="6"
+              maxlength="2000"
+              placeholder="Describe what happened in as much detail as possible — include what you saw, heard, or noticed, and approximately when it occurred."
+              required
+            ></textarea>
+            <span class="char-counter"><span id="char-count">0</span> / 2000</span>
+          </div>
+          <p class="field-note">
+            <i class="fas fa-robot"></i>
+            Our staff system will automatically classify the type, priority, and visibility of your report based on your description.
+          </p>
+        </div>
+
+        <!-- Issue Category (optional, broad — NLP still primary) -->
+        <div class="field-block">
+          <label for="f-category" class="field-label">
+            Issue Category
+            <span class="badge-optional">Optional</span>
+          </label>
+          <select id="f-category" name="category" class="field-select">
+            <option value="">Select a broad category (optional)</option>
+            <option value="maintenance">Maintenance / Infrastructure</option>
+            <option value="cleanliness">Cleanliness / Waste</option>
+            <option value="safety">Safety / Hazard</option>
+            <option value="security">Security Concern</option>
+            <option value="noise">Noise Complaint</option>
+            <option value="parking">Parking / Traffic</option>
+            <option value="others">Others</option>
+          </select>
+          <p class="field-note">
+            <i class="fas fa-circle-info"></i>
+            This is a broad hint only. Our staff's NLP system will perform detailed classification regardless of your selection.
+          </p>
+        </div>
+      </div>
+
+      <!-- ─── LOCATION ─── -->
+      <div class="form-card" data-section="2">
+        <div class="card-header">
+          <div>
+            <h2>Location of the Concern</h2>
+            <p class="card-hint">Address where the concern/incident exists (or closest to).</p>
+          </div>
+        </div>
+
+        <p class="search-label">Search location by:</p>
+        <div class="radio-group">
+          <label class="radio-label">
+            <input type="radio" name="search-type" value="address" checked onchange="toggleLocationMethod()">
+            Street / Address
+          </label>
+          <label class="radio-label">
+            <input type="radio" name="search-type" value="map" onchange="toggleLocationMethod()">
+            Pin on Map
+          </label>
+        </div>
+
+        <!-- Address fields -->
+        <div id="address-fields" class="address-fields">
+          <div class="field-row-2">
+            <div class="field-block" style="margin-bottom:0;">
+              <label for="f-address" class="field-label">Address</label>
+              <input type="text" id="f-address" name="address" class="field-input" placeholder="House / Block number">
+            </div>
+            <div class="field-block" style="margin-bottom:0;">
+              <label for="f-street" class="field-label">Street</label>
+              <input type="text" id="f-street" name="street" class="field-input" placeholder="e.g., Alpine St.">
+            </div>
+          </div>
+        </div>
+
+        <!-- Map -->
+        <div id="map-container" class="map-container" style="display:none;">
+          <div class="map-wrapper">
+            <div id="map" class="leaflet-map"></div>
+            <div class="map-overlay-hint" id="mapHint">
+              <i class="fas fa-hand-pointer"></i>
+              <span>Click or drag the pin to mark the exact location</span>
+            </div>
+          </div>
+
+          <div class="location-status" id="locationStatus" aria-live="polite">
+            <i class="fas fa-circle-info"></i>
+            <span id="locationStatusText">No location selected yet.</span>
+          </div>
+
+          <button type="button" class="btn-locate" id="btnLocate">
+            <i class="fas fa-crosshairs"></i> Use My Current Location
+          </button>
+        </div>
+
+        <!-- Additional location details (always visible) -->
+        <div class="field-block" style="margin-top:20px;">
+          <label for="f-additional-location" class="field-label">Additional Location Details</label>
+          <input type="text" id="f-additional-location" name="additionalLocation" class="field-input"
+            placeholder="e.g., Near the clubhouse, Corner of Alpine St., in front of Block 5">
+        </div>
+      </div>
+
+      <!-- ─── ADDITIONAL DETAILS ─── -->
+      <div class="form-card" data-section="3">
+        <div class="card-header">
+          <div>
+            <h2>Additional Details</h2>
+            <p class="card-hint">Optional — but helps our team act faster.</p>
+          </div>
+        </div>
+
+        <!-- Photo Upload -->
+        <div class="field-block">
+          <label class="field-label" for="f-photo">
+            Upload Photo
+            <span class="badge-optional">Optional</span>
+          </label>
+          <p class="field-note" style="margin-bottom:12px;">
+            <i class="fas fa-camera"></i>
+            For maintenance concerns, this image may be used as a <strong>"Before"</strong> photo and shown publicly on the Community Map once resolved.
+          </p>
+
+          <div class="upload-zone" id="uploadZone" tabindex="0" role="button" aria-label="Upload photo">
+            <input type="file" id="f-photo" name="photo" accept="image/*" style="display:none;">
+            <div class="upload-idle" id="uploadIdle">
+              <i class="fas fa-cloud-arrow-up"></i>
+              <span>Click to upload or drag &amp; drop</span>
+              <small>JPG, PNG, WEBP — max 10 MB</small>
+            </div>
+            <div class="upload-preview" id="uploadPreview" style="display:none;">
+              <img id="previewImg" src="" alt="Preview">
+              <button type="button" class="remove-photo" id="removePhoto" title="Remove photo">
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Anonymous -->
+        <div class="field-block">
+          <label class="toggle-row" for="f-anonymous">
+            <div class="toggle-text">
+              <span class="field-label" style="margin-bottom:2px;">Submit Anonymously</span>
+              <small>Your personal information will not be shown publicly or shared with other residents.</small>
+            </div>
+            <div class="toggle-switch">
+              <input type="checkbox" id="f-anonymous" name="anonymous" role="switch">
+              <span class="toggle-thumb"></span>
+            </div>
+          </label>
+        </div>
+
+        <!-- Reporter (shown only when NOT anonymous) -->
+        <div id="reporterSection" class="reporter-section">
+          <div class="field-row-2">
+            <div class="field-block" style="margin-bottom:0;">
+              <label for="f-name" class="field-label">Your Name</label>
+              <input type="text" id="f-name" name="reporterName" class="field-input" placeholder="Full name">
+            </div>
+            <div class="field-block" style="margin-bottom:0;">
+              <label for="f-contact" class="field-label">Contact (optional)</label>
+              <input type="text" id="f-contact" name="reporterContact" class="field-input" placeholder="Phone or email">
+            </div>
+          </div>
+          <p class="field-note" style="margin-top:10px;">
+            <i class="fas fa-lock"></i>
+            Contact details are visible only to HOA staff and will not be shared publicly.
+          </p>
+        </div>
+      </div>
+
+      <!-- ─── SUBMIT ─── -->
+      <div class="form-card submit-card" data-section="4">
+        <div class="confirm-row">
+          <label class="checkbox-row" for="f-confirm">
+            <input type="checkbox" id="f-confirm" name="confirm" required>
+            <span class="custom-check"><i class="fas fa-check"></i></span>
+            <span>I confirm that the information provided is accurate to the best of my knowledge, and I understand that false reports may be subject to administrative action.</span>
+          </label>
+        </div>
+
+        <button type="submit" class="btn-submit" id="btnSubmit" disabled>
+          <span class="btn-submit-text">
+            <i class="fas fa-paper-plane"></i>
+            Submit Report
+          </span>
+          <span class="btn-submit-loading" style="display:none;">
+            <i class="fas fa-spinner fa-spin"></i>
+            Submitting…
+          </span>
+        </button>
+
+        <p class="submit-note">
+          Reports are reviewed during office hours. You will be notified once staff have processed your submission.
+        </p>
+      </div>
+
+    </form>
+  </main>
+
+  <!-- ═══════════════════════════════════════
+       SUCCESS MODAL
+  ═══════════════════════════════════════ -->
+  <div class="modal-overlay" id="successModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle" style="display:none;">
+    <div class="modal-card">
+      <div class="modal-icon-wrap">
+        <div class="modal-icon-ring"></div>
+        <i class="fas fa-check modal-icon"></i>
+      </div>
+      <h2 id="modalTitle">Report Received</h2>
+      <p>Thank you for your report. Our team will review and process it accordingly.</p>
+      <div class="modal-ref" id="modalRef">REF-000000</div>
+      <p class="modal-ref-note">Save this reference number for any follow-up inquiries.</p>
+      <div class="modal-actions">
+        <button class="btn-submit" onclick="closeModal()">
+          <i class="fas fa-plus"></i> Submit Another Report
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       FOOTER
+  ═══════════════════════════════════════ -->
+  <footer class="footer">
+    <div class="footer-content">
+      <div class="footer-section footer-logo-section">
+        <a href="index.html" class="footer-logo-link">
+          <img src="LBAlogo.png" alt="Bel-Air Village Logo" class="footer-logo">
+        </a>
+      </div>
+      <div class="footer-section">
+        <h3>Contact Us</h3>
+        <ul class="footer-links">
+          <li><i class="fas fa-map-marker-alt"></i> P3 B15 Alpine St. LBA4, Brgy. Don Jose, Sta. Rosa, Laguna 4026</li>
+          <li><i class="fas fa-phone"></i> (+63) 09398588138</li>
+          <li><i class="fas fa-phone"></i> 0495603050</li>
+        </ul>
+      </div>
+      <div class="footer-section">
+        <h3>Quick Links</h3>
+        <ul class="footer-links">
+          <li><a href="about-laguna-belair.html">About Us</a></li>
+          <li><a href="contacts.html">Contact Us</a></li>
+          <li><a href="faq.html">FAQs</a></li>
+          <li><a href="privacy-policy.html">Privacy Policy</a></li>
+        </ul>
+      </div>
+      <div class="footer-section">
+        <h3>Site Links</h3>
+        <ul class="footer-links">
+          <li><a href="announcement.html">Announcements</a></li>
+          <li><a href="calendars.html">Community Calendar</a></li>
+          <li><a href="forms-documents.html">Forms &amp; Documents</a></li>
+          <li><a href="report-concerns.html">Report a Concern</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>&copy; <span id="footerYear"></span> Laguna BelAir 4. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script src="report-concerns.js"></script>
+  <script>
+    // Set current year in footer
+    const footerYearSpan = document.getElementById('footerYear');
+    if (footerYearSpan) footerYearSpan.textContent = new Date().getFullYear();
+    // Mobile dropdown toggle support
+    document.querySelectorAll('.dropdown').forEach(dropdown => {
+      const toggle = dropdown.querySelector('.dropdown-toggle');
+      if (!toggle) return;
+      toggle.addEventListener('click', (e) => {
+        e.preventDefault();
+        const isOpen = dropdown.classList.contains('dropdown-open');
+        document.querySelectorAll('.dropdown').forEach(d => d.classList.remove('dropdown-open'));
+        if (!isOpen) dropdown.classList.add('dropdown-open');
+      });
+    });
+    document.addEventListener('click', (e) => {
+      document.querySelectorAll('.dropdown').forEach(d => {
+        if (!d.contains(e.target)) d.classList.remove('dropdown-open');
+      });
+    });
+  </script>
+</body>
+</html>

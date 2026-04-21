@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Community Exchange - Laguna BelAir 4</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="advertisements.css">
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════
+  HEADER / NAV
+═══════════════════════════════════════ -->
+<div class="top-header-container">
+  <div class="logo-section">
+    <a href="index.html" class="logo-link">
+      <img src="LBAlogo.png" alt="Laguna BelAir 4 Logo" class="logo-image">
+    </a>
+  </div>
+  <div class="header-center-wrapper">
+    <div class="navbar-two-rows">
+      <div class="navbar-top-row">
+        <a href="login.html"><i class="fas fa-sign-in-alt"></i> Login</a>
+        <span class="nav-sep">|</span>
+        <a href="register.html"><i class="fas fa-user-plus"></i> Register</a>
+      </div>
+      <div class="navbar-bottom-row">
+        <a href="./index.html" class="nav-link">Home</a>
+        <div class="dropdown">
+          <a href="#" class="dropdown-toggle">About <i class="fas fa-chevron-down"></i></a>
+          <div class="dropdown-menu">
+            <a href="about-laguna-belair.html">Laguna BelAir 4</a>
+            <a href="committees-bods.html">Committees / BODs</a>
+            <a href="landmarks.html">Landmarks</a>
+            <a href="contacts.html">Contacts</a>
+          </div>
+        </div>
+        <div class="dropdown">
+          <a href="#" class="dropdown-toggle">Community <i class="fas fa-chevron-down"></i></a>
+          <div class="dropdown-menu">
+            <a href="announcement.html">Announcements</a>
+            <a href="forums.html">Forums / Discussions</a>
+            <a href="advertisements.html" class="active">Community Exchange</a>
+            <a href="calendars.html">Calendars</a>
+            <a href="meeting-agendas.html">Meeting Records</a>
+            <a href="community-map.html">Community Map</a>
+          </div>
+        </div>
+        <div class="dropdown">
+          <a href="#" class="dropdown-toggle">Services <i class="fas fa-chevron-down"></i></a>
+          <div class="dropdown-menu">
+            <a href="reserve.html">Reserve Amenities</a>
+            <a href="report-concerns.html">Report an Issue</a>
+          </div>
+        </div>
+        <div class="dropdown">
+          <a href="#" class="dropdown-toggle">Others <i class="fas fa-chevron-down"></i></a>
+          <div class="dropdown-menu">
+            <a href="forms-documents.html">Forms &amp; Documents</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+  HERO SECTION
+═══════════════════════════════════════ -->
+<section class="hero-section">
+  <div class="hero-inner">
+    <h1 class="hero-title">Community Exchange</h1>
+    <p class="hero-sub">Post or find services, items, and local opportunities within the village</p>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════
+  MAIN CONTENT
+═══════════════════════════════════════ -->
+<main class="main-container">
+
+  <!-- ACTION BAR -->
+  <div class="action-bar">
+    <button class="btn-create" id="openCreateModal">
+      <i class="fas fa-plus"></i> Create Post
+    </button>
+    <div class="action-bar-right">
+      <div class="search-wrap">
+        <i class="fas fa-search search-icon"></i>
+        <input type="text" id="searchInput" class="search-input" placeholder="Search posts…" aria-label="Search posts">
+        <button class="search-clear" id="searchClear" aria-label="Clear search" title="Clear">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- FILTER TABS -->
+  <div class="filter-bar" id="filterTabs" role="tablist" aria-label="Filter posts by category">
+    <button class="filter-tab active" data-filter="all" role="tab" aria-selected="true">All</button>
+    <button class="filter-tab" data-filter="Business Ad" role="tab" aria-selected="false">
+      <i class="fas fa-store"></i> Business
+    </button>
+    <button class="filter-tab" data-filter="Selling" role="tab" aria-selected="false">
+      <i class="fas fa-tag"></i> Selling
+    </button>
+    <button class="filter-tab" data-filter="Services" role="tab" aria-selected="false">
+      <i class="fas fa-hands-helping"></i> Services
+    </button>
+    <button class="filter-tab" data-filter="Looking For" role="tab" aria-selected="false">
+      <i class="fas fa-search-plus"></i> Looking For
+    </button>
+  </div>
+
+  <!-- RESULTS META -->
+  <p class="results-meta" id="resultsCount"></p>
+
+  <!-- POST FEED -->
+  <div class="post-feed" id="postFeed"></div>
+
+  <!-- EMPTY STATE -->
+  <div class="empty-state" id="emptyState">
+    <div class="empty-icon"><i class="fas fa-clipboard-list"></i></div>
+    <h3>No posts found</h3>
+    <p>Try adjusting your search or filter — or be the first to post something!</p>
+    <button class="btn-create" id="openCreateFromEmpty">
+      <i class="fas fa-plus"></i> Create Post
+    </button>
+  </div>
+
+</main>
+
+<!-- ═══════════════════════════════════════
+  MODAL: VIEW POST DETAILS
+═══════════════════════════════════════ -->
+<div class="modal-overlay" id="detailModal" role="dialog" aria-modal="true" aria-labelledby="detailTitle">
+  <div class="modal-box modal-detail">
+    <button class="modal-close" id="closeDetailModal" aria-label="Close modal">
+      <i class="fas fa-times"></i>
+    </button>
+
+    <div class="detail-images" id="detailImages"></div>
+
+    <div class="detail-meta">
+      <span class="cat-badge" id="detailBadge"></span>
+      <span class="detail-date" id="detailDate"></span>
+    </div>
+
+    <h2 class="detail-title" id="detailTitle"></h2>
+
+    <div class="detail-poster">
+      <i class="fas fa-user-circle"></i>
+      <span id="detailPoster"></span>
+    </div>
+
+    <div class="detail-extras" id="detailExtras"></div>
+
+    <p class="detail-desc" id="detailDesc"></p>
+
+    <!-- Contact Section -->
+    <div class="contact-section" id="detailContact">
+      <div class="contact-header">
+        <h4><i class="fas fa-address-card"></i> Contact Information</h4>
+        <button class="toggle-contact-btn" id="toggleContactBtn">
+          <i class="fas fa-eye"></i> Show Contact
+        </button>
+      </div>
+      <div class="contact-body" id="contactBody">
+        <div class="contact-items" id="contactItems"></div>
+        <div class="safety-note">
+          <i class="fas fa-exclamation-triangle"></i>
+          <span>Always transact safely. Meet in public places and bring someone you trust.</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="detail-footer">
+      <button class="btn-report" id="detailReportBtn">
+        <i class="fas fa-flag"></i> Report Post
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+  MODAL: CREATE POST
+═══════════════════════════════════════ -->
+<div class="modal-overlay" id="createModal" role="dialog" aria-modal="true" aria-labelledby="createModalTitle">
+  <div class="modal-box modal-create">
+    <div class="modal-header">
+      <h2 id="createModalTitle"><i class="fas fa-plus-circle"></i> New Post</h2>
+      <button class="modal-close" id="closeCreateModal" aria-label="Close modal">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <form class="create-form" id="createForm" novalidate>
+
+      <!-- Post Type -->
+      <div class="form-group">
+        <label for="postType">Post Type <span class="req">*</span></label>
+        <select id="postType" name="postType" required>
+          <option value="">— Select a type —</option>
+          <option value="Business Ad">Business Ad</option>
+          <option value="Selling">Selling</option>
+          <option value="Services">Services</option>
+          <option value="Looking For">Looking For</option>
+        </select>
+        <span class="field-error" id="err-postType"></span>
+      </div>
+
+      <!-- Title -->
+      <div class="form-group">
+        <label for="postTitle">Title <span class="req">*</span></label>
+        <input type="text" id="postTitle" name="postTitle" placeholder="e.g., Professional Plumbing Services" maxlength="80" required>
+        <div class="input-meta">
+          <span class="field-error" id="err-postTitle"></span>
+          <span class="char-count" id="titleCount">0 / 80</span>
+        </div>
+      </div>
+
+      <!-- Description -->
+      <div class="form-group">
+        <label for="postDesc">Description <span class="req">*</span></label>
+        <textarea id="postDesc" name="postDesc" placeholder="Describe what you're offering or looking for…" rows="4" maxlength="600" required></textarea>
+        <div class="input-meta">
+          <span class="field-error" id="err-postDesc"></span>
+          <span class="char-count" id="descCount">0 / 600</span>
+        </div>
+      </div>
+
+      <!-- Conditional: Price (Selling only) -->
+      <div class="form-group cond-field" id="field-price">
+        <label for="postPrice">Price</label>
+        <input type="text" id="postPrice" name="postPrice" placeholder="e.g., ₱500 or Free / Negotiable">
+      </div>
+
+
+      <!-- Conditional: Availability (Services / Business Ad) -->
+      <div class="form-group cond-field" id="field-availability">
+        <label for="postAvailability">Availability</label>
+        <input type="text" id="postAvailability" name="postAvailability" placeholder="e.g., Weekdays 8am – 5pm">
+      </div>
+
+      <!-- Contact Info -->
+      <fieldset class="contact-fieldset">
+        <legend>Contact Info <span class="req">*</span> <small>— at least one required</small></legend>
+        <div class="contact-fields-grid">
+          <div class="form-group">
+            <label for="contactName"><i class="fas fa-user"></i> Name</label>
+            <input type="text" id="contactName" name="contactName" placeholder="Your name or business name">
+          </div>
+          <div class="form-group">
+            <label for="contactPhone"><i class="fas fa-phone"></i> Phone</label>
+            <input type="tel" id="contactPhone" name="contactPhone" placeholder="09XX XXX XXXX">
+          </div>
+          <div class="form-group">
+            <label for="contactEmail"><i class="fas fa-envelope"></i> Email</label>
+            <input type="email" id="contactEmail" name="contactEmail" placeholder="your@email.com">
+          </div>
+          <div class="form-group">
+            <label for="contactLink"><i class="fas fa-link"></i> External Link</label>
+            <input type="url" id="contactLink" name="contactLink" placeholder="https://facebook.com/yourpage">
+          </div>
+        </div>
+        <span class="field-error" id="err-contact"></span>
+      </fieldset>
+
+      <!-- Image Upload -->
+      <div class="form-group">
+        <label>Images <small>— optional, max 3</small></label>
+        <div class="image-upload-area" id="imageUploadArea">
+          <input type="file" id="postImages" accept="image/*" multiple class="file-input">
+          <label for="postImages" class="file-drop-label">
+            <i class="fas fa-cloud-upload-alt"></i>
+            <span>Click to upload images</span>
+            <small>JPG, PNG, WEBP · Max 5MB each</small>
+          </label>
+        </div>
+        <div class="image-previews" id="imagePreviews"></div>
+      </div>
+
+
+      <div class="form-actions">
+        <button type="button" class="btn-secondary" id="cancelCreate">Cancel</button>
+        <button type="submit" class="btn-primary">
+          <i class="fas fa-paper-plane"></i> Post
+        </button>
+      </div>
+
+    </form>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+  MODAL: REPORT POST
+═══════════════════════════════════════ -->
+<div class="modal-overlay" id="reportModal" role="dialog" aria-modal="true">
+  <div class="modal-box modal-sm">
+    <div class="modal-header">
+      <h2><i class="fas fa-flag"></i> Report Post</h2>
+      <button class="modal-close" id="closeReportModal" aria-label="Close modal">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div class="form-group">
+      <label for="reportReason">Reason <span class="req">*</span></label>
+      <select id="reportReason">
+        <option value="">— Select a reason —</option>
+        <option>Spam or scam</option>
+        <option>Inappropriate content</option>
+        <option>False information</option>
+        <option>Harassment</option>
+        <option>Other</option>
+      </select>
+      <span class="field-error" id="err-reportReason"></span>
+    </div>
+    <div class="form-group">
+      <label for="reportDetails">Additional details <small>— optional</small></label>
+      <textarea id="reportDetails" rows="3" placeholder="Add more context if needed…"></textarea>
+    </div>
+    <div class="form-actions">
+      <button class="btn-secondary" id="cancelReport">Cancel</button>
+      <button class="btn-primary btn-danger" id="submitReport">
+        <i class="fas fa-flag"></i> Submit Report
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast" role="alert" aria-live="polite"></div>
+
+<!-- ═══════════════════════════════════════
+  FOOTER
+═══════════════════════════════════════ -->
+<footer class="footer">
+  <div class="footer-content">
+    <div class="footer-section footer-logo-section">
+      <a href="index.html" class="footer-logo-link">
+        <img src="LBAlogo.png" alt="Bel-Air Village Logo" class="footer-logo">
+      </a>
+    </div>
+    <div class="footer-section">
+      <h3>Contact Us</h3>
+      <ul class="footer-links">
+        <li><i class="fas fa-map-marker-alt"></i> P3 B15 Alpine St. LBA4, Brgy. Don Jose, Sta. Rosa, Laguna 4026</li>
+        <li><i class="fas fa-phone"></i> (+63) 09398588138</li>
+        <li><i class="fas fa-phone"></i> 0495603050</li>
+      </ul>
+    </div>
+    <div class="footer-section">
+      <h3>Quick Links</h3>
+      <ul class="footer-links">
+        <li><a href="about-laguna-belair.html">About Us</a></li>
+        <li><a href="contacts.html">Contact Us</a></li>
+        <li><a href="faq.html">FAQs</a></li>
+        <li><a href="privacy-policy.html">Privacy Policy</a></li>
+      </ul>
+    </div>
+    <div class="footer-section">
+      <h3>Site Links</h3>
+      <ul class="footer-links">
+        <li><a href="announcement.html">Announcements</a></li>
+        <li><a href="calendars.html">Community Calendar</a></li>
+        <li><a href="forms-documents.html">Forms &amp; Documents</a></li>
+        <li><a href="report-concerns.html">Report a Concern</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <p>&copy; <span id="current-year"></span> Laguna BelAir 4. All rights reserved.</p>
+  </div>
+</footer>
+
+<script src="advertisements.js"></script>
+</body>
+</html>
