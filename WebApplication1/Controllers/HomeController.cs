@@ -1,25 +1,76 @@
 using Microsoft.AspNetCore.Mvc;
-using System.Diagnostics;
+using WebApplication1.Repository;
+using Microsoft.AspNetCore.Http;
+using System.Threading.Tasks;
 using WebApplication1.Models;
 
 namespace WebApplication1.Controllers
 {
     public class HomeController : Controller
     {
-        public IActionResult Index()
+        private readonly IRepo _repo;
+
+        public HomeController(IRepo repo)
         {
-            return View();
+            _repo = repo;
+        }
+        public IActionResult aboutLagunaBelAir() => View();
+        public IActionResult adminDashboard() => View();
+        public IActionResult advertisements() => View();
+        public IActionResult announcement() => View();
+        public IActionResult calendars() => View();
+        public IActionResult committeesBods() => View();
+        public IActionResult communityMap() => View();
+        public IActionResult contacts() => View();
+        public IActionResult forgotPassword() => View();
+        public IActionResult formsDocuments() => View();
+        public IActionResult forums() => View();
+        public IActionResult Index() => View();
+        public IActionResult landMarks() => View();
+        public IActionResult meetingAgendas() => View();
+        public IActionResult register() => View();
+        public IActionResult reportConcerns () => View();
+        public IActionResult reserve () => View();
+        public IActionResult staffDashboard () => View();
+        public IActionResult vehiclePetRegistration () => View();
+        // GET: /login
+        [HttpGet]
+        [Route("login")]
+        public IActionResult login()
+        {
+            // explicit path so the exact view file is rendered
+            return View("~/Views/Home/login.cshtml");
         }
 
-        public IActionResult Privacy()
+        
+        [HttpPost("login")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Login(string username, string password)
         {
-            return View();
+            if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
+            {
+                ModelState.AddModelError(string.Empty, "Username and password are required.");
+                return View("~/Views/Home/login.cshtml");
+            }
+
+            var user = await _repo.AuthenticateAsync(username, password);
+            if (user == null)
+            {
+                ModelState.AddModelError(string.Empty, "Invalid credentials.");
+                return View("~/Views/Home/login.cshtml");
+            }
+
+            HttpContext.Session.SetInt32("UserId", user.Id);
+            HttpContext.Session.SetString("Username", user.Username);
+
+            return RedirectToAction("adminDashboard");
         }
 
-        [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-        public IActionResult Error()
+        // Example: show users list (keeps DB usage)
+        public async Task<IActionResult> Users()
         {
-            return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+            var users = await _repo.GetAllAsync();
+            return View(users);
         }
     }
 }

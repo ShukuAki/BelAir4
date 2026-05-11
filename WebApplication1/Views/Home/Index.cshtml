@@ -1,305 +1,308 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Home - Laguna BelAir 4</title>
-<!-- Fonts: Playfair Display + Outfit (matching advertisements) -->
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<!-- Icons -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<!-- Styles -->
-<link rel="stylesheet" href="index.css">
-</head>
-<body>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home - Laguna BelAir 4</title>
+    <!-- Fonts: Playfair Display + Outfit (matching advertisements) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Styles -->
+    <link rel="stylesheet" href="~/css/index.css">
+    </head>
+    <body>
 
-<!-- ═══════════════════════════════════════
+        <!-- ═══════════════════════════════════════
   HEADER / NAV (updated to match advertisements style)
 ═══════════════════════════════════════ -->
-<div class="top-header-container">
-  <div class="logo-section">
-    <a href="index.html" class="logo-link">
-      <img src="LBAlogo.png" alt="Laguna BelAir 4 Logo" class="logo-image">
-    </a>
-  </div>
-  <div class="header-center-wrapper">
-    <div class="navbar-two-rows">
-      <div class="navbar-top-row">
-        <a href="login.html"><i class="fas fa-sign-in-alt"></i> Login</a>
-        <span class="nav-sep">|</span>
-        <a href="register.html"><i class="fas fa-user-plus"></i> Register</a>
-      </div>
-      <div class="navbar-bottom-row">
-        <a href="./index.html" class="nav-link active">Home</a>
-        <div class="dropdown">
-          <a href="#" class="dropdown-toggle">About <i class="fas fa-chevron-down"></i></a>
-          <div class="dropdown-menu">
-            <a href="about-laguna-belair.html">Laguna BelAir 4</a>
-            <a href="committees-bods.html">Committees / BODs</a>
-            <a href="landmarks.html">Landmarks</a>
-            <a href="contacts.html">Contacts</a>
-          </div>
-        </div>
-        <div class="dropdown">
-          <a href="#" class="dropdown-toggle">Community <i class="fas fa-chevron-down"></i></a>
-          <div class="dropdown-menu">
-            <a href="announcement.html">Announcements</a>
-            <a href="forums.html">Forums / Discussions</a>
-            <a href="advertisements.html">Community Exchange</a>
-            <a href="calendars.html">Calendars</a>
-            <a href="meeting-agendas.html">Meeting Records</a>
-            <a href="community-map.html">Community Map</a>
-          </div>
-        </div>
-        <div class="dropdown">
-          <a href="#" class="dropdown-toggle">Services <i class="fas fa-chevron-down"></i></a>
-          <div class="dropdown-menu">
-            <a href="reserve.html">Reserve Amenities</a>
-            <a href="report-concerns.html">Report an Issue</a>
-          </div>
-        </div>
-        <div class="dropdown">
-          <a href="#" class="dropdown-toggle">Others <i class="fas fa-chevron-down"></i></a>
-          <div class="dropdown-menu">
-            <a href="forms-documents.html">Forms &amp; Documents</a>
-            <a href="vehicle-pet-registration.html">Register Pet/Vehicle</a>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
+        <div class="top-header-container">
+            <!-- Logo Section -->
+            <div class="logo-section">
+                <a asp-controller="Home" asp-action="Index" class="logo-link">
+                    <img src="~/assets/LBAlogo.png" alt="Bel-Air Village Logo" class="logo-image">
+                    </a>
+                </div>
+                <!-- Navbar Wrapper -->
+                <div class="header-center-wrapper">
+                    <div class="navbar-two-rows">
+                        <!-- Top Row: Utility Links -->
+                        <div class="navbar-top-row">
+                            <a asp-controller="Home" asp-action="login"><i class="fas fa-sign-in-alt"></i> Login</a>
+                            <span class="nav-separator">|</span>
+                            <a asp-controller="Home" asp-action="register"><i class="fas fa-user-plus"></i> Register</a>
+                        </div>
+                        <!-- Bottom Row: Main Navigation -->
+                        <div class="navbar-bottom-row">
+                            <a asp-controller="Home" asp-action="Index" class="nav-link">Home</a>
+                            <div class="dropdown">
+                                <a href="#" class="dropdown-toggle">About <i class="fas fa-chevron-down"></i></a>
+                                <div class="dropdown-menu">
+                                    <a asp-controller="Home" asp-action="aboutlagunabelair">Laguna BelAir 4</a>
+                                    <a asp-controller="Home" asp-action="committeesBods">Committees/BODs</a>
+                                    <a asp-controller="Home" asp-action="landMarks">Landmarks</a>
+                                    <a asp-controller="Home" asp-action="contacts">Contacts</a>
+                                </div>
+                            </div>
+                            <div class="dropdown">
+                                <a href="#" class="dropdown-toggle">Community <i class="fas fa-chevron-down"></i></a>
+                                <div class="dropdown-menu">
+                                    <a asp-controller="Home" asp-action="announcement">Announcements</a>
+                                    <a asp-controller="Home" asp-action="forums">Forums/Discussions</a>
+                                    <a asp-controller="Home" asp-action="advertisements">Advertisements</a>
+                                    <a asp-controller="Home" asp-action="calendars">Calendars</a>
+                                    <a asp-controller="Home" asp-action="meetingAgendas">Meeting Record/Governance</a>
+                                    <a asp-controller="Home" asp-action="communityMap">Community Map</a>
+                                </div>
+                            </div>
+                            <div class="dropdown">
+                                <a href="#" class="dropdown-toggle">Services <i class="fas fa-chevron-down"></i></a>
+                                <div class="dropdown-menu">
+                                    <a asp-controller="Home" asp-action="reserve">Reserve Amenities</a>
+                                    <a asp-controller="Home" asp-action="reportConcerns">Report Concerns/Incidents</a>
+                                </div>
+                            </div>
+                            <div class="dropdown">
+                                <a href="#" class="dropdown-toggle">Others <i class="fas fa-chevron-down"></i></a>
+                                <div class="dropdown-menu">
+                                    <a asp-controller="Home" asp-action="formsDocuments">Downloadable Forms and Documents</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-<!-- ═══════════════════════════════════════
+            <!-- ═══════════════════════════════════════
   HERO SECTION (updated with subtitle paragraph)
 ═══════════════════════════════════════ -->
-<section class="hero-section">
-  <div class="background-image"></div>
-  <div class="hero-overlay">
-    <div class="hero-content">
-      <h1 class="hero-title">
-        <span class="hero-line">WELCOME TO</span>
-        <span class="hero-name">BEL-AIR VILLAGE 4</span>
-      </h1>
-      <p class="hero-subtitle">A premier residential community in Santa Rosa, Laguna <br> where safety, harmony, and active living thrive.</p>
-      <div class="search-container">
-        <input type="text" placeholder="Search site..." class="search-input">
-        <button class="search-button">
-          <i class="fas fa-search"></i>
-        </button>
-      </div>
-    </div>
-  </div>
-</section>
+            <section class="hero-section">
+                <div class="background-image"></div>
+                <div class="hero-overlay">
+                    <div class="hero-content">
+                        <h1 class="hero-title">
+                            <span class="hero-line">WELCOME TO</span>
+                            <span class="hero-name">BEL-AIR VILLAGE 4</span>
+                        </h1>
+                        <p class="hero-subtitle">A premier residential community in Santa Rosa, Laguna <br> where safety, harmony, and active living thrive.</p>
+                        <div class="search-container">
+                            <input type="text" placeholder="Search site..." class="search-input">
+                            <button class="search-button">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
 
-<!-- ═══════════════════════════════════════
+            <!-- ═══════════════════════════════════════
   MAIN CONTENT CONTAINER
 ═══════════════════════════════════════ -->
-<div class="main-container">
-  <!-- Quick Action Circles -->
-  <section class="quick-actions">
-    <div class="action-circle">
-      <a href="report-concerns.html" style="text-decoration: none; color: inherit;">
-        <div class="circle-icon">
-          <i class="fas fa-exclamation-triangle"></i>
-        </div>
-        <p>Report a Concern</p>
-      </a>
-    </div>
-    <div class="action-circle">
-      <a href="reserve.html" style="text-decoration: none; color: inherit;">
-        <div class="circle-icon">
-          <i class="fas fa-calendar-check"></i>
-        </div>
-        <p>Reserve Amenities</p>
-      </a>
-    </div>
-    <div class="action-circle">
-      <a href="calendars.html" style="text-decoration: none; color: inherit;">
-        <div class="circle-icon">
-          <i class="fas fa-calendar-alt"></i>
-        </div>
-        <p>Community Calendar</p>
-      </a>
-    </div>
-    <div class="action-circle">
-      <a href="forums.html" style="text-decoration: none; color: inherit;">
-        <div class="circle-icon">
-          <i class="fas fa-comments"></i>
-        </div>
-        <p>Forums & Discussions</p>
-      </a>
-    </div>
-    <div class="action-circle">
-      <a href="contacts.html" style="text-decoration: none; color: inherit;">
-        <div class="circle-icon">
-          <i class="fas fa-phone-alt"></i>
-        </div>
-        <p>Contact Us</p>
-      </a>
-    </div>
-  </section>
+            <div class="main-container">
+                <!-- Quick Action Circles -->
+                <section class="quick-actions">
+                    <div class="action-circle">
+                        <a href="report-concerns.html" style="text-decoration: none; color: inherit;">
+                            <div class="circle-icon">
+                                <i class="fas fa-exclamation-triangle"></i>
+                            </div>
+                            <p>Report a Concern</p>
+                        </a>
+                    </div>
+                    <div class="action-circle">
+                        <a href="reserve.html" style="text-decoration: none; color: inherit;">
+                            <div class="circle-icon">
+                                <i class="fas fa-calendar-check"></i>
+                            </div>
+                            <p>Reserve Amenities</p>
+                        </a>
+                    </div>
+                    <div class="action-circle">
+                        <a href="calendars.html" style="text-decoration: none; color: inherit;">
+                            <div class="circle-icon">
+                                <i class="fas fa-calendar-alt"></i>
+                            </div>
+                            <p>Community Calendar</p>
+                        </a>
+                    </div>
+                    <div class="action-circle">
+                        <a href="forums.html" style="text-decoration: none; color: inherit;">
+                            <div class="circle-icon">
+                                <i class="fas fa-comments"></i>
+                            </div>
+                            <p>Forums & Discussions</p>
+                        </a>
+                    </div>
+                    <div class="action-circle">
+                        <a href="contacts.html" style="text-decoration: none; color: inherit;">
+                            <div class="circle-icon">
+                                <i class="fas fa-phone-alt"></i>
+                            </div>
+                            <p>Contact Us</p>
+                        </a>
+                    </div>
+                </section>
 
-  <!-- Quick Links Grid - 5 Items Only -->
-  <section class="links-section">
-    <h2 class="section-title">QUICK LINKS</h2>
-    <div class="links-grid">
-      <div class="link-box">
-        <a href="announcement.html" style="text-decoration: none; color: inherit;">
-          <div class="link-icon">
-            <i class="fas fa-newspaper"></i>
-          </div>
-          <h3>News & Notices</h3>
-          <p>Stay updated with community announcements</p>
-        </a>
-      </div>
-      <div class="link-box">
-        <a href="meeting-agendas.html" style="text-decoration: none; color: inherit;">
-          <div class="link-icon">
-            <i class="fas fa-clipboard-list"></i>
-          </div>
-          <h3>Meeting Minutes & Agendas</h3>
-          <p>Access board meeting records</p>
-        </a>
-      </div>
-      <div class="link-box">
-        <a href="committees-bods.html" style="text-decoration: none; color: inherit;">
-          <div class="link-icon">
-            <i class="fas fa-users"></i>
-          </div>
-          <h3>Board of Directors</h3>
-          <p>Learn about our leadership</p>
-        </a>
-      </div>
-      <div class="link-box">
-        <a href="landmarks.html" style="text-decoration: none; color: inherit;">
-          <div class="link-icon">
-            <i class="fas fa-map-marked-alt"></i>
-          </div>
-          <h3>Landmarks</h3>
-          <p>Explore our village landmarks</p>
-        </a>
-      </div>
-      <div class="link-box">
-        <a href="advertisements.html" style="text-decoration: none; color: inherit;">
-          <div class="link-icon">
-            <i class="fas fa-store"></i>
-          </div>
-          <h3>Marketplace/Classifieds</h3>
-          <p>Buy, sell, and connect locally</p>
-        </a>
-      </div>
-    </div>
-  </section>
+                <!-- Quick Links Grid - 5 Items Only -->
+                <section class="links-section">
+                    <h2 class="section-title">QUICK LINKS</h2>
+                    <div class="links-grid">
+                        <div class="link-box">
+                            <a href="announcement.html" style="text-decoration: none; color: inherit;">
+                                <div class="link-icon">
+                                    <i class="fas fa-newspaper"></i>
+                                </div>
+                                <h3>News & Notices</h3>
+                                <p>Stay updated with community announcements</p>
+                            </a>
+                        </div>
+                        <div class="link-box">
+                            <a href="meeting-agendas.html" style="text-decoration: none; color: inherit;">
+                                <div class="link-icon">
+                                    <i class="fas fa-clipboard-list"></i>
+                                </div>
+                                <h3>Meeting Minutes & Agendas</h3>
+                                <p>Access board meeting records</p>
+                            </a>
+                        </div>
+                        <div class="link-box">
+                            <a href="committees-bods.html" style="text-decoration: none; color: inherit;">
+                                <div class="link-icon">
+                                    <i class="fas fa-users"></i>
+                                </div>
+                                <h3>Board of Directors</h3>
+                                <p>Learn about our leadership</p>
+                            </a>
+                        </div>
+                        <div class="link-box">
+                            <a href="landmarks.html" style="text-decoration: none; color: inherit;">
+                                <div class="link-icon">
+                                    <i class="fas fa-map-marked-alt"></i>
+                                </div>
+                                <h3>Landmarks</h3>
+                                <p>Explore our village landmarks</p>
+                            </a>
+                        </div>
+                        <div class="link-box">
+                            <a href="advertisements.html" style="text-decoration: none; color: inherit;">
+                                <div class="link-icon">
+                                    <i class="fas fa-store"></i>
+                                </div>
+                                <h3>Marketplace/Classifieds</h3>
+                                <p>Buy, sell, and connect locally</p>
+                            </a>
+                        </div>
+                    </div>
+                </section>
 
-  <!-- Calendar Section -->
-  <section id="community-calendar" class="calendar-section">
-    <h2 class="section-title">Community Calendar</h2>
-    <div class="calendar-container">
-      <!-- Left Side: Events List -->
-      <div class="events-side">
-        <div class="selected-date-display">
-          <h3 id="current-date">Today's Date</h3>
-        </div>
-        <div class="events-list">
-          <h4>Events for <span id="display-date">Today</span></h4>
-          <div class="events-container" id="events-container">
-            <div class="no-events">
-              <i class="fas fa-calendar-day"></i>
-              <p>No events scheduled for today</p>
+                <!-- Calendar Section -->
+                <section id="community-calendar" class="calendar-section">
+                    <h2 class="section-title">Community Calendar</h2>
+                    <div class="calendar-container">
+                        <!-- Left Side: Events List -->
+                        <div class="events-side">
+                            <div class="selected-date-display">
+                                <h3 id="current-date">Today's Date</h3>
+                            </div>
+                            <div class="events-list">
+                                <h4>Events for <span id="display-date">Today</span></h4>
+                                <div class="events-container" id="events-container">
+                                    <div class="no-events">
+                                        <i class="fas fa-calendar-day"></i>
+                                        <p>No events scheduled for today</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Right Side: Interactive Calendar -->
+                        <div class="calendar-side">
+                            <div class="calendar-header">
+                                <button id="prev-month"><i class="fas fa-chevron-left"></i></button>
+                                <h3 id="current-month-year">Month Year</h3>
+                                <button id="next-month"><i class="fas fa-chevron-right"></i></button>
+                            </div>
+                            <div class="calendar-weekdays">
+                                <div>Sun</div>
+                                <div>Mon</div>
+                                <div>Tue</div>
+                                <div>Wed</div>
+                                <div>Thu</div>
+                                <div>Fri</div>
+                                <div>Sat</div>
+                            </div>
+                            <div class="calendar-days" id="calendar-days">
+                                <!-- Calendar days will be generated by JavaScript -->
+                            </div>
+                        </div>
+                    </div>
+                </section>
             </div>
-          </div>
-        </div>
-      </div>
-      <!-- Right Side: Interactive Calendar -->
-      <div class="calendar-side">
-        <div class="calendar-header">
-          <button id="prev-month"><i class="fas fa-chevron-left"></i></button>
-          <h3 id="current-month-year">Month Year</h3>
-          <button id="next-month"><i class="fas fa-chevron-right"></i></button>
-        </div>
-        <div class="calendar-weekdays">
-          <div>Sun</div>
-          <div>Mon</div>
-          <div>Tue</div>
-          <div>Wed</div>
-          <div>Thu</div>
-          <div>Fri</div>
-          <div>Sat</div>
-        </div>
-        <div class="calendar-days" id="calendar-days">
-          <!-- Calendar days will be generated by JavaScript -->
-        </div>
-      </div>
-    </div>
-  </section>
-</div>
 
-<!-- ═══════════════════════════════════════
-  FOOTER
-═══════════════════════════════════════ -->
-<footer class="footer">
-  <div class="footer-content">
-    <div class="footer-section footer-logo-section">
-      <a href="index.html" class="footer-logo-link">
-        <img src="LBAlogo.png" alt="Bel-Air Village Logo" class="footer-logo">
-      </a>
-    </div>
-    <div class="footer-section">
-      <h3>Contact Us</h3>
-      <ul class="footer-links">
-        <li><i class="fas fa-map-marker-alt"></i> P3 B15 Alpine St. LBA4, Brgy. Don Jose, Sta. Rosa, Laguna 4026</li>
-        <li><i class="fas fa-phone"></i> (+63) 09398588138</li>
-        <li><i class="fas fa-phone"></i> 0495603050</li>
-      </ul>
-    </div>
-    <div class="footer-section">
-      <h3>Quick Links</h3>
-      <ul class="footer-links">
-        <li><a href="about-laguna-belair.html">About Us</a></li>
-        <li><a href="contacts.html">Contact Us</a></li>
-        <li><a href="faq.html">FAQs</a></li>
-        <li><a href="privacy-policy.html">Privacy Policy</a></li>
-      </ul>
-    </div>
-    <div class="footer-section">
-      <h3>Site Links</h3>
-      <ul class="footer-links">
-        <li><a href="announcement.html">Announcements</a></li>
-        <li><a href="calendars.html">Community Calendar</a></li>
-        <li><a href="forms-documents.html">Forms &amp; Documents</a></li>
-        <li><a href="report-concerns.html">Report a Concern</a></li>
-      </ul>
-    </div>
-  </div>
-  <div class="footer-bottom">
-    <p>&copy; <span id="current-year"></span> Laguna BelAir 4. All rights reserved.</p>
-  </div>
-</footer>
+            <!-- ═══════════════════════════════════════
+      FOOTER
+    ═══════════════════════════════════════ -->
+            <footer class="footer">
+                <div class="footer-content">
+                    <div class="footer-section footer-logo-section">
+                        <a href="index.html" class="footer-logo-link">
+                            <img src="~/assets/LBAlogo.png" alt="Bel-Air Village Logo" class="footer-logo">
+                            </a>
+                        </div>
+                        <div class="footer-section">
+                            <h3>Contact Us</h3>
+                            <ul class="footer-links">
+                                <li><i class="fas fa-map-marker-alt"></i> P3 B15 Alpine St. LBA4, Brgy. Don Jose, Sta. Rosa, Laguna 4026</li>
+                                <li><i class="fas fa-phone"></i> (+63) 09398588138</li>
+                                <li><i class="fas fa-phone"></i> 0495603050</li>
+                            </ul>
+                        </div>
+                        <div class="footer-section">
+                            <h3>Quick Links</h3>
+                            <ul class="footer-links">
+                                <li><a href="about-laguna-belair.html">About Us</a></li>
+                                <li><a href="contacts.html">Contact Us</a></li>
+                                <li><a href="faq.html">FAQs</a></li>
+                                <li><a href="privacy-policy.html">Privacy Policy</a></li>
+                            </ul>
+                        </div>
+                        <div class="footer-section">
+                            <h3>Site Links</h3>
+                            <ul class="footer-links">
+                                <li><a href="announcement.html">Announcements</a></li>
+                                <li><a href="calendars.html">Community Calendar</a></li>
+                                <li><a href="forms-documents.html">Forms &amp; Documents</a></li>
+                                <li><a href="report-concerns.html">Report a Concern</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="footer-bottom">
+                        <p>&copy; <span id="current-year"></span> Laguna BelAir 4. All rights reserved.</p>
+                    </div>
+                </footer>
 
-<!-- JavaScript -->
-<script src="index.js"></script>
-<script>
-  // Set current year in footer
-  document.getElementById('current-year').textContent = new Date().getFullYear();
-  // Mobile dropdown toggle support
-  document.querySelectorAll('.dropdown').forEach(dropdown => {
-    const toggle = dropdown.querySelector('.dropdown-toggle');
-    if (!toggle) return;
-    toggle.addEventListener('click', (e) => {
-      e.preventDefault();
-      const isOpen = dropdown.classList.contains('dropdown-open');
-      document.querySelectorAll('.dropdown').forEach(d => d.classList.remove('dropdown-open'));
-      if (!isOpen) dropdown.classList.add('dropdown-open');
-    });
-  });
-  document.addEventListener('click', (e) => {
-    document.querySelectorAll('.dropdown').forEach(d => {
-      if (!d.contains(e.target)) d.classList.remove('dropdown-open');
-    });
-  });
-</script>
-</body>
-</html>
+                <!-- JavaScript -->
+                <script src="~/js/index.js"></script>
+                <script>
+                        // Set current year in footer
+                        document.getElementById('current-year').textContent = new Date().getFullYear();
+                        // Mobile dropdown toggle support
+                        document.querySelectorAll('.dropdown').forEach(dropdown => {
+                          const toggle = dropdown.querySelector('.dropdown-toggle');
+                          if (!toggle) return;
+                          toggle.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            const isOpen = dropdown.classList.contains('dropdown-open');
+                            document.querySelectorAll('.dropdown').forEach(d => d.classList.remove('dropdown-open'));
+                            if (!isOpen) dropdown.classList.add('dropdown-open');
+                          });
+                        });
+                        document.addEventListener('click', (e) => {
+                          document.querySelectorAll('.dropdown').forEach(d => {
+                            if (!d.contains(e.target)) d.classList.remove('dropdown-open');
+                          });
+                        });
+                </script>
+            </body>
+        </html>

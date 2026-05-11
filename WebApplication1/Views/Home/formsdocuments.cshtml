@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>About Laguna BelAir 4</title>
+<title>Forms & Documents - Laguna BelAir 4</title>
 <!-- Fonts: Playfair Display + Outfit (matching advertisements) -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -11,7 +11,7 @@
 <!-- Icons -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <!-- Styles -->
-<link rel="stylesheet" href="about-laguna-belair.css">
+<link rel="stylesheet" href="~/css/forms-documents.css">
 </head>
 <body>
 
@@ -36,7 +36,7 @@
         <div class="dropdown">
           <a href="#" class="dropdown-toggle">About <i class="fas fa-chevron-down"></i></a>
           <div class="dropdown-menu">
-            <a href="about-laguna-belair.html" class="active">Laguna BelAir 4</a>
+            <a href="about-laguna-belair.html">Laguna BelAir 4</a>
             <a href="committees-bods.html">Committees / BODs</a>
             <a href="landmarks.html">Landmarks</a>
             <a href="contacts.html">Contacts</a>
@@ -63,7 +63,7 @@
         <div class="dropdown">
           <a href="#" class="dropdown-toggle">Others <i class="fas fa-chevron-down"></i></a>
           <div class="dropdown-menu">
-            <a href="forms-documents.html">Forms &amp; Documents</a>
+            <a href="forms-documents.html" class="active">Forms &amp; Documents</a>
             <a href="vehicle-pet-registration.html">Register Pet/Vehicle</a>
           </div>
         </div>
@@ -73,100 +73,126 @@
 </div>
 
 <!-- ═══════════════════════════════════════
-  HERO SECTION (matching advertisements style)
+  HERO SECTION (matching advertisements style with added <p>)
 ═══════════════════════════════════════ -->
 <section class="hero-section">
   <div class="hero-inner">
-    <h1 class="hero-title">Laguna BelAir 4</h1>
-    <p class="hero-sub">A premier residential community in Santa Rosa, Laguna <br> where safety, harmony, and active living thrive.</p>
+    <h1 class="hero-title">Forms & Documents</h1>
+    <p class="hero-sub">Access important HOA forms, permits, and community guidelines <br> downloadable and ready for submission.</p>
   </div>
 </section>
 
 <!-- ═══════════════════════════════════════
-  MAIN CONTENT (preserved from original)
+  MAIN CONTENT
 ═══════════════════════════════════════ -->
-<main class="main-content">
-  <!-- About the Community -->
-  <section class="content-section">
-    <h2>About Laguna BelAir 4</h2>
-    <p>Laguna BelAir 4 is a residential subdivision located in Brgy. Don Jose, City of Santa Rosa, Laguna. The community is managed by the Homeowners Association to ensure a safe, peaceful, and organized environment for all residents. The village promotes cooperation, responsible homeownership, and active participation in community activities and programs.</p>
-  </section>
-
-  <!-- Community Living -->
-  <section class="content-section">
-    <h2>Community Living</h2>
-    <ul>
-      <li>Safe and secured residential environment</li>
-      <li>Guarded entrance and security personnel</li>
-      <li>Clean and orderly surroundings</li>
-      <li>Active homeowners participation</li>
-      <li>Peaceful neighborhood atmosphere</li>
-    </ul>
-  </section>
-
-  <!-- Village Facilities -->
-  <section class="content-section">
-    <h2>Available Facilities</h2>
-    <ul class="facilities-list">
-      <li><i class="fas fa-basketball-ball"></i> Open Court</li>
-      <li><i class="fas fa-building"></i> Multi-Purpose Hall</li>
-      <li><i class="fas fa-tree"></i> Parks</li>
-      <li><i class="fas fa-road"></i> Village Roads & Common Areas</li>
-    </ul>
-  </section>
-
-  <!-- Location -->
-  <section class="content-section">
-    <h2>Location</h2>
-    <div class="location-content">
-      <div class="location-info">
-        <h3>Our Address</h3>
-        <p><i class="fas fa-map-marker-alt"></i> <strong>Laguna BelAir 4</strong></p>
-        <p><i class="fas fa-map-pin"></i> Brgy. Don Jose, Santa Rosa City, Laguna</p>
-        <p><i class="fas fa-phone"></i> (+63) 09398588138</p>
-        <p><i class="fas fa-phone-alt"></i> 0495603050</p>
-      </div>
-      <div class="map-container">
-        <iframe
-          src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3869.8!2d121.1!3d14.3!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMTTCsDE4JzAwLjAiTiAxMjHCsDA2JzAwLjAiRQ!5e0!3m2!1sen!2sph!4v1234567890"
-          allowfullscreen=""
-          loading="lazy"
-          referrerpolicy="no-referrer-when-downgrade">
-        </iframe>
+<main class="page-main">
+  <!-- Documents Container -->
+  <div class="documents-container">
+    <!-- General Forms Category -->
+    <div class="doc-category">
+      <h2 class="category-title"><i class="fas fa-folder"></i> General Forms</h2>
+      <div class="doc-list">
+        <a href="path/to/form1.pdf" class="doc-item" download>
+          <div class="doc-info">
+            <i class="fas fa-file-pdf doc-icon"></i>
+            <span class="doc-name">Homeowner Registration Form</span>
+          </div>
+          <span class="doc-size">245 KB</span>
+          <i class="fas fa-download doc-download"></i>
+        </a>
+        <a href="#" class="doc-item" download>
+          <div class="doc-info">
+            <i class="fas fa-file-pdf doc-icon"></i>
+            <span class="doc-name">Gate Pass Request Form</span>
+          </div>
+          <span class="doc-size">120 KB</span>
+          <i class="fas fa-download doc-download"></i>
+        </a>
+        <a href="#" class="doc-item" download>
+          <div class="doc-info">
+            <i class="fas fa-file-pdf doc-icon"></i>
+            <span class="doc-name">Visitor Registration Form</span>
+          </div>
+          <span class="doc-size">98 KB</span>
+          <i class="fas fa-download doc-download"></i>
+        </a>
       </div>
     </div>
-  </section>
 
-  <!-- Online Community Services -->
-  <section class="content-section">
-    <h2>Online Community Services</h2>
-    <div class="services-grid">
-      <a href="announcement.html" class="service-card">
-        <i class="fas fa-bullhorn"></i>
-        <h3>Announcements</h3>
-      </a>
-      <a href="report-concerns.html" class="service-card">
-        <i class="fas fa-exclamation-triangle"></i>
-        <h3>Report Concerns / Incidents</h3>
-      </a>
-      <a href="reserve.html" class="service-card">
-        <i class="fas fa-calendar-check"></i>
-        <h3>Reserve Amenities</h3>
-      </a>
-      <a href="forums.html" class="service-card">
-        <i class="fas fa-comments"></i>
-        <h3>Forums / Discussions</h3>
-      </a>
-      <a href="forms-documents.html" class="service-card">
-        <i class="fas fa-file-download"></i>
-        <h3>Downloadable Forms</h3>
-      </a>
+    <!-- Construction & Renovation Category -->
+    <div class="doc-category">
+      <h2 class="category-title"><i class="fas fa-hard-hat"></i> Construction & Renovation</h2>
+      <div class="doc-list">
+        <a href="#" class="doc-item" download>
+          <div class="doc-info">
+            <i class="fas fa-file-pdf doc-icon"></i>
+            <span class="doc-name">Renovation Permit Application</span>
+          </div>
+          <span class="doc-size">1.2 MB</span>
+          <i class="fas fa-download doc-download"></i>
+        </a>
+        <a href="#" class="doc-item" download>
+          <div class="doc-info">
+            <i class="fas fa-file-pdf doc-icon"></i>
+            <span class="doc-name">Work Permit - Contractor List</span>
+          </div>
+          <span class="doc-size">85 KB</span>
+          <i class="fas fa-download doc-download"></i>
+        </a>
+        <a href="#" class="doc-item" download>
+          <div class="doc-info">
+            <i class="fas fa-file-pdf doc-icon"></i>
+            <span class="doc-name">Building Modification Guidelines</span>
+          </div>
+          <span class="doc-size">450 KB</span>
+          <i class="fas fa-download doc-download"></i>
+        </a>
+      </div>
     </div>
-  </section>
+
+    <!-- Community Documents Category -->
+    <div class="doc-category">
+      <h2 class="category-title"><i class="fas fa-book"></i> Community Documents</h2>
+      <div class="doc-list">
+        <a href="#" class="doc-item" download>
+          <div class="doc-info">
+            <i class="fas fa-file-alt doc-icon"></i>
+            <span class="doc-name">Homeowners Association Bylaws</span>
+          </div>
+          <span class="doc-size">2.5 MB</span>
+          <i class="fas fa-download doc-download"></i>
+        </a>
+        <a href="#" class="doc-item" download>
+          <div class="doc-info">
+            <i class="fas fa-file-alt doc-icon"></i>
+            <span class="doc-name">Village Rules & Regulations</span>
+          </div>
+          <span class="doc-size">1.8 MB</span>
+          <i class="fas fa-download doc-download"></i>
+        </a>
+        <a href="#" class="doc-item" download>
+          <div class="doc-info">
+            <i class="fas fa-file-alt doc-icon"></i>
+            <span class="doc-name">Annual Report 2025</span>
+          </div>
+          <span class="doc-size">3.2 MB</span>
+          <i class="fas fa-download doc-download"></i>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Important Notice -->
+  <div class="notice-section">
+    <i class="fas fa-info-circle"></i>
+    <div>
+      <p><strong>Note:</strong> All forms should be submitted to the HOA Office during regular business hours. For questions, please contact us at (+63) 09398588138.</p>
+    </div>
+  </div>
 </main>
 
 <!-- ═══════════════════════════════════════
-  FOOTER (preserved)
+  FOOTER
 ═══════════════════════════════════════ -->
 <footer class="footer">
   <div class="footer-content">
@@ -207,7 +233,8 @@
   </div>
 </footer>
 
-<script src="about-laguna-belair.js"></script>
+<!-- JavaScript -->
+<script src="~/js/forms-documents.js"></script>
 <script>
   // Set current year in footer
   document.getElementById('current-year').textContent = new Date().getFullYear();
