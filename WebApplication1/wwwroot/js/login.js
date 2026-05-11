@@ -44,42 +44,44 @@ const userDatabase = {
 /* ========================================
 LOGIN VALIDATION AND AUTO-DETECT REDIRECT
 ======================================== */
-document.getElementById('loginForm').addEventListener('submit', function(e) {
+document.getElementById('loginForm').addEventListener('submit', async function(e) {
     e.preventDefault();
-    
-    const email = document.getElementById('email').value.trim().toLowerCase();
+
+    const email = document.getElementById('username').value.trim();
     const password = document.getElementById('password').value;
-    
-    // Check if email exists in database
-    if (userDatabase[email]) {
-        const user = userDatabase[email];
-        
-        // Verify password
-        if (password === user.password) {
-            // Store user session info
-            sessionStorage.setItem('loggedInUser', JSON.stringify({
-                type: user.type,
-                email: email,
-                name: email.split('@')[0]
-            }));
-            
-            // Store remember me preference if checked
-            const rememberMe = document.querySelector('input[name="remember"]').checked;
-            if (rememberMe) {
-                localStorage.setItem('rememberedEmail', email);
-            } else {
-                localStorage.removeItem('rememberedEmail');
-            }
-            
-            // Redirect based on user type
-            window.location.href = user.redirect;
-        } else {
-            // Password incorrect
-            showError('Invalid password. Please try again.');
+
+    // Post to server-side login endpoint
+    try {
+        const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+        const formData = new URLSearchParams();
+        formData.append('username', email);
+        formData.append('password', password);
+
+        const res = await fetch('/login', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'RequestVerificationToken': token
+            },
+            body: formData.toString()
+        });
+
+        if (res.redirected) {
+            window.location.href = res.url;
+            return;
         }
-    } else {
-        // Email not found
-        showError('Email address not found. Please check your email or register for an account.');
+
+        if (res.status === 200) {
+            // assume login succeeded and server redirected
+            window.location.reload();
+            return;
+        }
+
+        // fallback to show error
+        showError('Login failed. Please check your credentials.');
+    } catch (err) {
+        showError('Login error. Please try again later.');
     }
 });
 

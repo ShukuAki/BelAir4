@@ -5,103 +5,11 @@
 document.addEventListener('DOMContentLoaded', function () {
 
   // ─────────────────────────────────────────
-  // SAMPLE DATA
+  // POSTS (will be fetched from server). If fetch fails, fallback to embedded sample.
   // ─────────────────────────────────────────
-  const POSTS = [
-    {
-      id: 1,
-      title: 'Kailan mag-aayos ng street lights sa Block 7?',
-      category: 'Concerns',
-      status: 'Under Review',
-      desc: 'Mayroon kaming tatlong street lights na patay na sa Block 7, lalo na yung malapit sa kanto ng Mahogany at Acacia Street. Delikado po ito sa gabi, lalo na para sa mga nagpapalakad at nagbibike. Sana maaksyunan na po ito ng HOA.',
-      author: 'Maria Santos',
-      date: 'Mar 10, 2026',
-      helpful: 8,
-      replies: [
-        { name: 'HOA Admin',   isStaff: true,  date: 'Mar 11, 2026', text: 'Salamat sa inyong concern, Mrs. Santos. Naka-iskedyul na po ang maintenance team para sa Martes. Mababalik na ang ilaw sa loob ng 2-3 araw.' },
-        { name: 'Pedro Reyes', isStaff: false, date: 'Mar 11, 2026', text: 'Pareho po kaming apektado dito. Maganda na may tugon agad ang HOA!' }
-      ],
-      image: null,
-      location: 'Block 7, Mahogany & Acacia St.'
-    },
-    {
-      id: 2,
-      title: 'Maaari bang dagdagan ang oras ng pool sa weekend?',
-      category: 'Suggestions',
-      status: 'Answered',
-      desc: 'Maraming residente ang nagtatrabaho sa weekdays kaya hindi namin magagamit ang pool. Maganda sana kung papalawain ang oras hanggang 8pm tuwing Sabado at Linggo. Maraming pamilya ang makikinabang dito, lalo na ang mga bata.',
-      author: 'Carlo Mendoza',
-      date: 'Mar 8, 2026',
-      helpful: 15,
-      replies: [
-        { name: 'HOA Board',    isStaff: true,  date: 'Mar 9, 2026', text: 'Napag-usapan na po ito sa aming huling pulong. Simula Abril, magiging 7am–7pm ang pool hours tuwing Sabado at Linggo. Salamat sa mungkahi!' },
-        { name: 'Liza Cruz',    isStaff: false, date: 'Mar 9, 2026', text: 'Ang galing! Salamat sa pakikinig ng HOA sa ating mga mungkahi.' },
-        { name: 'Carlo Mendoza',isStaff: false, date: 'Mar 9, 2026', text: 'Maraming salamat sa mabilis na tugon at aksyon!' }
-      ],
-      image: null,
-      location: 'Clubhouse Area'
-    },
-    {
-      id: 3,
-      title: 'May nagtitinda ba ng Tupperware o Avon dito sa subdivision?',
-      category: 'Community Help',
-      status: 'Open',
-      desc: "Naghahanap ako ng residente na nagbebenta ng Tupperware o Avon products dito sa loob ng subdivision. Mas gusto ko sana kung may kakilala tayo na residente para suportahan ang isa't isa. Kung mayroon, paki-message po sa akin.",
-      author: 'Nena Villanueva',
-      date: 'Mar 7, 2026',
-      helpful: 3,
-      replies: [
-        { name: 'Joy Aquino', isStaff: false, date: 'Mar 7, 2026', text: 'Hi Nena! Nagbe-benta ako ng Avon. Block 5 po ako, pwede tayong mag-usap! 😊' }
-      ],
-      image: null,
-      location: null
-    },
-    {
-      id: 4,
-      title: 'Paano mag-register para sa amenity reservation online?',
-      category: 'Questions',
-      status: 'Resolved',
-      desc: 'Baguhan pa lang po ako dito sa LBA4. Hindi ko pa alam kung paano mag-reserve ng basketball court at function hall online. May step-by-step guide ba? Naghahanap na rin ako sa website pero hindi ko mahanap ang exact na form.',
-      author: 'Rodel Flores',
-      date: 'Mar 5, 2026',
-      helpful: 11,
-      replies: [
-        { name: 'HOA Secretary', isStaff: true,  date: 'Mar 5, 2026', text: 'Welcome po sa LBA4, Mr. Flores! Pumunta po kayo sa reserve.html sa aming website. Mag-log in, piliin ang amenity, at piliin ang petsa. May form na lalabas para sa confirmation. Kung may problema pa, bisitahin kami sa office sa Lunes–Biyernes, 8am–5pm.' },
-        { name: 'Rodel Flores',  isStaff: false, date: 'Mar 6, 2026', text: 'Nahanap ko na po! Salamat sa mabilis na tulong, HOA Secretary!' }
-      ],
-      image: null,
-      location: null
-    },
-    {
-      id: 5,
-      title: 'Mungkahi: Magdagdag ng bike lane sa loob ng subdivision',
-      category: 'Suggestions',
-      status: 'Under Review',
-      desc: 'Marami na po kaming mga residente na gumagamit ng bisikleta para sa aming pang-araw-araw na buhay. Dahil dito, mahalagang may dedicated na bike lane tayo para sa kaligtasan ng lahat — lalo na ng mga bata. Mungkahi ko ang isang one-way bike lane sa pangunahing daan ng Phase 3.',
-      author: 'Ben Aguilar',
-      date: 'Mar 3, 2026',
-      helpful: 22,
-      replies: [
-        { name: 'Ana Torres', isStaff: false, date: 'Mar 4, 2026', text: 'Sang-ayon ako dito! Delikado nga talaga sa ngayon, walang clear na landas para sa mga nagbibike.' },
-        { name: 'HOA Admin',  isStaff: true,  date: 'Mar 4, 2026', text: 'Napansin namin ang inyong mungkahi. Isasali namin ito sa agenda ng susunod na board meeting sa Marso 20. Abangan ang anunsyo.' }
-      ],
-      image: null,
-      location: 'Phase 3 Main Road'
-    },
-    {
-      id: 6,
-      title: 'Sino ang nagmamay-ari ng asong walang tali sa Gate 3?',
-      category: 'Concerns',
-      status: 'Open',
-      desc: 'Paulit-ulit na may mabangis na aso na walang tali sa bandang Gate 3, lalo na sa umaga. Noong Martes ay muntik na niyang kagatin ang aking anak. Pakiusap po sa may-ari na itali o ikulong ang aso. Kung walang makapag-claim, sana maaksyunan ng HOA.',
-      author: 'Grace Lim',
-      date: 'Mar 2, 2026',
-      helpful: 5,
-      replies: [],
-      image: null,
-      location: 'Near Gate 3'
-    }
-  ];
+  let POSTS = [];
+
+  
 
   // Track voted and reported posts
   const votedPosts      = new Set();
@@ -626,14 +534,44 @@ document.addEventListener('DOMContentLoaded', function () {
     const loc = document.getElementById('formLocation').value.trim();
     const img = (previewImg.src && previewImg.src !== window.location.href) ? previewImg.src : null;
 
-    POSTS.unshift({
-      id: POSTS.length + 1, title, category: cat, status: 'Open', desc,
-      author: 'You', date: todayStr(), helpful: 0, replies: [], image: img, location: loc || null
-    });
-    closeCreate();
-    renderPosts();
-    renderStats();
-    showToast('Your discussion has been posted successfully!');
+    (async () => {
+      try {
+        const res = await fetch('/api/forums/posts', {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title, category: cat, status: 'Open', description: desc, author: 'You', date: todayStr(), helpful: 0, image: img, location: loc || null })
+        });
+        if (!res.ok) {
+          const text = await res.text();
+          console.error('Create post failed:', res.status, text);
+          showToast('Failed to post discussion.');
+          return;
+        }
+        const created = await res.json();
+        // prepend created post and re-render
+        POSTS.unshift({
+          id: created.id,
+          title: created.title,
+          category: created.category,
+          status: created.status,
+          desc: created.description,
+          author: created.author,
+          date: created.date,
+          helpful: created.helpful,
+          replies: created.replies || [],
+          image: created.image,
+          location: created.location
+        });
+        closeCreate();
+        renderPosts();
+        renderStats();
+        showToast('Your discussion has been posted successfully!');
+      } catch (err) {
+        console.error('Create post exception', err);
+        showToast('Failed to post discussion.');
+      }
+    })();
   });
 
   replySubmitBtn.addEventListener('click', () => {
@@ -641,17 +579,57 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!text) return;
     const p = POSTS.find(x => x.id === currentPostId);
     if (!p) return;
-    p.replies.push({ name: 'You', isStaff: false, date: todayStr(), text });
-    renderReplies(p);
-    replyInput.value = '';
-    renderStats();
-    showToast('Reply posted!');
+
+    // Post reply to server
+    fetch(`/api/forums/posts/${currentPostId}/replies`, {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'You', isStaff: false, date: todayStr(), text })
+    }).then(r => {
+      if (!r.ok) throw new Error('Failed');
+      // append locally
+      p.replies.push({ name: 'You', isStaff: false, date: todayStr(), text });
+      renderReplies(p);
+      replyInput.value = '';
+      renderStats();
+      showToast('Reply posted!');
+    }).catch(err => {
+      showToast('Failed to post reply.');
+    });
   });
 
   // ─────────────────────────────────────────
   // INIT
   // ─────────────────────────────────────────
-  if (currentYearEl) currentYearEl.textContent = new Date().getFullYear();
-  renderPosts();
-  renderStats();
+  async function loadPosts() {
+    try {
+      const res = await fetch('/api/forums/posts', { credentials: 'same-origin' });
+      if (!res.ok) throw new Error('Network');
+      const data = await res.json();
+      // adapt server shape to client expected fields
+      POSTS = data.map(p => ({
+        id: p.id,
+        title: p.title,
+        category: p.category,
+        status: p.status,
+        desc: p.description,
+        author: p.author,
+        date: p.date,
+        helpful: p.helpful,
+        replies: (p.replies || []).map(r => ({ name: r.name, isStaff: r.isStaff, date: r.date, text: r.text })),
+        image: p.image,
+        location: p.location
+      }));
+    } catch (e) {
+      // If server fetch fails, show empty list and log.
+      POSTS = [];
+      console.warn('Could not load posts from server.', e);
+    }
+    if (currentYearEl) currentYearEl.textContent = new Date().getFullYear();
+    renderPosts();
+    renderStats();
+  }
+
+  loadPosts();
 });

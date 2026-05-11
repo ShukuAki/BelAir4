@@ -16,6 +16,12 @@ namespace WebApplication1.Repository
         Task<bool> DeleteAsync(int id);
         Task<UserAccount?> AuthenticateAsync(string username, string password);
         Task SeedAsync();
+        // Forum
+        Task<List<Post>> GetPostsAsync();
+        Task<Post?> GetPostByIdAsync(int id);
+        Task<Post> CreatePostAsync(Post post);
+        Task<bool> AddReplyAsync(Reply reply);
+        Task<bool> MarkHelpfulAsync(int postId);
     }
 
     public class Repo : IRepo
@@ -88,17 +94,63 @@ namespace WebApplication1.Repository
         // Simple seeding example to trigger DB operations on startup or as-needed.
         public async Task SeedAsync()
         {
-            if (await _db.UserAccounts.AnyAsync())
-                return;
-
-            var users = new[]
+            if (!await _db.UserAccounts.AnyAsync())
             {
-                new UserAccount { Username = "admin", Password = "admin", Type = 1 },
-                new UserAccount { Username = "user", Password = "user", Type = 0 }
-            };
+                var users = new[]
+                {
+                    new UserAccount { Username = "admin", Password = "admin", Type = 1 },
+                    new UserAccount { Username = "user", Password = "user", Type = 0 }
+                };
+                _db.UserAccounts.AddRange(users);
+            }
 
-            _db.UserAccounts.AddRange(users);
+            // No forum/forum post seeding here. Forum data is persisted only in the database and
+            // should not be initialized from code. Remove any hard-coded forum sample data.
+
             await _db.SaveChangesAsync();
+        }
+
+        // Forum methods
+        public async Task<List<Post>> GetPostsAsync()
+        {
+            return await _db.Posts
+                .AsNoTracking()
+                .Include(p => p.Replies)
+                .OrderByDescending(p => p.Id)
+                .ToListAsync();
+        }
+
+        public async Task<Post?> GetPostByIdAsync(int id)
+        {
+            return await _db.Posts
+                .Include(p => p.Replies)
+                .FirstOrDefaultAsync(p => p.Id == id);
+        }
+
+        public async Task<Post> CreatePostAsync(Post post)
+        {
+            if (post.Replies == null) post.Replies = new System.Collections.Generic.List<Reply>();
+            _db.Posts.Add(post);
+            await _db.SaveChangesAsync();
+            return post;
+        }
+
+        public async Task<bool> AddReplyAsync(Reply reply)
+        {
+            var post = await _db.Posts.FindAsync(reply.PostId);
+            if (post is null) return false;
+            _db.Replies.Add(reply);
+            await _db.SaveChangesAsync();
+            return true;
+        }
+
+        public async Task<bool> MarkHelpfulAsync(int postId)
+        {
+            var post = await _db.Posts.FindAsync(postId);
+            if (post is null) return false;
+            post.Helpful += 1;
+            await _db.SaveChangesAsync();
+            return true;
         }
     }
 }

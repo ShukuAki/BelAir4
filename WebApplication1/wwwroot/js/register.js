@@ -240,9 +240,28 @@ document.addEventListener('DOMContentLoaded', function() {
         }
       }
 
-      // Show success message and hide form
-      document.querySelector('.register-form').style.display = 'none';
-      document.getElementById('successMessage').classList.add('show');
+      // Submit to server
+      const tokenEl = document.querySelector('input[name="__RequestVerificationToken"]');
+      const token = tokenEl ? tokenEl.value : '';
+      const submitData = new FormData(registerForm);
+
+      try {
+        const res = await fetch('/register', {
+          method: 'POST',
+          headers: token ? { 'RequestVerificationToken': token } : {},
+          body: submitData
+        });
+
+        if (res.ok) {
+          // Show success message and hide form
+          document.querySelector('.register-form').style.display = 'none';
+          document.getElementById('successMessage').classList.add('show');
+        } else {
+          alert('Registration failed. Please try again.');
+        }
+      } catch (ex) {
+        alert('Error submitting registration.');
+      }
 
       // Scroll to success message
       document.getElementById('successMessage').scrollIntoView({ 
