@@ -8,17 +8,13 @@ Updated to work with new header/hero design
 let registeredVehicles = [];
 let registeredPets = [];
 
-// Auto-filled owner info (from session/login)
-const ownerInfo = {
-    name: "Juan Dela Cruz",
-    address: "P3 B15 Alpine St., Laguna BelAir 4"
-};
+// Auto-filled owner info (from session/login) — no fallback defaults
+const ownerInfo = (window.initialOwnerInfo && window.initialOwnerInfo.name)
+    ? window.initialOwnerInfo
+    : { name: "", address: "" };
 
-// DOM Elements
-const tabBtns = document.querySelectorAll('.tab-btn');
-const tabContents = document.querySelectorAll('.tab-content');
-const vehicleCategory = document.getElementById('vehicleCategory');
-const guestFields = document.getElementById('guestFields');
+// Note: query DOM elements when needed (after DOMContentLoaded) to avoid empty NodeLists
+let tabBtns, tabContents, vehicleCategory, guestFields;
 
 // Store pet photo data
 let petPhotoData = null;
@@ -26,30 +22,42 @@ let petPhotoData = null;
 // ========================================
 // INITIALIZATION
 // ========================================
-document.addEventListener('DOMContentLoaded', () => {
+async function initRegistrationPage() {
     // Set owner info
     const ownerNameEl = document.getElementById('ownerName');
     const ownerAddressEl = document.getElementById('ownerAddress');
     if (ownerNameEl) ownerNameEl.textContent = ownerInfo.name;
     if (ownerAddressEl) ownerAddressEl.textContent = ownerInfo.address;
-    
+
     // Set current year
     const yearEl = document.getElementById('current-year');
     if (yearEl) yearEl.textContent = new Date().getFullYear();
-    
-    // Setup event listeners
+
+    // Query DOM elements now that DOM is ready
+    tabBtns = document.querySelectorAll('.tab-btn');
+    tabContents = document.querySelectorAll('.tab-content');
+    vehicleCategory = document.getElementById('vehicleCategory');
+    guestFields = document.getElementById('guestFields');
+
+    // Setup event listeners (elements are present now)
     setupTabNavigation();
     setupGuestVehicleToggle();
     setupFormSubmissions();
     setupFileUploads();
-    
-    // Load registered items
+
+    // Load registered items from server, fall back to sample data
+    await Promise.all([loadVehiclesFromServer(), loadPetsFromServer()]);
+    if (registeredVehicles.length === 0) loadSampleData();
     renderVehiclesList();
     renderPetsList();
-    
-    // Load sample data for demo
-    loadSampleData();
-});
+}
+
+// If DOM already ready, run init immediately, otherwise wait for DOMContentLoaded
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initRegistrationPage);
+} else {
+    initRegistrationPage();
+}
 
 // Load sample data for demonstration
 function loadSampleData() {
@@ -75,7 +83,70 @@ function loadSampleData() {
         });
         renderVehiclesList();
     }
+
+// Load from server
+async function loadVehiclesFromServer() {
+    try {
+        const res = await fetch('/api/registrations/vehicles', { credentials: 'same-origin' });
+        if (!res.ok) throw new Error('Network');
+        const data = await res.json();
+        registeredVehicles = (data || []).map(adaptVehicle);
+    } catch (e) {
+        console.warn('Could not load vehicles from server.', e);
+    }
 }
+
+async function loadPetsFromServer() {
+    try {
+        const res = await fetch('/api/registrations/pets', { credentials: 'same-origin' });
+        if (!res.ok) throw new Error('Network');
+        const data = await res.json();
+        registeredPets = (data || []).map(adaptPet);
+    } catch (e) {
+        console.warn('Could not load pets from server.', e);
+    }
+}
+
+function adaptVehicle(s) {
+    return {
+        id: s.id || s.Id,
+        type: s.type || s.Type || '',
+        category: s.category || s.Category || '',
+        plateNumber: s.plateNumber || s.PlateNumber || '',
+        color: s.color || s.Color || '',
+        brand: s.brand || s.Brand || '',
+        model: s.model || s.Model || '',
+        year: s.year || s.Year || '',
+        vin: s.vin || s.Vin || '',
+        notes: s.notes || s.Notes || '',
+        guestName: s.guestName || s.GuestName || '',
+        guestContact: s.guestContact || s.GuestContact || '',
+        guestDuration: s.guestDuration || s.GuestDuration || '',
+        guestDurationType: s.guestDurationType || s.GuestDurationType || 'hours',
+        ownerName: s.ownerName || s.OwnerName || '',
+        registeredDate: s.registeredDate || s.RegisteredDate || ''
+    };
+
+
+function adaptPet(s) {
+    return {
+        id: s.id || s.Id,
+        type: s.type || s.Type || '',
+        breed: s.breed || s.Breed || '',
+        name: s.name || s.Name || '',
+        color: s.color || s.Color || '',
+        age: s.age || s.Age || '',
+        gender: s.gender || s.Gender || '',
+        vaccinated: s.vaccinated || s.Vaccinated || '',
+        microchip: s.microchip || s.Microchip || '',
+        neutered: s.neutered || s.Neutered || '',
+        temperament: s.temperament || s.Temperament || '',
+        notes: s.notes || s.Notes || '',
+        photo: s.photo || s.Photo || '',
+        ownerName: s.ownerName || s.OwnerName || '',
+        registeredDate: s.registeredDate || s.RegisteredDate || ''
+    };
+
 
 // ========================================
 // MOBILE DROPDOWN TOGGLE SUPPORT (added)
@@ -243,6 +314,39 @@ function setupFormSubmissions() {
             };
             
             registeredVehicles.push(vehicleData);
+            // Post to server
+            fetch('/api/registrations/vehicles', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    type: vehicleData.type,
+                    category: vehicleData.category,
+                    plateNumber: vehicleData.plateNumber,
+                    color: vehicleData.color,
+                    brand: vehicleData.brand,
+                    model: vehicleData.model,
+                    year: vehicleData.year,
+                    vin: vehicleData.vin,
+                    notes: vehicleData.notes,
+                    guestName: vehicleData.guestName,
+                    guestContact: vehicleData.guestContact,
+                    guestDuration: vehicleData.guestDuration,
+                    guestDurationType: vehicleData.guestDurationType,
+                    ownerName: vehicleData.ownerName,
+                    registeredDate: vehicleData.registeredDate
+                })
+            }).then(async res => {
+                if (!res.ok) {
+                    console.error('Vehicle save failed', res.status);
+                    showNotification('Failed to save vehicle to server', 'error');
+                    return;
+                }
+                const created = await res.json();
+                // replace local temp entry id with server id
+                const idx = registeredVehicles.findIndex(v => v.id === vehicleData.id);
+                if (idx !== -1) registeredVehicles[idx].id = created.id;
+            }).catch(err => console.error('Save vehicle exception', err));
             
             // Show success message
             const vehicleSuccess = document.getElementById('vehicleSuccess');
@@ -291,6 +395,37 @@ function setupFormSubmissions() {
             };
             
             registeredPets.push(petData);
+            // Post to server
+            fetch('/api/registrations/pets', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    type: petData.type,
+                    breed: petData.breed,
+                    name: petData.name,
+                    color: petData.color,
+                    age: petData.age,
+                    gender: petData.gender,
+                    vaccinated: petData.vaccinated,
+                    microchip: petData.microchip,
+                    neutered: petData.neutered,
+                    temperament: petData.temperament,
+                    notes: petData.notes,
+                    photo: petData.photo,
+                    ownerName: petData.ownerName,
+                    registeredDate: petData.registeredDate
+                })
+            }).then(async res => {
+                if (!res.ok) {
+                    console.error('Pet save failed', res.status);
+                    showNotification('Failed to save pet to server', 'error');
+                    return;
+                }
+                const created = await res.json();
+                const idx = registeredPets.findIndex(p => p.id === petData.id);
+                if (idx !== -1) registeredPets[idx].id = created.id;
+            }).catch(err => console.error('Save pet exception', err));
             
             // Show success message
             const petSuccess = document.getElementById('petSuccess');

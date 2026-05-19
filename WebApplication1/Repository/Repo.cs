@@ -22,6 +22,11 @@ namespace WebApplication1.Repository
         Task<Post> CreatePostAsync(Post post);
         Task<bool> AddReplyAsync(Reply reply);
         Task<bool> MarkHelpfulAsync(int postId);
+        // Vehicles & Pets
+        Task<List<Models.Vehicle>> GetVehiclesAsync();
+        Task<Models.Vehicle> CreateVehicleAsync(Models.Vehicle vehicle);
+        Task<List<Models.Pet>> GetPetsAsync();
+        Task<Models.Pet> CreatePetAsync(Models.Pet pet);
     }
 
     public class Repo : IRepo
@@ -133,6 +138,37 @@ namespace WebApplication1.Repository
             _db.Posts.Add(post);
             await _db.SaveChangesAsync();
             return post;
+        }
+
+        // Vehicles & Pets
+        public async Task<List<Models.Vehicle>> GetVehiclesAsync()
+        {
+            return await _db.Vehicles
+                .AsNoTracking()
+                .OrderByDescending(v => v.Id)
+                .ToListAsync();
+        }
+
+        public async Task<Models.Vehicle> CreateVehicleAsync(Models.Vehicle vehicle)
+        {
+            _db.Add(vehicle);
+            await _db.SaveChangesAsync();
+            return vehicle;
+        }
+
+        public async Task<List<Models.Pet>> GetPetsAsync()
+        {
+            return await _db.Pets
+                .AsNoTracking()
+                .OrderByDescending(p => p.Id)
+                .ToListAsync();
+        }
+
+        public async Task<Models.Pet> CreatePetAsync(Models.Pet pet)
+        {
+            _db.Add(pet);
+            await _db.SaveChangesAsync();
+            return pet;
         }
 
         public async Task<bool> AddReplyAsync(Reply reply)

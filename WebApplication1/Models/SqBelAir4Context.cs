@@ -18,6 +18,8 @@ public partial class SqBelAir4Context : DbContext
     public virtual DbSet<UserAccount> UserAccounts { get; set; }
     public virtual DbSet<Post> Posts { get; set; }
     public virtual DbSet<Reply> Replies { get; set; }
+    public virtual DbSet<Vehicle> Vehicles { get; set; }
+    public virtual DbSet<Pet> Pets { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
 #warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
@@ -38,6 +40,51 @@ public partial class SqBelAir4Context : DbContext
             entity.Property(e => e.Username)
                 .HasMaxLength(50)
                 .IsUnicode(false);
+        });
+
+        modelBuilder.Entity<Vehicle>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK_Vehicles");
+            entity.ToTable("vehicles");
+
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.Type).HasMaxLength(50).IsUnicode(false).HasColumnName("type");
+            entity.Property(e => e.Category).HasMaxLength(50).IsUnicode(false).HasColumnName("category");
+            entity.Property(e => e.PlateNumber).HasMaxLength(50).IsUnicode(false).HasColumnName("plate_number");
+            entity.Property(e => e.Color).HasMaxLength(50).IsUnicode(false).HasColumnName("color");
+            entity.Property(e => e.Brand).HasMaxLength(100).IsUnicode(false).HasColumnName("brand");
+            entity.Property(e => e.Model).HasMaxLength(100).IsUnicode(false).HasColumnName("model");
+            entity.Property(e => e.Year).HasMaxLength(10).IsUnicode(false).HasColumnName("year");
+            entity.Property(e => e.Vin).HasMaxLength(100).IsUnicode(false).HasColumnName("vin");
+            entity.Property(e => e.Notes).HasColumnName("notes");
+            entity.Property(e => e.GuestName).HasMaxLength(200).IsUnicode(false).HasColumnName("guest_name");
+            entity.Property(e => e.GuestContact).HasMaxLength(50).IsUnicode(false).HasColumnName("guest_contact");
+            entity.Property(e => e.GuestDuration).HasMaxLength(50).IsUnicode(false).HasColumnName("guest_duration");
+            entity.Property(e => e.GuestDurationType).HasMaxLength(20).IsUnicode(false).HasColumnName("guest_duration_type");
+            entity.Property(e => e.OwnerName).HasMaxLength(200).IsUnicode(false).HasColumnName("owner_name");
+            entity.Property(e => e.RegisteredDate).HasMaxLength(50).IsUnicode(false).HasColumnName("registered_date");
+        });
+
+        modelBuilder.Entity<Pet>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK_Pets");
+            entity.ToTable("pets");
+
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.Type).HasMaxLength(50).IsUnicode(false).HasColumnName("type");
+            entity.Property(e => e.Breed).HasMaxLength(100).IsUnicode(false).HasColumnName("breed");
+            entity.Property(e => e.Name).HasMaxLength(100).IsUnicode(false).HasColumnName("name");
+            entity.Property(e => e.Color).HasMaxLength(100).IsUnicode(false).HasColumnName("color");
+            entity.Property(e => e.Age).HasColumnName("age");
+            entity.Property(e => e.Gender).HasMaxLength(20).IsUnicode(false).HasColumnName("gender");
+            entity.Property(e => e.Vaccinated).HasMaxLength(20).IsUnicode(false).HasColumnName("vaccinated");
+            entity.Property(e => e.Microchip).HasMaxLength(20).IsUnicode(false).HasColumnName("microchip");
+            entity.Property(e => e.Neutered).HasMaxLength(20).IsUnicode(false).HasColumnName("neutered");
+            entity.Property(e => e.Temperament).HasMaxLength(100).IsUnicode(false).HasColumnName("temperament");
+            entity.Property(e => e.Notes).HasColumnName("notes");
+            entity.Property(e => e.Photo).HasColumnName("photo");
+            entity.Property(e => e.OwnerName).HasMaxLength(200).IsUnicode(false).HasColumnName("owner_name");
+            entity.Property(e => e.RegisteredDate).HasMaxLength(50).IsUnicode(false).HasColumnName("registered_date");
         });
 
         modelBuilder.Entity<Post>(entity =>

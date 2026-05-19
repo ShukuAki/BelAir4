@@ -181,6 +181,43 @@ namespace WebApplication1.Controllers
             return Ok();
         }
 
+        // Vehicles & Pets API
+        [HttpGet("/api/registrations/vehicles")]
+        public async Task<IActionResult> GetVehicles()
+        {
+            var vehicles = await _repo.GetVehiclesAsync();
+            return Json(vehicles);
+        }
+
+        [HttpPost("/api/registrations/vehicles")]
+        [WebApplication1.Filters.UserTypeAuthorize(1,2,3)]
+        public async Task<IActionResult> CreateVehicle([FromBody] Models.Vehicle vehicle)
+        {
+            if (vehicle == null) return BadRequest();
+            vehicle.OwnerName = HttpContext.Session.GetString("Username") ?? vehicle.OwnerName ?? "Anonymous";
+            vehicle.RegisteredDate = System.DateTime.Now.ToString("d");
+            var created = await _repo.CreateVehicleAsync(vehicle);
+            return Json(created);
+        }
+
+        [HttpGet("/api/registrations/pets")]
+        public async Task<IActionResult> GetPets()
+        {
+            var pets = await _repo.GetPetsAsync();
+            return Json(pets);
+        }
+
+        [HttpPost("/api/registrations/pets")]
+        [WebApplication1.Filters.UserTypeAuthorize(1,2,3)]
+        public async Task<IActionResult> CreatePet([FromBody] Models.Pet pet)
+        {
+            if (pet == null) return BadRequest();
+            pet.OwnerName = HttpContext.Session.GetString("Username") ?? pet.OwnerName ?? "Anonymous";
+            pet.RegisteredDate = System.DateTime.Now.ToString("d");
+            var created = await _repo.CreatePetAsync(pet);
+            return Json(created);
+        }
+
         [HttpPost("/api/forums/posts/{id}/helpful")]
         public async Task<IActionResult> MarkHelpful(int id)
         {
