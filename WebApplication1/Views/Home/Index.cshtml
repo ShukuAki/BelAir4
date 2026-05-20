@@ -11,73 +11,73 @@
     <!-- Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Styles -->
-    <link rel="stylesheet" href="~/css/index.css">
-    </head>
+    <link rel="stylesheet" href="@(Url.Content("~/css/index.css"))">
+    </head> 
     <body>
 
-        <!-- ═══════════════════════════════════════
-  HEADER / NAV (updated to match advertisements style)
-═══════════════════════════════════════ -->
-        <div class="top-header-container">
-            <!-- Logo Section -->
-            <div class="logo-section">
-                <a asp-controller="Home" asp-action="Index" class="logo-link">
-                    <img src="~/assets/LBAlogo.png" alt="Bel-Air Village Logo" class="logo-image">
-                    </a>
+    <!-- ═══════════════════════════════════════
+          HEADER / NAV (updated to match advertisements style)
+        ═══════════════════════════════════════ -->
+    <div class="top-header-container">
+        <!-- Logo Section -->
+        <div class="logo-section">
+            <a asp-controller="Home" asp-action="Index" class="logo-link">
+                <img src="@(Url.Content("~/assets/LBAlogo.png"))" alt="Bel-Air Village Logo" class="logo-image">
+            </a>
+        </div>
+        <!-- Navbar Wrapper -->
+        <div class="header-center-wrapper">
+            <div class="navbar-two-rows">
+                <!-- Top Row: Utility Links -->
+                <div class="navbar-top-row">
+                    <a asp-controller="Home" asp-action="login"><i class="fas fa-sign-in-alt"></i> Login</a>
+                    <span class="nav-separator">|</span>
+                    <a asp-controller="Home" asp-action="register"><i class="fas fa-user-plus"></i> Register</a>
                 </div>
-                <!-- Navbar Wrapper -->
-                <div class="header-center-wrapper">
-                    <div class="navbar-two-rows">
-                        <!-- Top Row: Utility Links -->
-                        <div class="navbar-top-row">
-                            <a asp-controller="Home" asp-action="login"><i class="fas fa-sign-in-alt"></i> Login</a>
-                            <span class="nav-separator">|</span>
-                            <a asp-controller="Home" asp-action="register"><i class="fas fa-user-plus"></i> Register</a>
+                <!-- Bottom Row: Main Navigation -->
+                <div class="navbar-bottom-row">
+                    <a asp-controller="Home" asp-action="Index" class="nav-link">Home</a>
+                    <div class="dropdown">
+                        <a href="#" class="dropdown-toggle">About <i class="fas fa-chevron-down"></i></a>
+                        <div class="dropdown-menu">
+                            <a asp-controller="Home" asp-action="aboutlagunabelair">Laguna BelAir 4</a>
+                            @* <a asp-controller="Home" asp-action="committeesBods">Committees/BODs</a> *@
+                            <a asp-controller="Home" asp-action="landMarks">Landmarks</a>
+                            <a asp-controller="Home" asp-action="contacts">Contacts</a>
                         </div>
-                        <!-- Bottom Row: Main Navigation -->
-                        <div class="navbar-bottom-row">
-                            <a asp-controller="Home" asp-action="Index" class="nav-link">Home</a>
-                            <div class="dropdown">
-                                <a href="#" class="dropdown-toggle">About <i class="fas fa-chevron-down"></i></a>
-                                <div class="dropdown-menu">
-                                    <a asp-controller="Home" asp-action="aboutlagunabelair">Laguna BelAir 4</a>
-                                    <a asp-controller="Home" asp-action="committeesBods">Committees/BODs</a>
-                                    <a asp-controller="Home" asp-action="landMarks">Landmarks</a>
-                                    <a asp-controller="Home" asp-action="contacts">Contacts</a>
-                                </div>
-                            </div>
-                            <div class="dropdown">
-                                <a href="#" class="dropdown-toggle">Community <i class="fas fa-chevron-down"></i></a>
-                                <div class="dropdown-menu">
-                                    <a asp-controller="Home" asp-action="announcement">Announcements</a>
-                                    <a asp-controller="Home" asp-action="forums">Forums/Discussions</a>
-                                    <a asp-controller="Home" asp-action="advertisements">Advertisements</a>
-                                    <a asp-controller="Home" asp-action="calendars">Calendars</a>
+                    </div>
+                    <div class="dropdown">
+                        <a href="#" class="dropdown-toggle">Community <i class="fas fa-chevron-down"></i></a>
+                        <div class="dropdown-menu">
+                            @*  <a asp-controller="Home" asp-action="announcement">Announcements</a> *@
+                            <a asp-controller="Home" asp-action="forums">Forums/Discussions</a>
+                            <a asp-controller="Home" asp-action="advertisements">Advertisements</a>
+                            @*   <a asp-controller="Home" asp-action="calendars">Calendars</a>
                                     <a asp-controller="Home" asp-action="meetingAgendas">Meeting Record/Governance</a>
-                                    <a asp-controller="Home" asp-action="communityMap">Community Map</a>
-                                </div>
-                            </div>
-                            <div class="dropdown">
-                                <a href="#" class="dropdown-toggle">Services <i class="fas fa-chevron-down"></i></a>
-                                <div class="dropdown-menu">
-                                    <a asp-controller="Home" asp-action="reserve">Reserve Amenities</a>
-                                    <a asp-controller="Home" asp-action="reportConcerns">Report Concerns/Incidents</a>
-                                </div>
-                            </div>
-                            <div class="dropdown">
+                                    <a asp-controller="Home" asp-action="communityMap">Community Map</a> *@
+                        </div>
+                    </div>
+                    <div class="dropdown">
+                        <a href="#" class="dropdown-toggle">Services <i class="fas fa-chevron-down"></i></a>
+                        <div class="dropdown-menu">
+                            @*  <a asp-controller="Home" asp-action="reserve">Reserve Amenities</a> *@
+                            <a asp-controller="Home" asp-action="reportConcerns">Report Concerns/Incidents</a>
+                        </div>
+                    </div>
+                    @* <div class="dropdown">
                                 <a href="#" class="dropdown-toggle">Others <i class="fas fa-chevron-down"></i></a>
                                 <div class="dropdown-menu">
                                     <a asp-controller="Home" asp-action="formsDocuments">Downloadable Forms and Documents</a>
                                 </div>
-                            </div>
-                        </div>
-                    </div>
+                            </div> *@
                 </div>
             </div>
+        </div>
+    </div>
 
-            <!-- ═══════════════════════════════════════
-  HERO SECTION (updated with subtitle paragraph)
-═══════════════════════════════════════ -->
+                 <!-- ═══════════════════════════════════════
+                  HERO SECTION (updated with subtitle paragraph)
+                ═══════════════════════════════════════ -->
             <section class="hero-section">
                 <div class="background-image"></div>
                 <div class="hero-overlay">
@@ -97,21 +97,21 @@
                 </div>
             </section>
 
-            <!-- ═══════════════════════════════════════
-  MAIN CONTENT CONTAINER
-═══════════════════════════════════════ -->
+                    <!-- ═══════════════════════════════════════
+                        MAIN CONTENT CONTAINER
+                    ═══════════════════════════════════════ -->
             <div class="main-container">
                 <!-- Quick Action Circles -->
                 <section class="quick-actions">
                     <div class="action-circle">
-                        <a href="report-concerns.html" style="text-decoration: none; color: inherit;">
+                        <a asp-controller="Home" asp-action="reportConcerns" style="text-decoration: none; color: inherit;">
                             <div class="circle-icon">
                                 <i class="fas fa-exclamation-triangle"></i>
                             </div>
                             <p>Report a Concern</p>
                         </a>
                     </div>
-                    <div class="action-circle">
+                   @*  <div class="action-circle">
                         <a href="reserve.html" style="text-decoration: none; color: inherit;">
                             <div class="circle-icon">
                                 <i class="fas fa-calendar-check"></i>
@@ -126,7 +126,7 @@
                             </div>
                             <p>Community Calendar</p>
                         </a>
-                    </div>
+                    </div> *@
                     <div class="action-circle">
                         <a href="forums.html" style="text-decoration: none; color: inherit;">
                             <div class="circle-icon">
@@ -136,7 +136,7 @@
                         </a>
                     </div>
                     <div class="action-circle">
-                        <a href="contacts.html" style="text-decoration: none; color: inherit;">
+                <a asp-controller="Home" asp-action="contacts" style="text-decoration: none; color: inherit;">
                             <div class="circle-icon">
                                 <i class="fas fa-phone-alt"></i>
                             </div>
@@ -198,7 +198,7 @@
                 </section>
 
                 <!-- Calendar Section -->
-                <section id="community-calendar" class="calendar-section">
+                @* <section id="community-calendar" class="calendar-section">
                     <h2 class="section-title">Community Calendar</h2>
                     <div class="calendar-container">
                         <!-- Left Side: Events List -->
@@ -237,17 +237,17 @@
                             </div>
                         </div>
                     </div>
-                </section>
+                </section> *@
             </div>
 
             <!-- ═══════════════════════════════════════
-      FOOTER
-    ═══════════════════════════════════════ -->
+              FOOTER
+            ═══════════════════════════════════════ -->
             <footer class="footer">
                 <div class="footer-content">
                     <div class="footer-section footer-logo-section">
-                        <a href="index.html" class="footer-logo-link">
-                            <img src="~/assets/LBAlogo.png" alt="Bel-Air Village Logo" class="footer-logo">
+                            <a href="index.html" class="footer-logo-link">
+                            <img src="@(Url.Content("~/assets/LBAlogo.png"))" alt="Bel-Air Village Logo" class="footer-logo">
                             </a>
                         </div>
                         <div class="footer-section">
@@ -267,7 +267,7 @@
                                 <li><a href="privacy-policy.html">Privacy Policy</a></li>
                             </ul>
                         </div>
-                        <div class="footer-section">
+                      @*   <div class="footer-section">
                             <h3>Site Links</h3>
                             <ul class="footer-links">
                                 <li><a href="announcement.html">Announcements</a></li>
@@ -275,7 +275,7 @@
                                 <li><a href="forms-documents.html">Forms &amp; Documents</a></li>
                                 <li><a href="report-concerns.html">Report a Concern</a></li>
                             </ul>
-                        </div>
+                        </div> *@
                     </div>
                     <div class="footer-bottom">
                         <p>&copy; <span id="current-year"></span> Laguna BelAir 4. All rights reserved.</p>
@@ -283,7 +283,7 @@
                 </footer>
 
                 <!-- JavaScript -->
-                <script src="~/js/index.js"></script>
+                <script src="@(Url.Content("~/js/index.js"))"></script>
                 <script>
                         // Set current year in footer
                         document.getElementById('current-year').textContent = new Date().getFullYear();

@@ -1557,6 +1557,412 @@ document.addEventListener('DOMContentLoaded', function() {
     if (e.key === 'lba4_exchange')  { renderExchangeDashboard(); }
   });
   _updateNotifBadge();
+  loadKeywordsData(); // Load keywords for Word Bank
   showPage('overview', document.querySelector('.nav-link.active'));
   console.log('%c LBA4 Staff Dashboard v4 loaded ✓', 'color:#0a4d3c;font-weight:bold;font-size:13px');
+});
+
+/* ════════════════════════════════════════════════════════════════════════
+   KEYWORD MANAGEMENT - Word Bank & AI Priority Detection
+════════════════════════════════════════════════════════════════════════ */
+
+let KEYWORDS_DATA = { high: [], medium: [], low: [] };
+
+async function loadKeywordsData() {
+  try {
+    const response = await fetch('/api/keywords');
+    const result = await response.json();
+    if (result.success && result.data) {
+      KEYWORDS_DATA = { high: [], medium: [], low: [] };
+      result.data.forEach(kw => {
+        if (kw.isActive) {
+          const severity = (kw.severity || 'medium').toLowerCase();
+          if (KEYWORDS_DATA[severity]) {
+            KEYWORDS_DATA[severity].push(kw.keyword);
+          }
+        }
+      });
+      renderWordBank();
+    }
+  } catch (error) {
+    console.error('Error loading keywords:', error);
+  }
+}
+
+function renderWordBank() {
+  const highGrid = document.getElementById('kw-high-grid');
+  const medGrid = document.getElementById('kw-med-grid');
+
+  if (highGrid) {
+    highGrid.innerHTML = '';
+    KEYWORDS_DATA.high.forEach(kw => {
+      const chip = document.createElement('span');
+      chip.className = 'kw-chip kw-high';
+      chip.innerHTML = kw;
+      chip.onclick = () => removeKeywordChip(kw, 'high');
+      highGrid.appendChild(chip);
+    });
+  }
+
+  if (medGrid) {
+    medGrid.innerHTML = '';
+    KEYWORDS_DATA.medium.forEach(kw => {
+      const chip = document.createElement('span');
+      chip.className = 'kw-chip kw-medium';
+      chip.innerHTML = kw;
+      chip.onclick = () => removeKeywordChip(kw, 'medium');
+      medGrid.appendChild(chip);
+    });
+
+    KEYWORDS_DATA.low.forEach(kw => {
+      const chip = document.createElement('span');
+      chip.className = 'kw-chip kw-low';
+      chip.innerHTML = kw;
+      chip.onclick = () => removeKeywordChip(kw, 'low');
+      medGrid.appendChild(chip);
+    });
+  }
+}
+
+async function removeKeywordChip(keyword, severity) {
+  try {
+    // Find keyword by name and severity to get its ID
+    const response = await fetch('/api/keywords');
+    const result = await response.json();
+    if (result.success && result.data) {
+      const kwItem = result.data.find(k => k.keyword === keyword && k.severity === severity);
+      if (kwItem) {
+        const deleteResponse = await fetch(`/api/keywords/${kwItem.id}`, { method: 'DELETE' });
+        const deleteResult = await deleteResponse.json();
+        if (deleteResult.success) {
+          showToast('Keyword removed');
+          loadKeywordsData();
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error removing keyword:', error);
+    alert('Failed to remove keyword');
+  }
+}
+
+async function addNewKeyword() {
+  const keyword = document.getElementById('kw-word')?.value;
+  const severity = document.getElementById('kw-sev')?.value || 'medium';
+  const category = document.getElementById('kw-cat')?.value || 'Safety';
+
+  if (!keyword || keyword.trim() === '') {
+    alert('Please enter a keyword');
+    return;
+  }
+
+  try {
+    const response = await fetch('/api/keywords', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        keyword: keyword.trim(),
+        severity: severity,
+        category: category,
+        language: 'bilingual',
+        isActive: true
+      })
+    });
+
+    const result = await response.json();
+    if (result.success) {
+      showToast('Keyword added');
+      document.getElementById('kw-word').value = '';
+      closeModal('addKeyword');
+      loadKeywordsData();
+    } else {
+      alert('Error: ' + (result.error || 'Failed to add keyword'));
+    }
+  } catch (error) {
+    console.error('Error adding keyword:', error);
+    alert('Failed to add keyword');
+  }
+}
+
+async function analyzePriority(description) {
+  try {
+    const response = await fetch('/api/analyze-priority', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ description: description })
+    });
+
+    const result = await response.json();
+    if (result.success) {
+      return {
+        priority: result.priority,
+        keywords: result.detectedKeywords,
+        keywordsJoined: result.keywordsJoined
+      };
+    }
+  } catch (error) {
+    console.error('Error analyzing priority:', error);
+  }
+  return { priority: 'medium', keywords: [], keywordsJoined: '' };
+}
+
+async function loadIncidentsFromAPI() {
+  try {
+    const response = await fetch('/api/incidents');
+    const result = await response.json();
+    if (result.success && result.data) {
+      INCIDENTS = result.data;
+      renderIncidentsTable('all');
+      updateIncidentStats();
+    }
+  } catch (error) {
+    console.error('Error loading incidents:', error);
+  }
+}
+
+function filterIncidents(filter, btn) {
+  const allBtns = document.querySelectorAll('#incidents-table-card .chip');
+  allBtns.forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+
+  renderIncidentsTable(filter);
+}
+
+function renderIncidentsTable(filter = 'all') {
+  const tbody = document.getElementById('incidents-tbody');
+  if (!tbody) return;
+
+  let filtered = INCIDENTS;
+  if (filter === 'high' || filter === 'medium' || filter === 'low') {
+    filtered = INCIDENTS.filter(r => r.priority === filter);
+  }
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;padding:32px;color:var(--gray-400)"><i class="fas fa-inbox" style="font-size:24px;display:block;margin-bottom:8px"></i>No incidents found.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(r => {
+    const priorityColor = r.priority === 'high' ? '#c0392b' : r.priority === 'medium' ? '#f39c12' : '#27ae60';
+    const priorityIcon = r.priority === 'high' ? 'fa-arrow-up' : r.priority === 'medium' ? 'fa-circle' : 'fa-arrow-down';
+    const keywords = r.detectedKeywords || '';
+    const keywordChips = keywords.split(',').filter(k => k.trim()).map(k => `<span class="tag tag-blue">${k.trim()}</span>`).join('');
+
+    return `
+      <tr>
+        <td><strong>${r.reference || 'REF-' + r.id}</strong></td>
+        <td><span style="color:${priorityColor};font-weight:bold"><i class="fas ${priorityIcon}"></i> ${(r.priority || 'medium').toUpperCase()}</span></td>
+        <td>${r.description?.substring(0, 50)}...</td>
+        <td>${r.street || r.address || '-'}</td>
+        <td>${r.category || '-'}</td>
+        <td>${r.reporterName || (r.anonymous ? 'Anonymous' : '-')}</td>
+        <td>${new Date(r.timestamp).toLocaleDateString()}</td>
+        <td>${keywordChips || '<span style="color:#ccc">-</span>'}</td>
+        <td>${r.isPublic ? '<i class="fas fa-globe" style="color:var(--green)"></i>' : '<i class="fas fa-lock" style="color:var(--orange)"></i>'}</td>
+        <td><button class="btn btn-outline btn-sm" onclick="viewIncidentDetail(${r.id})"><i class="fas fa-eye"></i></button></td>
+      </tr>
+    `;
+  }).join('');
+
+  document.getElementById('resultCount').textContent = filtered.length;
+}
+
+function viewIncidentDetail(id) {
+  const incident = INCIDENTS.find(r => r.id === id);
+  if (!incident) return;
+
+  const html = `
+    <div class="form-group"><label>Reference</label><input type="text" readonly value="${incident.reference}" style="background:var(--gray-50)"></div>
+    <div class="form-group"><label>Priority</label><input type="text" readonly value="${incident.priority}" style="background:var(--gray-50)"></div>
+    <div class="form-group"><label>Description</label><textarea readonly style="background:var(--gray-50)">${incident.description}</textarea></div>
+    <div class="form-group"><label>Location</label><input type="text" readonly value="${incident.street || incident.address}" style="background:var(--gray-50)"></div>
+    <div class="form-group"><label>Detected Keywords</label><input type="text" readonly value="${incident.detectedKeywords || '-'}" style="background:var(--gray-50)"></div>
+    <div class="form-group"><label>Reporter</label><input type="text" readonly value="${incident.reporterName || 'Anonymous'}" style="background:var(--gray-50)"></div>
+  `;
+
+  document.getElementById('view-incident-content').innerHTML = html;
+  openModal('viewIncident');
+}
+
+async function updateIncidentStats() {
+  const highCount = INCIDENTS.filter(r => r.priority === 'high').length;
+  const mediumCount = INCIDENTS.filter(r => r.priority === 'medium').length;
+  const lowCount = INCIDENTS.filter(r => r.priority === 'low').length;
+
+  if (document.getElementById('dist-high-n')) {
+    document.getElementById('dist-high-n').textContent = highCount;
+    document.getElementById('dist-high-bar').style.width = highCount > 0 ? '100%' : '0%';
+  }
+  if (document.getElementById('dist-medium-n')) {
+    document.getElementById('dist-medium-n').textContent = mediumCount;
+    const total = highCount + mediumCount + lowCount;
+    document.getElementById('dist-medium-bar').style.width = (mediumCount / Math.max(total, 1)) * 100 + '%';
+  }
+  if (document.getElementById('dist-low-n')) {
+    document.getElementById('dist-low-n').textContent = lowCount;
+    const total = highCount + mediumCount + lowCount;
+    document.getElementById('dist-low-bar').style.width = (lowCount / Math.max(total, 1)) * 100 + '%';
+  }
+
+  document.getElementById('stat-open-incidents').textContent = highCount;
+}
+
+function updateCommonKeywords() {
+  const kwGrid = document.getElementById('common-keywords-grid');
+  if (!kwGrid) return;
+
+  const keywordFreq = {};
+  INCIDENTS.forEach(r => {
+    if (r.detectedKeywords) {
+      r.detectedKeywords.split(',').forEach(kw => {
+        const k = kw.trim();
+        if (k) keywordFreq[k] = (keywordFreq[k] || 0) + 1;
+      });
+    }
+  });
+
+  const sorted = Object.entries(keywordFreq).sort((a, b) => b[1] - a[1]).slice(0, 10);
+  if (sorted.length === 0) {
+    kwGrid.innerHTML = '<div class="empty-state-inline"><i class="fas fa-tags"></i><span>Appear as incidents are logged</span></div>';
+  } else {
+    kwGrid.innerHTML = sorted.map(([kw, count]) => `<span class="tag tag-green">${kw} (${count})</span>`).join('');
+  }
+}
+
+/* ============================================================
+   WORD BANK & KEYWORD ANALYSIS
+============================================================ */
+
+// Load word bank data from API
+async function loadWordBank() {
+  try {
+    const response = await fetch('/api/wordbank');
+    const result = await response.json();
+
+    if (!result.success || !result.data) {
+      console.error('Failed to load word bank:', result.error);
+      return;
+    }
+
+    const wordBankList = document.getElementById('wordbank-list');
+    if (!wordBankList) return;
+
+    const html = generateWordBankTable(result.data);
+    wordBankList.innerHTML = html;
+  } catch (error) {
+    console.error('Error loading word bank:', error);
+  }
+}
+
+// Generate HTML table for word bank
+function generateWordBankTable(data) {
+  if (!data || data.length === 0) {
+    return '<div class="empty-state-inline" style="padding:32px"><i class="fas fa-inbox"></i><span>No keywords extracted yet</span></div>';
+  }
+
+  const rows = data.map(item => {
+    const severityColor = item.severity === 'high' ? '#c0392b' : item.severity === 'medium' ? '#f39c12' : '#27ae60';
+    const severityIcon = item.severity === 'high' ? 'fa-arrow-up' : item.severity === 'medium' ? 'fa-circle' : 'fa-arrow-down';
+    const priorityColor = item.priority === 'high' ? '#c0392b' : item.priority === 'medium' ? '#f39c12' : '#27ae60';
+
+    return `
+      <tr>
+        <td><span class="tag" style="background:${severityColor};color:white">${(item.severity || 'medium').toUpperCase()}</span></td>
+        <td><strong>${escHtml(item.keyword)}</strong></td>
+        <td>${escHtml(item.source)}</td>
+        <td><span class="tag tag-blue">${item.type}</span></td>
+        <td>${escHtml(item.category || '-')}</td>
+        <td>${escHtml(item.author || '-')}</td>
+        <td>${new Date(item.date).toLocaleDateString()}</td>
+      </tr>
+    `;
+  }).join('');
+
+  return `
+    <table style="width:100%">
+      <thead>
+        <tr>
+          <th>SEVERITY</th>
+          <th>KEYWORD</th>
+          <th>SOURCE</th>
+          <th>TYPE</th>
+          <th>CATEGORY</th>
+          <th>AUTHOR</th>
+          <th>DATE</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
+  `;
+}
+
+// Load incident reports with keyword analysis
+async function loadIncidentReportsWithAnalysis() {
+  try {
+    const response = await fetch('/api/incidents');
+    const result = await response.json();
+
+    if (!result.success || !result.data) {
+      console.error('Failed to load incidents:', result.error);
+      return;
+    }
+
+    INCIDENTS = result.data;
+    updateIncidentStats();
+    updateCommonKeywords();
+    renderIncidentsList();
+  } catch (error) {
+    console.error('Error loading incidents:', error);
+  }
+}
+
+// Render incidents list with keywords
+function renderIncidentsList() {
+  const tbody = document.getElementById('incidents-tbody');
+  if (!tbody) return;
+
+  if (INCIDENTS.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:32px;color:var(--gray-400)"><i class="fas fa-inbox" style="font-size:24px;display:block;margin-bottom:8px"></i>No incidents yet. Use "Log Report" to add one.</td></tr>';
+    return;
+  }
+
+  const rows = INCIDENTS.map(r => {
+    const priorityColor = r.priority === 'high' ? '#c0392b' : r.priority === 'medium' ? '#f39c12' : '#27ae60';
+    const priorityIcon = r.priority === 'high' ? 'fa-arrow-up' : r.priority === 'medium' ? 'fa-circle' : 'fa-arrow-down';
+    const keywordChips = r.detectedKeywords
+      ? r.detectedKeywords.split(',').map(k => `<span class="tag tag-green" style="font-size:11px;padding:3px 6px">${escHtml(k.trim())}</span>`).join(' ')
+      : '';
+
+    return `
+      <tr>
+        <td><strong>${r.reference || 'REF-' + r.id}</strong></td>
+        <td><span style="color:${priorityColor};font-weight:bold"><i class="fas ${priorityIcon}"></i> ${(r.priority || 'medium').toUpperCase()}</span></td>
+        <td>${r.description?.substring(0, 50) || '-'}...</td>
+        <td>${r.street || r.address || '-'}</td>
+        <td>${r.category || '-'}</td>
+        <td>${r.reporterName || (r.anonymous ? 'Anonymous' : '-')}</td>
+        <td>${new Date(r.timestamp).toLocaleDateString()}</td>
+        <td>${keywordChips || '<span style="color:#ccc">-</span>'}</td>
+        <td>${r.isPublic ? '<i class="fas fa-globe" style="color:var(--green)"></i>' : '<i class="fas fa-lock" style="color:var(--orange)"></i>'}</td>
+        <td><button class="btn btn-outline btn-sm" onclick="viewIncidentDetail(${r.id})"><i class="fas fa-eye"></i></button></td>
+      </tr>
+    `;
+  }).join('');
+
+  tbody.innerHTML = rows;
+}
+
+// Initialize word bank and incident analysis on page load
+function initializeWordBankAndAnalysis() {
+  if (document.getElementById('page-incidents')) {
+    loadIncidentReportsWithAnalysis();
+  }
+  if (document.getElementById('page-wordbank')) {
+    loadWordBank();
+  }
+}
+
+// Call initialization when dashboard loads
+document.addEventListener('DOMContentLoaded', () => {
+  initializeWordBankAndAnalysis();
 });

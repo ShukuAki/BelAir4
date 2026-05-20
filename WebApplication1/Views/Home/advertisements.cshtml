@@ -13,64 +13,64 @@
 <body>
 
         <!-- ═══════════════════════════════════════
-  HEADER / NAV (updated to match advertisements style)
-═══════════════════════════════════════ -->
+          HEADER / NAV (updated to match advertisements style)
+        ═══════════════════════════════════════ -->
         <div class="top-header-container">
             <!-- Logo Section -->
             <div class="logo-section">
                 <a asp-controller="Home" asp-action="Index" class="logo-link">
-                    <img src="~/assets/LBAlogo.png" alt="Bel-Air Village Logo" class="logo-image">
-                    </a>
-                </div>
-                <!-- Navbar Wrapper -->
-                <div class="header-center-wrapper">
-                    <div class="navbar-two-rows">
-                        <!-- Top Row: Utility Links -->
-                        <div class="navbar-top-row">
-                            <a asp-controller="Home" asp-action="login"><i class="fas fa-sign-in-alt"></i> Login</a>
-                            <span class="nav-separator">|</span>
-                            <a asp-controller="Home" asp-action="register"><i class="fas fa-user-plus"></i> Register</a>
+                    <img src="@(Url.Content("~/assets/LBAlogo.png"))" alt="Bel-Air Village Logo" class="logo-image">
+                </a>
+            </div>
+            <!-- Navbar Wrapper -->
+            <div class="header-center-wrapper">
+                <div class="navbar-two-rows">
+                    <!-- Top Row: Utility Links -->
+                    <div class="navbar-top-row">
+                        <a asp-controller="Home" asp-action="login"><i class="fas fa-sign-in-alt"></i> Login</a>
+                        <span class="nav-separator">|</span>
+                        <a asp-controller="Home" asp-action="register"><i class="fas fa-user-plus"></i> Register</a>
+                    </div>
+                    <!-- Bottom Row: Main Navigation -->
+                    <div class="navbar-bottom-row">
+                        <a asp-controller="Home" asp-action="Index" class="nav-link">Home</a>
+                        <div class="dropdown">
+                            <a href="#" class="dropdown-toggle">About <i class="fas fa-chevron-down"></i></a>
+                            <div class="dropdown-menu">
+                                <a asp-controller="Home" asp-action="aboutlagunabelair">Laguna BelAir 4</a>
+                                @* <a asp-controller="Home" asp-action="committeesBods">Committees/BODs</a> *@
+                                <a asp-controller="Home" asp-action="landMarks">Landmarks</a>
+                                <a asp-controller="Home" asp-action="contacts">Contacts</a>
+                            </div>
                         </div>
-                        <!-- Bottom Row: Main Navigation -->
-                        <div class="navbar-bottom-row">
-                            <a asp-controller="Home" asp-action="Index" class="nav-link">Home</a>
-                            <div class="dropdown">
-                                <a href="#" class="dropdown-toggle">About <i class="fas fa-chevron-down"></i></a>
-                                <div class="dropdown-menu">
-                                    <a asp-controller="Home" asp-action="aboutlagunabelair">Laguna BelAir 4</a>
-                                    <a asp-controller="Home" asp-action="committeesBods">Committees/BODs</a>
-                                    <a asp-controller="Home" asp-action="landMarks">Landmarks</a>
-                                    <a asp-controller="Home" asp-action="contacts">Contacts</a>
-                                </div>
-                            </div>
-                            <div class="dropdown">
-                                <a href="#" class="dropdown-toggle">Community <i class="fas fa-chevron-down"></i></a>
-                                <div class="dropdown-menu">
-                                    <a asp-controller="Home" asp-action="announcement">Announcements</a>
-                                    <a asp-controller="Home" asp-action="forums">Forums/Discussions</a>
-                                    <a asp-controller="Home" asp-action="advertisements">Advertisements</a>
-                                    <a asp-controller="Home" asp-action="calendars">Calendars</a>
+                        <div class="dropdown">
+                            <a href="#" class="dropdown-toggle">Community <i class="fas fa-chevron-down"></i></a>
+                            <div class="dropdown-menu">
+                                @*  <a asp-controller="Home" asp-action="announcement">Announcements</a> *@
+                                <a asp-controller="Home" asp-action="forums">Forums/Discussions</a>
+                                <a asp-controller="Home" asp-action="advertisements">Advertisements</a>
+                                @*   <a asp-controller="Home" asp-action="calendars">Calendars</a>
                                     <a asp-controller="Home" asp-action="meetingAgendas">Meeting Record/Governance</a>
-                                    <a asp-controller="Home" asp-action="communityMap">Community Map</a>
-                                </div>
+                                    <a asp-controller="Home" asp-action="communityMap">Community Map</a> *@
                             </div>
-                            <div class="dropdown">
-                                <a href="#" class="dropdown-toggle">Services <i class="fas fa-chevron-down"></i></a>
-                                <div class="dropdown-menu">
-                                    <a asp-controller="Home" asp-action="reserve">Reserve Amenities</a>
-                                    <a asp-controller="Home" asp-action="reportConcerns">Report Concerns/Incidents</a>
-                                </div>
+                        </div>
+                        <div class="dropdown">
+                            <a href="#" class="dropdown-toggle">Services <i class="fas fa-chevron-down"></i></a>
+                            <div class="dropdown-menu">
+                                @*  <a asp-controller="Home" asp-action="reserve">Reserve Amenities</a> *@
+                                <a asp-controller="Home" asp-action="reportConcerns">Report Concerns/Incidents</a>
                             </div>
-                            <div class="dropdown">
+                        </div>
+                        @* <div class="dropdown">
                                 <a href="#" class="dropdown-toggle">Others <i class="fas fa-chevron-down"></i></a>
                                 <div class="dropdown-menu">
                                     <a asp-controller="Home" asp-action="formsDocuments">Downloadable Forms and Documents</a>
                                 </div>
-                            </div>
-                        </div>
+                            </div> *@
                     </div>
                 </div>
             </div>
+        </div>
 
 <!-- ═══════════════════════════════════════
   HERO SECTION
@@ -339,34 +339,34 @@
 <!-- Toast -->
 <div class="toast" id="toast" role="alert" aria-live="polite"></div>
 
-<!-- ═══════════════════════════════════════
-  FOOTER
-═══════════════════════════════════════ -->
+            <!-- ═══════════════════════════════════════
+              FOOTER
+            ═══════════════════════════════════════ -->
             <footer class="footer">
                 <div class="footer-content">
                     <div class="footer-section footer-logo-section">
                         <a href="index.html" class="footer-logo-link">
-                            <img src="~/assets/LBAlogo.png" alt="Bel-Air Village Logo" class="footer-logo">
-                            </a>
-                        </div>
-                        <div class="footer-section">
-                            <h3>Contact Us</h3>
-                            <ul class="footer-links">
-                                <li><i class="fas fa-map-marker-alt"></i> P3 B15 Alpine St. LBA4, Brgy. Don Jose, Sta. Rosa, Laguna 4026</li>
-                                <li><i class="fas fa-phone"></i> (+63) 09398588138</li>
-                                <li><i class="fas fa-phone"></i> 0495603050</li>
-                            </ul>
-                        </div>
-                        <div class="footer-section">
-                            <h3>Quick Links</h3>
-                            <ul class="footer-links">
-                                <li><a href="about-laguna-belair.html">About Us</a></li>
-                                <li><a href="contacts.html">Contact Us</a></li>
-                                <li><a href="faq.html">FAQs</a></li>
-                                <li><a href="privacy-policy.html">Privacy Policy</a></li>
-                            </ul>
-                        </div>
-                        <div class="footer-section">
+                            <img src="@(Url.Content("~/assets/LBAlogo.png"))" alt="Bel-Air Village Logo" class="footer-logo">
+                        </a>
+                    </div>
+                    <div class="footer-section">
+                        <h3>Contact Us</h3>
+                        <ul class="footer-links">
+                            <li><i class="fas fa-map-marker-alt"></i> P3 B15 Alpine St. LBA4, Brgy. Don Jose, Sta. Rosa, Laguna 4026</li>
+                            <li><i class="fas fa-phone"></i> (+63) 09398588138</li>
+                            <li><i class="fas fa-phone"></i> 0495603050</li>
+                        </ul>
+                    </div>
+                    <div class="footer-section">
+                        <h3>Quick Links</h3>
+                        <ul class="footer-links">
+                            <li><a href="about-laguna-belair.html">About Us</a></li>
+                            <li><a href="contacts.html">Contact Us</a></li>
+                            <li><a href="faq.html">FAQs</a></li>
+                            <li><a href="privacy-policy.html">Privacy Policy</a></li>
+                        </ul>
+                    </div>
+                    @*   <div class="footer-section">
                             <h3>Site Links</h3>
                             <ul class="footer-links">
                                 <li><a href="announcement.html">Announcements</a></li>
@@ -374,12 +374,12 @@
                                 <li><a href="forms-documents.html">Forms &amp; Documents</a></li>
                                 <li><a href="report-concerns.html">Report a Concern</a></li>
                             </ul>
-                        </div>
-                    </div>
-                    <div class="footer-bottom">
-                        <p>&copy; <span id="current-year"></span> Laguna BelAir 4. All rights reserved.</p>
-                    </div>
-                </footer>
-<script src="advertisements.js"></script>
+                        </div> *@
+                </div>
+                <div class="footer-bottom">
+                    <p>&copy; <span id="current-year"></span> Laguna BelAir 4. All rights reserved.</p>
+                </div>
+            </footer>
+<script src="~/js/advertisements.js"></script>
 </body>
 </html>

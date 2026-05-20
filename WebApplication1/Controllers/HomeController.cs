@@ -225,5 +225,63 @@ namespace WebApplication1.Controllers
             if (!ok) return NotFound();
             return Ok();
         }
+
+        [HttpPost("/api/concerns/report")]
+        public async Task<IActionResult> SubmitConcernReport()
+        {
+            try
+            {
+                var form = Request.Form;
+                var report = new ConcernReport();
+
+                // Parse basic fields
+                if (double.TryParse(form["latitude"].ToString(), out var lat))
+                    report.Latitude = lat;
+                if (double.TryParse(form["longitude"].ToString(), out var lon))
+                    report.Longitude = lon;
+
+                report.Description = form["description"].ToString();
+                report.Category = form["category"].ToString();
+                report.Address = form["address"].ToString();
+                report.Street = form["street"].ToString();
+                report.AdditionalLocation = form["additionalLocation"].ToString();
+                report.Anonymous = form["anonymous"].ToString().ToLower() == "on" || form["anonymous"].ToString().ToLower() == "true";
+                report.ReporterName = form["reporterName"].ToString();
+                report.ReporterContact = form["reporterContact"].ToString();
+                report.Timestamp = DateTime.Now;
+
+                // Generate reference number
+                report.Reference = $"REF-{DateTime.Now:yyyyMMdd}-{Guid.NewGuid().ToString().Substring(0, 6).ToUpper()}";
+
+                // Handle photo upload
+                var photoFile = Request.Form.Files.GetFile("photo");
+                if (photoFile != null && photoFile.Length > 0)
+                {
+                    var uploads = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "reports");
+                    if (!Directory.Exists(uploads))
+                        Directory.CreateDirectory(uploads);
+
+                    var fileName = Guid.NewGuid().ToString() + Path.GetExtension(photoFile.FileName);
+                    var filePath = Path.Combine(uploads, fileName);
+
+                    using (var stream = System.IO.File.Create(filePath))
+                    {
+                        await photoFile.CopyToAsync(stream);
+                    }
+
+                    report.Photo = $"/uploads/reports/{fileName}";
+                }
+
+                // Save to database
+                var createdReport = await _repo.CreateReportAsync(report);
+
+                return Json(new { success = true, reference = createdReport.Reference, id = createdReport.Id });
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error submitting concern report");
+                return Json(new { success = false, error = ex.Message });
+            }
+        }
     }
 }

@@ -16,6 +16,12 @@ namespace WebApplication1.Models
         public string? Image { get; set; }
         public string? Location { get; set; }
 
+        // AI Priority Detection
+        public string? Priority { get; set; } = "medium"; // "high", "medium", "low"
+        public string? DetectedKeywords { get; set; } // comma-separated keywords found in description and title
+        public bool IsPublic { get; set; } = true; // visible on community map or staff-only
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
         public virtual ICollection<Reply> Replies { get; set; } = new List<Reply>();
     }
 }

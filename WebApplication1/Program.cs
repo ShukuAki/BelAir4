@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using WebApplication1.Models;
 using WebApplication1.Repository;
+using WebApplication1.Services;
 
 
 using Microsoft.AspNetCore.Builder;
@@ -19,6 +20,9 @@ builder.Services.AddDbContext<SqBelAir4Context>(options =>
 
 // Register repository
 builder.Services.AddScoped<IRepo, Repo>();
+
+// Register KeywordAnalysisService for priority detection
+builder.Services.AddScoped<IKeywordAnalysisService, KeywordAnalysisService>();
 
 // Session used by login action
 builder.Services.AddDistributedMemoryCache();

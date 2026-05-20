@@ -20,6 +20,8 @@ public partial class SqBelAir4Context : DbContext
     public virtual DbSet<Reply> Replies { get; set; }
     public virtual DbSet<Vehicle> Vehicles { get; set; }
     public virtual DbSet<Pet> Pets { get; set; }
+    public virtual DbSet<ConcernReport> ConcernReports { get; set; }
+    public virtual DbSet<KeywordDictionary> KeywordDictionaries { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
 #warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
@@ -120,6 +122,46 @@ public partial class SqBelAir4Context : DbContext
                   .WithMany(p => p.Replies)
                   .HasForeignKey(d => d.PostId)
                   .HasConstraintName("FK_Replies_Posts");
+        });
+
+        modelBuilder.Entity<ConcernReport>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK_ConcernReports");
+            entity.ToTable("concern_reports");
+
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.Description).HasColumnName("description");
+            entity.Property(e => e.Category).HasMaxLength(100).IsUnicode(false).HasColumnName("category");
+            entity.Property(e => e.Address).HasMaxLength(200).IsUnicode(false).HasColumnName("address");
+            entity.Property(e => e.Street).HasMaxLength(200).IsUnicode(false).HasColumnName("street");
+            entity.Property(e => e.AdditionalLocation).HasMaxLength(500).IsUnicode(false).HasColumnName("additional_location");
+            entity.Property(e => e.Latitude).HasColumnName("latitude");
+            entity.Property(e => e.Longitude).HasColumnName("longitude");
+            entity.Property(e => e.Anonymous).HasColumnName("anonymous");
+            entity.Property(e => e.ReporterName).HasMaxLength(200).IsUnicode(false).HasColumnName("reporter_name");
+            entity.Property(e => e.ReporterContact).HasMaxLength(200).IsUnicode(false).HasColumnName("reporter_contact");
+            entity.Property(e => e.Photo).HasColumnName("photo");
+            entity.Property(e => e.Timestamp).HasColumnName("timestamp");
+            entity.Property(e => e.Reference).HasMaxLength(50).IsUnicode(false).HasColumnName("reference");
+            entity.Property(e => e.Priority).HasMaxLength(20).IsUnicode(false).HasColumnName("priority").HasDefaultValue("medium");
+            entity.Property(e => e.DetectedKeywords).HasColumnName("detected_keywords");
+            entity.Property(e => e.IsPublic).HasColumnName("is_public").HasDefaultValue(true);
+        });
+
+        modelBuilder.Entity<KeywordDictionary>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK_KeywordDictionary");
+            entity.ToTable("keyword_dictionary");
+
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.Keyword).HasMaxLength(100).IsUnicode(true).HasColumnName("keyword");
+            entity.Property(e => e.Severity).HasMaxLength(20).IsUnicode(false).HasColumnName("severity");
+            entity.Property(e => e.Category).HasMaxLength(100).IsUnicode(false).HasColumnName("category");
+            entity.Property(e => e.Language).HasMaxLength(10).IsUnicode(false).HasColumnName("language");
+            entity.Property(e => e.Description).HasColumnName("description");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("GETUTCDATE()");
+            entity.Property(e => e.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("GETUTCDATE()");
+            entity.Property(e => e.IsActive).HasColumnName("is_active").HasDefaultValue(true);
         });
 
         OnModelCreatingPartial(modelBuilder);

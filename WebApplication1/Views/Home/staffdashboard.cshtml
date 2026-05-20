@@ -7,7 +7,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Nunito:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
-<link rel="stylesheet" href="staff-dashboard.css">
+<link rel="stylesheet" href="~/css/staff-dashboard.css">
 </head>
 <body>
 
@@ -31,9 +31,9 @@
   <nav class="sb-nav">
     <div class="nav-group-label">Main</div>
     <div class="nav-link active" onclick="showPage('overview',this)"><i class="fas fa-th-large"></i> Overview</div>
-    <div class="nav-link" onclick="showPage('incidents',this)"><i class="fas fa-exclamation-circle"></i> Incident Reports<span class="nav-badge" id="badge-incidents">0</span></div>
+    <div class="nav-link active" onclick="showPage('incidents',this)"><i class="fas fa-exclamation-circle"></i> Incident Reports<span class="nav-badge" id="badge-incidents">0</span></div>
     <div class="nav-link" onclick="showPage('taskboard',this)"><i class="fas fa-columns"></i> Task Board<span class="nav-badge yellow" id="badge-tasks">7</span></div>
-    <div class="nav-group-label">Approvals</div>
+    @* <div class="nav-group-label">Approvals</div>
     <div class="nav-link" onclick="showPage('residents',this)"><i class="fas fa-home"></i> Residents &amp; Verification<span class="nav-badge" id="badge-verif">3</span></div>
     <div class="nav-link" onclick="showPage('exchange',this)"><i class="fas fa-store"></i> Community Exchange<span class="nav-badge yellow" id="badge-exchange">5</span></div>
     <div class="nav-link" onclick="showPage('forums',this)"><i class="fas fa-comments"></i> Usap Tayo sa HOA<span class="nav-badge yellow">2</span></div>
@@ -44,12 +44,12 @@
     <div class="nav-link" onclick="showPage('bods',this)"><i class="fas fa-users"></i> Committees &amp; BODs</div>
     <div class="nav-link" onclick="showPage('meetings',this)"><i class="fas fa-clipboard-list"></i> Meeting Records</div>
     <div class="nav-link" onclick="showPage('documents',this)"><i class="fas fa-file-alt"></i> Forms &amp; Documents</div>
-    <div class="nav-link" onclick="showPage('contacts',this)"><i class="fas fa-phone-alt"></i> Contacts</div>
+    <div class="nav-link" onclick="showPage('contacts',this)"><i class="fas fa-phone-alt"></i> Contacts</div> *@
     <div class="nav-group-label">Tools</div>
     <div class="nav-link" onclick="showPage('communitymap',this)"><i class="fas fa-map-marked-alt"></i> Community Map</div>
     <div class="nav-link" onclick="showPage('wordbank',this)"><i class="fas fa-brain"></i> Word Bank</div>
-    <div class="nav-link" onclick="showPage('reports',this)"><i class="fas fa-chart-bar"></i> Reports</div>
-    <div class="nav-link" onclick="showPage('subscribers',this)"><i class="fas fa-bell"></i> Subscribers</div>
+    @* <div class="nav-link" onclick="showPage('reports',this)"><i class="fas fa-chart-bar"></i> Reports</div>
+    <div class="nav-link" onclick="showPage('subscribers',this)"><i class="fas fa-bell"></i> Subscribers</div> *@
   </nav>
   <div class="sb-footer" onclick="window.location.href='index.html'"><i class="fas fa-sign-out-alt"></i> Sign Out</div>
 </aside>
@@ -148,17 +148,20 @@
       </div>
     </div>
   </div>
+  <div class="info-banner" style="margin-bottom:18px">
+    <i class="fas fa-info-circle"></i> <strong>Keyword Detection:</strong> Keywords are automatically extracted from incident descriptions using the Word Bank dictionary. Priority levels are auto-assigned based on detected keywords (high urgency = immediate action required).
+  </div>
   <div class="card" id="incidents-table-card">
     <div class="card-header"><h3><i class="fas fa-list"></i> All Incident Reports</h3>
       <div class="chip-row">
         <div class="chip active" onclick="filterIncidents('all',this)">All</div>
-        <div class="chip" onclick="filterIncidents('open',this)">Open</div>
-        <div class="chip" onclick="filterIncidents('progress',this)">In Progress</div>
-        <div class="chip" onclick="filterIncidents('resolved',this)">Resolved</div>
+        <div class="chip" onclick="filterIncidents('high',this)"><i class="fas fa-arrow-up" style="color:#c0392b"></i> High Priority</div>
+        <div class="chip" onclick="filterIncidents('medium',this)"><i class="fas fa-circle" style="color:#f39c12"></i> Medium</div>
+        <div class="chip" onclick="filterIncidents('low',this)"><i class="fas fa-arrow-down" style="color:#27ae60"></i> Low</div>
       </div>
     </div>
-    <div class="tbl-wrap"><table><thead><tr><th>Ref #</th><th>Type</th><th>Description</th><th>Location</th><th>Category</th><th>Priority</th><th>Status</th><th>Reporter</th><th>Date</th><th>Public</th><th>Action</th></tr></thead>
-    <tbody id="incidents-tbody"><tr><td colspan="11" style="text-align:center;padding:32px;color:var(--gray-400)"><i class="fas fa-inbox" style="font-size:24px;display:block;margin-bottom:8px"></i>No incidents yet. Use "Log Report" to add one.</td></tr></tbody></table></div>
+    <div class="tbl-wrap"><table><thead><tr><th>Ref #</th><th>Priority</th><th>Description</th><th>Location</th><th>Category</th><th>Reporter</th><th>Date</th><th>Keywords</th><th>Public</th><th>Action</th></tr></thead>
+    <tbody id="incidents-tbody"><tr><td colspan="10" style="text-align:center;padding:32px;color:var(--gray-400)"><i class="fas fa-spinner fa-spin" style="font-size:18px;display:block;margin-bottom:8px"></i>Loading incidents...</td></tr></tbody></table></div>
   </div>
 </div>
 
@@ -253,7 +256,7 @@
 <div class="page" id="page-exchange">
   <div class="sec-header"><h2><i class="fas fa-store"></i> Community Exchange Approvals</h2><a href="advertisements.html" target="_blank" class="btn btn-outline btn-sm"><i class="fas fa-external-link-alt"></i> View Public Page</a></div>
   <div class="card" style="margin-bottom:18px">
-    <div class="card-header"><h3><i class="fas fa-clock"></i> Pending Approvals (<span id="pending-exchange-count">5</span>)</h3></div>
+    <div class="card-header"><h3><i class="fas fa-clock"></i> Pending A (<span id="pending-exchange-count">5</span>)</h3></div>
     <div id="pending-exchange-list"></div>
   </div>
   <div class="card">
@@ -464,7 +467,22 @@
 <!-- ═══════ WORD BANK ═══════ -->
 <div class="page" id="page-wordbank">
   <div class="sec-header"><h2><i class="fas fa-brain"></i> Word Bank &amp; Keyword Dictionary</h2><button class="btn btn-primary" onclick="openModal('addKeyword')"><i class="fas fa-plus"></i> Add Keyword</button></div>
-  <div class="info-banner"><i class="fas fa-info-circle"></i> <strong>How it works:</strong> The system scans incident descriptions for keywords and auto-determines priority. Bilingual (English–Tagalog) supported. Click any chip to remove it.</div>
+  <div class="info-banner"><i class="fas fa-info-circle"></i> <strong>How it works:</strong> The system scans incident descriptions and forum posts for keywords and auto-determines urgency. Bilingual (English–Tagalog) supported. Keywords are extracted and aggregated from all community reports and discussions.</div>
+
+  <!-- Extracted Keywords List -->
+  <div class="card" style="margin-bottom:20px">
+    <div class="card-header"><h3><i class="fas fa-list"></i> Extracted Keywords from Posts &amp; Reports</h3><span class="page-note">Auto-detected from descriptions</span></div>
+    <div class="tbl-wrap">
+      <div id="wordbank-list" style="min-height:200px">
+        <div style="text-align:center;padding:40px;color:var(--gray-400)">
+          <i class="fas fa-spinner fa-spin" style="font-size:24px;margin-bottom:12px;display:block"></i>
+          Loading word bank...
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Keyword Dictionary Management -->
   <div class="grid-2">
     <div class="card"><div class="card-header"><h3><i class="fas fa-arrow-up" style="color:var(--red)"></i> High Priority Keywords</h3></div><div class="keyword-grid" id="kw-high-grid">
       <span class="kw-chip kw-high" onclick="removeKeyword(this)">suspicious</span><span class="kw-chip kw-high" onclick="removeKeyword(this)">break-in</span><span class="kw-chip kw-high" onclick="removeKeyword(this)">theft / nakawan</span><span class="kw-chip kw-high" onclick="removeKeyword(this)">tubig / water leak</span><span class="kw-chip kw-high" onclick="removeKeyword(this)">baha / flood</span><span class="kw-chip kw-high" onclick="removeKeyword(this)">sunog / fire</span><span class="kw-chip kw-high" onclick="removeKeyword(this)">emergency</span><span class="kw-chip kw-high" onclick="removeKeyword(this)">fallen tree</span><span class="kw-chip kw-high" onclick="removeKeyword(this)">open gate</span>
@@ -834,6 +852,6 @@
 <div class="notif-modal-overlay" id="notif-modal-overlay"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<script src="staff-dashboard.js"></script>
+<script src="~/js/staff-dashboard.js"></script>
 </body>
 </html>
