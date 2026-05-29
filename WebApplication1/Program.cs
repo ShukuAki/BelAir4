@@ -24,6 +24,12 @@ builder.Services.AddScoped<IRepo, Repo>();
 // Register KeywordAnalysisService for priority detection
 builder.Services.AddScoped<IKeywordAnalysisService, KeywordAnalysisService>();
 
+// Register Ollama AI services for keyword extraction and priority determination
+builder.Services.AddHttpClient(); // registers IHttpClientFactory
+builder.Services.AddScoped<OllamaAiService>();
+builder.Services.AddScoped<HybridAiService>();
+builder.Services.AddScoped<IAiAnalysisService>(sp => sp.GetRequiredService<HybridAiService>());
+
 // Session used by login action
 builder.Services.AddDistributedMemoryCache();
 builder.Services.AddSession(options =>

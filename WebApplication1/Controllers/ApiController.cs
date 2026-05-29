@@ -14,12 +14,14 @@ namespace WebApplication1.Controllers
     {
         private readonly IRepo _repo;
         private readonly IKeywordAnalysisService _keywordService;
+        private readonly IAiAnalysisService _aiService;
         private readonly Microsoft.Extensions.Logging.ILogger<ApiController> _logger;
 
-        public ApiController(IRepo repo, IKeywordAnalysisService keywordService, Microsoft.Extensions.Logging.ILogger<ApiController> logger)
+        public ApiController(IRepo repo, IKeywordAnalysisService keywordService, IAiAnalysisService aiService, Microsoft.Extensions.Logging.ILogger<ApiController> logger)
         {
             _repo = repo;
             _keywordService = keywordService;
+            _aiService = aiService;
             _logger = logger;
         }
 
@@ -115,7 +117,7 @@ namespace WebApplication1.Controllers
             }
         }
 
-        // POST /api/analyze-priority - Analyze text and return priority
+        // POST /api/analyze-priority - Analyze text and return priority (AI-first, dictionary fallback)
         [HttpPost("analyze-priority")]
         public async Task<IActionResult> AnalyzePriority([FromBody] dynamic request)
         {
@@ -125,16 +127,33 @@ namespace WebApplication1.Controllers
                 if (string.IsNullOrWhiteSpace(text))
                     return BadRequest(new { success = false, error = "Description is required" });
 
-                var keywords = await _repo.GetActiveKeywordsAsync();
-                var priority = _keywordService.DeterminePriority(text, keywords);
-                var matched = _keywordService.ExtractMatchedKeywords(text, keywords);
+                var (kwsWithSev, aiPriority) = await _aiService.AnalyzeWithSeveritiesAsync(text);
+
+                string priority;
+                List<string> matched;
+                string source;
+
+                if (kwsWithSev.Count > 0)
+                {
+                    priority = aiPriority;
+                    matched = kwsWithSev.Select(k => k.keyword).ToList();
+                    source = "ai";
+                }
+                else
+                {
+                    var keywords = await _repo.GetActiveKeywordsAsync();
+                    priority = _keywordService.DeterminePriority(text, keywords);
+                    matched = _keywordService.ExtractMatchedKeywords(text, keywords);
+                    source = "dictionary";
+                }
 
                 return Ok(new
                 {
                     success = true,
-                    priority = priority,
+                    priority,
                     detectedKeywords = matched,
-                    keywordsJoined = string.Join(", ", matched)
+                    keywordsJoined = string.Join(", ", matched),
+                    source
                 });
             }
             catch (Exception ex)
@@ -216,65 +235,95 @@ namespace WebApplication1.Controllers
             }
         }
 
-        // GET /api/wordbank - Get combined word bank from posts and reports
+        // GET /api/wordbank - Get combined word bank from dictionary, posts and reports
         [HttpGet("wordbank")]
         public async Task<IActionResult> GetWordBank()
         {
             try
             {
-                var posts = await _repo.GetPostsAsync();
-                var reports = await _repo.GetReportsAsync();
                 var keywords = await _repo.GetActiveKeywordsAsync();
+                var wordBank = new List<WordBankItem>();
 
-                var wordBank = new List<dynamic>();
-
-                // Add detected keywords from posts
-                foreach (var post in posts.Where(p => !string.IsNullOrEmpty(p.DetectedKeywords)))
+                // Always include every active keyword from the dictionary table
+                foreach (var kw in keywords)
                 {
-                    var keywordsList = post.DetectedKeywords.Split(',').Select(k => k.Trim()).ToList();
-                    foreach (var keyword in keywordsList)
+                    wordBank.Add(new WordBankItem
                     {
-                        var kwData = keywords.FirstOrDefault(k => k.Keyword == keyword);
-                        wordBank.Add(new
-                        {
-                            type = "Post",
-                            source = post.Title,
-                            keyword = keyword,
-                            severity = kwData?.Severity ?? "medium",
-                            priority = post.Priority,
-                            date = post.CreatedAt,
-                            author = post.Author,
-                            category = post.Category
-                        });
-                    }
+                        Type = kw.Category == "AI-Detected" ? "AI-Detected" : "Dictionary",
+                        Source = kw.Category ?? "Manual",
+                        Keyword = kw.Keyword ?? "",
+                        Severity = kw.Severity ?? "medium",
+                        Priority = kw.Severity ?? "medium",
+                        Date = kw.UpdatedAt != default ? kw.UpdatedAt : kw.CreatedAt,
+                        Author = "Staff",
+                        Category = kw.Category ?? "-"
+                    });
                 }
 
-                // Add detected keywords from reports
-                foreach (var report in reports.Where(r => !string.IsNullOrEmpty(r.DetectedKeywords)))
+                // Add extracted keywords from posts (isolated — schema may be pending migration)
+                try
                 {
-                    var keywordsList = report.DetectedKeywords.Split(',').Select(k => k.Trim()).ToList();
-                    foreach (var keyword in keywordsList)
+                    var posts = await _repo.GetPostsAsync();
+                    foreach (var post in posts.Where(p => !string.IsNullOrEmpty(p.DetectedKeywords)))
                     {
-                        var kwData = keywords.FirstOrDefault(k => k.Keyword == keyword);
-                        wordBank.Add(new
+                        var keywordsList = post.DetectedKeywords!.Split(',').Select(k => k.Trim()).Where(k => !string.IsNullOrWhiteSpace(k));
+                        foreach (var keyword in keywordsList)
                         {
-                            type = "Report",
-                            source = report.Reference ?? $"Report-{report.Id}",
-                            keyword = keyword,
-                            severity = kwData?.Severity ?? "medium",
-                            priority = report.Priority,
-                            date = report.Timestamp,
-                            author = report.ReporterName ?? "Anonymous",
-                            category = report.Category
-                        });
+                            if (wordBank.Any(w => w.Keyword.Equals(keyword, StringComparison.OrdinalIgnoreCase))) continue;
+                            var kwData = keywords.FirstOrDefault(k => k.Keyword != null && k.Keyword.Equals(keyword, StringComparison.OrdinalIgnoreCase));
+                            wordBank.Add(new WordBankItem
+                            {
+                                Type = "Post",
+                                Source = post.Title ?? "Forum Post",
+                                Keyword = keyword,
+                                Severity = kwData?.Severity ?? "medium",
+                                Priority = post.Priority ?? "medium",
+                                Date = post.CreatedAt,
+                                Author = post.Author ?? "-",
+                                Category = post.Category ?? "-"
+                            });
+                        }
                     }
                 }
+                catch (Exception postEx)
+                {
+                    _logger.LogWarning(postEx, "Could not load posts for word bank (schema may need migration)");
+                }
 
-                // Sort by severity and date
+                // Add extracted keywords from reports (isolated — schema may be pending migration)
+                try
+                {
+                    var reports = await _repo.GetReportsAsync();
+                    foreach (var report in reports.Where(r => !string.IsNullOrEmpty(r.DetectedKeywords)))
+                    {
+                        var keywordsList = report.DetectedKeywords!.Split(',').Select(k => k.Trim()).Where(k => !string.IsNullOrWhiteSpace(k));
+                        foreach (var keyword in keywordsList)
+                        {
+                            if (wordBank.Any(w => w.Keyword.Equals(keyword, StringComparison.OrdinalIgnoreCase))) continue;
+                            var kwData = keywords.FirstOrDefault(k => k.Keyword != null && k.Keyword.Equals(keyword, StringComparison.OrdinalIgnoreCase));
+                            wordBank.Add(new WordBankItem
+                            {
+                                Type = "Report",
+                                Source = report.Reference ?? $"Report-{report.Id}",
+                                Keyword = keyword,
+                                Severity = kwData?.Severity ?? "medium",
+                                Priority = report.Priority ?? "medium",
+                                Date = report.Timestamp,
+                                Author = report.ReporterName ?? "Anonymous",
+                                Category = report.Category ?? "-"
+                            });
+                        }
+                    }
+                }
+                catch (Exception reportEx)
+                {
+                    _logger.LogWarning(reportEx, "Could not load reports for word bank (schema may need migration)");
+                }
+
                 var severityOrder = new Dictionary<string, int> { { "high", 0 }, { "medium", 1 }, { "low", 2 } };
                 var sorted = wordBank
-                    .OrderBy(w => severityOrder.ContainsKey(w.severity) ? severityOrder[w.severity] : 1)
-                    .ThenByDescending(w => w.date)
+                    .OrderBy(w => severityOrder.TryGetValue(w.Severity, out var o) ? o : 1)
+                    .ThenByDescending(w => w.Date)
                     .ToList();
 
                 return Ok(new { success = true, data = sorted, count = sorted.Count });
@@ -282,7 +331,7 @@ namespace WebApplication1.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error getting word bank");
-                return StatusCode(500, new { success = false, error = "Failed to retrieve word bank" });
+                return StatusCode(500, new { success = false, error = ex.Message });
             }
         }
 
@@ -335,7 +384,7 @@ namespace WebApplication1.Controllers
             }
         }
 
-        // POST /api/posts/{id}/analyze - Analyze a post and extract keywords
+        // POST /api/posts/{id}/analyze - Analyze a post and extract keywords (AI-first, dictionary fallback)
         [HttpPost("posts/{id}/analyze")]
         public async Task<IActionResult> AnalyzePost(int id)
         {
@@ -345,10 +394,26 @@ namespace WebApplication1.Controllers
                 if (post is null)
                     return NotFound(new { success = false, error = "Post not found" });
 
-                var keywords = await _repo.GetActiveKeywordsAsync();
                 var analysisText = $"{post.Title} {post.Description}";
-                var priority = _keywordService.DeterminePriority(analysisText, keywords);
-                var matched = _keywordService.ExtractMatchedKeywords(analysisText, keywords);
+                var (kwsWithSev, aiPriority) = await _aiService.AnalyzeWithSeveritiesAsync(analysisText);
+
+                string priority;
+                List<string> matched;
+                string source;
+
+                if (kwsWithSev.Count > 0)
+                {
+                    priority = aiPriority;
+                    matched = kwsWithSev.Select(k => k.keyword).ToList();
+                    source = "ai";
+                }
+                else
+                {
+                    var keywords = await _repo.GetActiveKeywordsAsync();
+                    priority = _keywordService.DeterminePriority(analysisText, keywords);
+                    matched = _keywordService.ExtractMatchedKeywords(analysisText, keywords);
+                    source = "dictionary";
+                }
 
                 post.Priority = priority;
                 post.DetectedKeywords = string.Join(", ", matched);
@@ -361,8 +426,9 @@ namespace WebApplication1.Controllers
                 {
                     success = true,
                     message = "Post analyzed successfully",
-                    priority = priority,
-                    detectedKeywords = matched
+                    priority,
+                    detectedKeywords = matched,
+                    source
                 });
             }
             catch (Exception ex)
@@ -371,5 +437,241 @@ namespace WebApplication1.Controllers
                 return StatusCode(500, new { success = false, error = "Failed to analyze post" });
             }
         }
+
+        // GET /api/ai/status - Check if Ollama AI is available
+        [HttpGet("ai/status")]
+        public async Task<IActionResult> GetAiStatus()
+        {
+            var available = await _aiService.IsAvailableAsync();
+            return Ok(new { available, engine = "Ollama", model = "mistral" });
+        }
+
+        // POST /api/ai/analyze - Analyze text with AI, optionally save discovered keywords
+        [HttpPost("ai/analyze")]
+        public async Task<IActionResult> AiAnalyze([FromBody] AiAnalyzeRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(request?.Text))
+                return BadRequest(new { success = false, error = "Text is required" });
+
+            try
+            {
+                var (kwsWithSev, priority) = await _aiService.AnalyzeWithSeveritiesAsync(request.Text);
+
+                int newKeywordsCount = 0;
+                if (request.SaveKeywords && kwsWithSev.Count > 0)
+                {
+                    var existingKeywords = await _repo.GetActiveKeywordsAsync();
+                    foreach (var (kw, sev) in kwsWithSev)
+                        newKeywordsCount += await UpsertKeywordAsync(existingKeywords, kw, sev);
+                }
+
+                return Ok(new
+                {
+                    success = true,
+                    priority,
+                    keywords = kwsWithSev.Select(k => new { keyword = k.keyword, severity = k.severity }),
+                    newKeywords = newKeywordsCount
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in AI analyze");
+                return StatusCode(500, new { success = false, error = "AI analysis failed" });
+            }
+        }
+
+        // POST /api/ai/analyze-all - Run AI analysis on all posts and reports, auto-save keywords
+        [HttpPost("ai/analyze-all")]
+        public async Task<IActionResult> AiAnalyzeAll()
+        {
+            try
+            {
+                var isAvailable = await _aiService.IsAvailableAsync();
+                if (!isAvailable)
+                    return Ok(new { success = false, error = "Ollama is not running. Start Ollama and try again." });
+
+                var posts = await _repo.GetPostsAsync();
+                var reports = await _repo.GetReportsAsync();
+                var existingKeywords = await _repo.GetActiveKeywordsAsync();
+
+                int processed = 0, newKeywordsCount = 0;
+
+                foreach (var post in posts)
+                {
+                    var text = $"{post.Title} {post.Description}".Trim();
+                    if (string.IsNullOrWhiteSpace(text)) continue;
+
+                    var (kwsWithSev, priority) = await _aiService.AnalyzeWithSeveritiesAsync(text);
+                    if (kwsWithSev.Count == 0) continue;
+
+                    post.Priority = priority;
+                    post.DetectedKeywords = string.Join(", ", kwsWithSev.Select(k => k.keyword));
+                    await _repo.UpdatePostAsync(post);
+
+                    foreach (var (kw, sev) in kwsWithSev)
+                        newKeywordsCount += await UpsertKeywordAsync(existingKeywords, kw, sev);
+
+                    processed++;
+                }
+
+                foreach (var report in reports)
+                {
+                    if (string.IsNullOrWhiteSpace(report.Description)) continue;
+
+                    var (kwsWithSev, priority) = await _aiService.AnalyzeWithSeveritiesAsync(report.Description);
+                    if (kwsWithSev.Count == 0) continue;
+
+                    report.Priority = priority;
+                    report.DetectedKeywords = string.Join(", ", kwsWithSev.Select(k => k.keyword));
+                    await _repo.UpdateReportAsync(report);
+
+                    foreach (var (kw, sev) in kwsWithSev)
+                        newKeywordsCount += await UpsertKeywordAsync(existingKeywords, kw, sev);
+
+                    processed++;
+                }
+
+                return Ok(new { success = true, processed, newKeywords = newKeywordsCount });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in AI analyze-all");
+                return StatusCode(500, new { success = false, error = "AI analysis failed" });
+            }
+        }
+
+        // GET /api/advertisements - Get approved advertisements (public)
+        [HttpGet("advertisements")]
+        public async Task<IActionResult> GetAdvertisements()
+        {
+            try
+            {
+                var ads = await _repo.GetApprovedAdvertisementsAsync();
+                return Ok(new { success = true, data = ads });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting advertisements");
+                return StatusCode(500, new { success = false, error = "Failed to retrieve advertisements" });
+            }
+        }
+
+        // POST /api/advertisements - Create new advertisement (pending status)
+        [HttpPost("advertisements")]
+        public async Task<IActionResult> CreateAdvertisement([FromBody] Advertisement ad)
+        {
+            try
+            {
+                var created = await _repo.CreateAdvertisementAsync(ad);
+                return Ok(new { success = true, data = created });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creating advertisement");
+                return StatusCode(500, new { success = false, error = "Failed to create advertisement" });
+            }
+        }
+
+        // GET /api/advertisements/pending - Get pending advertisements (staff only)
+        [HttpGet("advertisements/pending")]
+        public async Task<IActionResult> GetPendingAdvertisements()
+        {
+            try
+            {
+                var ads = await _repo.GetPendingAdvertisementsAsync();
+                return Ok(new { success = true, data = ads });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting pending advertisements");
+                return StatusCode(500, new { success = false, error = "Failed to retrieve pending advertisements" });
+            }
+        }
+
+        // POST /api/advertisements/{id}/approve - Approve advertisement (staff only)
+        [HttpPost("advertisements/{id}/approve")]
+        public async Task<IActionResult> ApproveAdvertisement(int id, [FromBody] ApproveRejectRequest request)
+        {
+            try
+            {
+                var success = await _repo.ApproveAdvertisementAsync(id, request.ReviewedBy ?? "Staff");
+                if (!success)
+                    return NotFound(new { success = false, error = "Advertisement not found" });
+                return Ok(new { success = true });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error approving advertisement");
+                return StatusCode(500, new { success = false, error = "Failed to approve advertisement" });
+            }
+        }
+
+        // POST /api/advertisements/{id}/reject - Reject advertisement (staff only)
+        [HttpPost("advertisements/{id}/reject")]
+        public async Task<IActionResult> RejectAdvertisement(int id, [FromBody] ApproveRejectRequest request)
+        {
+            try
+            {
+                var success = await _repo.RejectAdvertisementAsync(id, request.ReviewedBy ?? "Staff");
+                if (!success)
+                    return NotFound(new { success = false, error = "Advertisement not found" });
+                return Ok(new { success = true });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error rejecting advertisement");
+                return StatusCode(500, new { success = false, error = "Failed to reject advertisement" });
+            }
+        }
+
+        private async Task<int> UpsertKeywordAsync(List<KeywordDictionary> existingKeywords, string kw, string sev)
+        {
+            var existing = existingKeywords.FirstOrDefault(k =>
+                k.Keyword != null && k.Keyword.Equals(kw, StringComparison.OrdinalIgnoreCase));
+
+            if (existing == null)
+            {
+                await _repo.CreateKeywordAsync(new KeywordDictionary
+                {
+                    Keyword = kw,
+                    Severity = sev,
+                    Category = "AI-Detected",
+                    Language = "bilingual",
+                    IsActive = true
+                });
+                existingKeywords.Add(new KeywordDictionary { Keyword = kw, Severity = sev, IsActive = true });
+                return 1;
+            }
+
+            if (existing.Severity != sev)
+            {
+                existing.Severity = sev;
+                await _repo.UpdateKeywordAsync(existing);
+            }
+            return 0;
+        }
+    }
+
+    public class AiAnalyzeRequest
+    {
+        public string? Text { get; set; }
+        public bool SaveKeywords { get; set; } = true;
+    }
+
+    public class WordBankItem
+    {
+        public string Type { get; set; } = "";
+        public string Source { get; set; } = "";
+        public string Keyword { get; set; } = "";
+        public string Severity { get; set; } = "medium";
+        public string Priority { get; set; } = "medium";
+        public DateTime Date { get; set; }
+        public string Author { get; set; } = "";
+        public string Category { get; set; } = "";
+    }
+
+    public class ApproveRejectRequest
+    {
+        public string? ReviewedBy { get; set; }
     }
 }

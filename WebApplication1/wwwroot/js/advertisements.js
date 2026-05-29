@@ -4,83 +4,45 @@
    Laguna BelAir 4 HOA
 ═══════════════════════════════════════════════════════ */
 
-/* ── Sample Post Data ── */
-const POSTS = [
-  {
-    id: 1,
-    type: 'Business Ad',
-    title: 'Gardening & Landscaping Services',
-    desc: 'Professional gardening and landscaping for residential properties. We offer comprehensive lawn care, garden maintenance, seasonal planting, tree trimming, and water feature installation. Serving LBA4 and nearby areas for over 8 years.\n\nFree site visit for new clients!',
-    poster: 'Green Thumb Landscaping',
-    date: '2026-03-24',
-    image: 'sample.jpg',
-    price: null,
-    availability: 'Mon – Sat, 7am – 5pm',
-    contact: {
-      name: 'John Smith',
-      phone: '(+63) 912 345 6789',
-      email: 'info@greenthumb.com',
-      link: ''
-    }
-  },
-  {
-    id: 2,
-    type: 'Selling',
-    title: 'Barely Used Sofa Set for Sale',
-    desc: '3-seater + 2-seater sofa set. Light gray fabric, very clean, no stains. Reason for selling: redecorating. Available for pick-up inside the village.\n\nSelling at a steal — bought for ₱18,000 last year.',
-    poster: 'Reyes Household',
-    date: '2026-03-23',
-    image: '',
-    price: '₱6,500 (negotiable)',
-    availability: null,
-    contact: {
-      name: 'Maria Reyes',
-      phone: '09171234567',
-      email: '',
-      link: 'https://facebook.com/mariareyes'
-    }
-  },
-  {
-    id: 3,
-    type: 'Services',
-    title: 'Dental Clinic — Home Visit Available',
-    desc: 'Licensed dentist offering consultations, cleaning, tooth extraction, and basic dental procedures. Home visits available within LBA4 and nearby barangays.\n\nBring the whole family — package deals available for households!',
-    poster: 'Dr. Ana Santos, DMD',
-    date: '2026-03-22',
-    image: 'sample.jpg',
-    price: null,
-    availability: 'Tue, Thu, Sat — by appointment',
-    contact: {
-      name: 'Dr. Ana Santos',
-      phone: '09981234567',
-      email: 'drana.santos@gmail.com',
-      link: ''
-    }
-  },
-  {
-    id: 4,
-    type: 'Looking For',
-    title: 'Looking for a Reliable Car Mechanic',
-    desc: 'Hi! Looking for a trusted car mechanic who can do house calls for minor repairs and regular PMS for a Toyota Vios 2019. Preferably someone based in or near LBA4. Budget is negotiable.',
-    poster: 'Village Resident',
-    date: '2026-03-21',
-    image: '',
-    price: null,
-    availability: null,
-    contact: {
-      name: '',
-      phone: '09201234567',
-      email: '',
-      link: ''
-    }
-  }
-];
-
 /* ── State ── */
+let POSTS = [];
 let activeFilter = 'all';
 let searchQuery  = '';
 let currentPostId = null;
 let selectedImages = []; // { file, url }
+
+/* ── API Integration ── */
+async function loadPosts() {
+  try {
+    const res = await fetch('/api/advertisements');
+    const json = await res.json();
+    if (json.success) {
+      POSTS = json.data.map(ad => ({
+        id: ad.id,
+        type: ad.type,
+        title: ad.title,
+        desc: ad.description,
+        poster: ad.author || ad.contactName || 'Village Resident',
+        date: ad.createdAt,
+        image: ad.image,
+        price: ad.price,
+        availability: ad.availability,
+        contact: {
+          name: ad.contactName,
+          phone: ad.contactPhone,
+          email: ad.contactEmail,
+          link: ad.contactLink
+        }
+      }));
+      renderFeed();
+    } else {
+      showToast('Failed to load posts', 'error');
+    }
+  } catch (err) {
+    console.error('Error loading posts:', err);
+    showToast('Error loading posts', 'error');
+  }
+}
 
 /* ════════════════════════════════════════
    RENDERING
@@ -424,31 +386,40 @@ function validateCreateForm() {
   return valid;
 }
 
-function submitPost() {
+async function submitPost() {
   const newPost = {
-    id: Date.now(),
     type:        document.getElementById('postType').value,
     title:       document.getElementById('postTitle').value.trim(),
-    desc:        document.getElementById('postDesc').value.trim(),
-    poster:      document.getElementById('contactName').value.trim() || 'Village Resident',
-    date:        new Date().toISOString().split('T')[0],
-    image:       selectedImages.length ? selectedImages[0].url : '',
+    description: document.getElementById('postDesc').value.trim(),
+    author:      document.getElementById('contactName').value.trim() || 'Village Resident',
+    contactName: document.getElementById('contactName').value.trim(),
+    contactPhone: document.getElementById('contactPhone').value.trim(),
+    contactEmail: document.getElementById('contactEmail').value.trim(),
+    contactLink: document.getElementById('contactLink').value.trim(),
     price:       document.getElementById('postPrice').value.trim() || null,
     availability:document.getElementById('postAvailability').value.trim() || null,
-    contact: {
-      name:  document.getElementById('contactName').value.trim(),
-      phone: document.getElementById('contactPhone').value.trim(),
-      email: document.getElementById('contactEmail').value.trim(),
-      link:  document.getElementById('contactLink').value.trim()
-    }
+    image:       selectedImages.length ? selectedImages[0].url : null
   };
 
-  POSTS.unshift(newPost);
-
-  closeModal('createModal');
-  resetCreateForm();
-  renderFeed();
-  showToast('Your post has been published!', 'success');
+  try {
+    const res = await fetch('/api/advertisements', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newPost)
+    });
+    const json = await res.json();
+    if (json.success) {
+      closeModal('createModal');
+      resetCreateForm();
+      showToast('Your post has been submitted for review!', 'success');
+      // Don't add to local feed yet - it needs approval
+    } else {
+      showToast('Failed to submit post: ' + (json.error || 'Unknown error'), 'error');
+    }
+  } catch (err) {
+    console.error('Error submitting post:', err);
+    showToast('Error submitting post', 'error');
+  }
 }
 
 function resetCreateForm() {
@@ -536,8 +507,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Initial render
-  renderFeed();
+  // Initial render - load from API
+  loadPosts();
 
   // Filter tabs
   document.getElementById('filterTabs').addEventListener('click', e => {

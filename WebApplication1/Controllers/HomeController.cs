@@ -1,19 +1,22 @@
 using Microsoft.AspNetCore.Mvc;
 using WebApplication1.Repository;
+using WebApplication1.Services;
+using WebApplication1.Models;
 using Microsoft.AspNetCore.Http;
 using System.Threading.Tasks;
-using WebApplication1.Models;
 
 namespace WebApplication1.Controllers
 {
     public class HomeController : Controller
     {
         private readonly IRepo _repo;
+        private readonly IAiAnalysisService _aiService;
         private readonly Microsoft.Extensions.Logging.ILogger<HomeController> _logger;
 
-        public HomeController(IRepo repo, Microsoft.Extensions.Logging.ILogger<HomeController> logger)
+        public HomeController(IRepo repo, IAiAnalysisService aiService, Microsoft.Extensions.Logging.ILogger<HomeController> logger)
         {
             _repo = repo;
+            _aiService = aiService;
             _logger = logger;
         }
         public IActionResult aboutLagunaBelAir() => View();
@@ -275,7 +278,44 @@ namespace WebApplication1.Controllers
                 // Save to database
                 var createdReport = await _repo.CreateReportAsync(report);
 
-                return Json(new { success = true, reference = createdReport.Reference, id = createdReport.Id });
+                // Run AI analysis inline (scoped services must remain in-scope)
+                try
+                {
+                    var (keywordsWithSeverity, priority) = await _aiService.AnalyzeWithSeveritiesAsync(report.Description);
+                    if (keywordsWithSeverity.Count > 0 || priority != "medium")
+                    {
+                        createdReport.Priority = priority;
+                        createdReport.DetectedKeywords = string.Join(",", keywordsWithSeverity.Select(k => k.keyword));
+                        await _repo.UpdateReportAsync(createdReport);
+
+                        var existingKeywords = await _repo.GetActiveKeywordsAsync();
+                        foreach (var (keyword, severity) in keywordsWithSeverity)
+                        {
+                            var exists = existingKeywords.Any(k => k.Keyword != null &&
+                                k.Keyword.Equals(keyword, StringComparison.OrdinalIgnoreCase));
+                            if (!exists)
+                            {
+                                await _repo.CreateKeywordAsync(new KeywordDictionary
+                                {
+                                    Keyword = keyword,
+                                    Severity = severity,
+                                    Category = "AI-Detected",
+                                    Language = "bilingual",
+                                    IsActive = true,
+                                    CreatedAt = DateTime.UtcNow,
+                                    UpdatedAt = DateTime.UtcNow
+                                });
+                            }
+                        }
+                    }
+                }
+                catch (Exception aiEx)
+                {
+                    _logger?.LogWarning(aiEx, "AI analysis failed for report {Reference}, report was still saved", createdReport.Reference);
+                }
+
+                return Json(new { success = true, reference = createdReport.Reference, id = createdReport.Id,
+                    priority = createdReport.Priority, keywords = createdReport.DetectedKeywords });
             }
             catch (Exception ex)
             {

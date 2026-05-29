@@ -23,6 +23,14 @@ const LBA4 = {
   ]
 };
 
+/* ── UTILITIES ── */
+function formatDate(str) {
+  if (!str) return '';
+  const d = new Date(str);
+  if (isNaN(d.getTime())) return str;
+  return d.toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
 /* ── STATE ── */
 let INCIDENTS   = [];
 let MAP_ITEMS   = [];
@@ -116,8 +124,9 @@ function showPage(id, el) {
   if (id === 'communitymap') setTimeout(initCommunityMap, 80);
   if (id === 'incidents')    setTimeout(initPreviewMap, 80);
   if (id === 'events')       { renderCalendar(); renderEventsList(); }
-  if (id === 'exchange')     renderExchangeDashboard();
+  if (id === 'exchange')     loadExchangeData();
   if (id === 'forums')       renderForumsDashboard();
+  if (id === 'wordbank')     { loadWordBank(); loadKeywordsData(); checkAiStatus(); }
   if (window.innerWidth <= 768) document.getElementById('sidebar').classList.remove('mobile-open');
 }
 
@@ -737,53 +746,110 @@ function searchResidents(q) {
 }
 
 /* ============================================================
-   COMMUNITY EXCHANGE — connected to lba4_exchange localStorage
+   COMMUNITY EXCHANGE — API-based (pending/approved advertisements)
 ============================================================ */
-const DEF_EXCHANGE = {
-  pending: [
-    {id:'ex_001', title:'Homemade Lunch Boxes',   seller:'Pedro Cruz',      sellerLocation:'Block A, H5',  category:'Food & Catering', price:'₱120/box',        description:'Delicious homemade meals prepared fresh daily.',   status:'pending',   submittedAt:'Feb 18, 2026', image:'🍱'},
-    {id:'ex_002', title:'Home Repair & Plumbing',  seller:'Ben Ocampo',      sellerLocation:'Block C, H12', category:'Services',         price:'Rates negotiable', description:'Professional plumbing and home repairs.',           status:'pending',   submittedAt:'Feb 17, 2026', image:'🛠️'},
-    {id:'ex_003', title:'Custom Cakes & Pastries', seller:'Cynthia Ramos',   sellerLocation:'Block B, H8',  category:'Food & Catering', price:'₱350/cake',        description:'Custom cakes for birthdays and events.',            status:'pending',   submittedAt:'Feb 16, 2026', image:'🧁'},
-    {id:'ex_004', title:'Yoga Classes',            seller:'Lea Manalo',      sellerLocation:'Block D, H6',  category:'Services',         price:'₱200/session',     description:'Morning yoga sessions at the clubhouse.',          status:'pending',   submittedAt:'Feb 15, 2026', image:'🧘'},
-    {id:'ex_005', title:'Preloved Kids Clothes',   seller:'Jenny Santos',    sellerLocation:'Block A, H3',  category:'For Sale',         price:'₱50–₱300 each',    description:'Gently used kids clothing sizes 1T–5T.',            status:'pending',   submittedAt:'Feb 14, 2026', image:'👗'}
-  ],
-  published: [
-    {id:'ex_p01', title:'Fresh Vegetables',   seller:'Nena Bautista',    sellerLocation:'Block D, H3', category:'Food & Catering', price:'₱50–₱200/kg',   description:'Fresh organic vegetables harvested from our garden.', status:'published', publishedAt:'Feb 15, 2026', image:'🥬'},
-    {id:'ex_p02', title:'Math Tutoring',       seller:'Nico Santos',      sellerLocation:'Block A, H9', category:'Services',         price:'₱300/hour',     description:'Math tutoring for grades 1–12.',                      status:'published', publishedAt:'Feb 12, 2026', image:'📐'},
-    {id:'ex_p03', title:'Garden Maintenance',  seller:'Ramon Villanueva', sellerLocation:'Block C, H2', category:'Services',         price:'₱500/session',  description:'Lawn mowing and garden care.',                        status:'published', publishedAt:'Feb 10, 2026', image:'🌿'}
-  ]
-};
+let exchangeData = { pending: [], published: [] };
 
-function getExchange() {
-  try { const s = localStorage.getItem('lba4_exchange'); if (s) return JSON.parse(s); } catch(e) {}
-  return { pending:[...DEF_EXCHANGE.pending], published:[...DEF_EXCHANGE.published] };
+async function loadExchangeData() {
+  try {
+    const [pendingRes, approvedRes] = await Promise.all([
+      fetch('/api/advertisements/pending'),
+      fetch('/api/advertisements')
+    ]);
+    const pendingJson = await pendingRes.json();
+    const approvedJson = await approvedRes.json();
+    
+    if (pendingJson.success) {
+      exchangeData.pending = pendingJson.data.map(ad => ({
+        id: ad.id,
+        title: ad.title,
+        seller: ad.author || ad.contactName || 'Unknown',
+        sellerLocation: '',
+        category: ad.type,
+        price: ad.price || '—',
+        description: ad.description,
+        status: 'pending',
+        submittedAt: formatDate(ad.createdAt),
+        image: ad.image || '📢'
+      }));
+    }
+    
+    if (approvedJson.success) {
+      exchangeData.published = approvedJson.data.map(ad => ({
+        id: ad.id,
+        title: ad.title,
+        seller: ad.author || ad.contactName || 'Unknown',
+        sellerLocation: '',
+        category: ad.type,
+        price: ad.price || '—',
+        description: ad.description,
+        status: 'published',
+        publishedAt: formatDate(ad.createdAt),
+        image: ad.image || '📢'
+      }));
+    }
+    
+    renderExchangeDashboard();
+  } catch (err) {
+    console.error('Error loading exchange data:', err);
+  }
 }
-function saveExchange(d) { try { localStorage.setItem('lba4_exchange', JSON.stringify(d)); } catch(e) {} }
 
-function approveExchange(id) {
-  const d = getExchange(); const idx = d.pending.findIndex(p => p.id === id); if (idx < 0) return;
-  const item = { ...d.pending[idx], status:'published', publishedAt: new Date().toLocaleDateString('en-PH',{year:'numeric',month:'short',day:'numeric'}) };
-  delete item.submittedAt; d.published.unshift(item); d.pending.splice(idx,1);
-  saveExchange(d); renderExchangeDashboard(); showToast(`✅ "${item.title}" published`);
+async function approveExchange(id) {
+  try {
+    const res = await fetch(`/api/advertisements/${id}/approve`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reviewedBy: 'Staff' })
+    });
+    const json = await res.json();
+    if (json.success) {
+      showToast('Advertisement approved and published');
+      await loadExchangeData();
+    } else {
+      showToast('Failed to approve: ' + (json.error || 'Unknown error'), 'error');
+    }
+  } catch (err) {
+    console.error('Error approving exchange:', err);
+    showToast('Error approving advertisement', 'error');
+  }
 }
-function rejectExchange(id) {
-  const d = getExchange(); const i = d.pending.findIndex(p => p.id === id); if (i < 0) return;
-  const t = d.pending[i].title; d.pending.splice(i,1); saveExchange(d); renderExchangeDashboard(); showToast(`"${t}" rejected`, 'error');
+
+async function rejectExchange(id) {
+  if (!confirm('Reject this advertisement?')) return;
+  try {
+    const res = await fetch(`/api/advertisements/${id}/reject`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reviewedBy: 'Staff' })
+    });
+    const json = await res.json();
+    if (json.success) {
+      showToast('Advertisement rejected', 'error');
+      await loadExchangeData();
+    } else {
+      showToast('Failed to reject: ' + (json.error || 'Unknown error'), 'error');
+    }
+  } catch (err) {
+    console.error('Error rejecting exchange:', err);
+    showToast('Error rejecting advertisement', 'error');
+  }
 }
+
 function cancelExchange(id) {
-  const d = getExchange(); const i = d.pending.findIndex(p => p.id === id); if (i < 0) return;
-  const t = d.pending[i].title; d.pending.splice(i,1); saveExchange(d); renderExchangeDashboard(); showToast(`"${t}" cancelled`, 'info');
-}
-function deleteExchange(id) {
-  const d = getExchange(); const i = d.published.findIndex(p => p.id === id);
-  if (i < 0 || !confirm(`Delete "${d.published[i].title}"?`)) return;
-  const t = d.published[i].title; d.published.splice(i,1); saveExchange(d); renderExchangeDashboard(); showToast(`"${t}" deleted`, 'error');
+  // For pending ads, cancel is same as reject
+  rejectExchange(id);
 }
 
-/* FIXED: View now opens a proper detail modal */
+function deleteExchange(id) {
+  if (!confirm('Delete this published advertisement?')) return;
+  // Note: Delete would need a separate API endpoint if needed
+  // For now, we can only reject (which removes from approved list)
+  rejectExchange(id);
+}
+
 function viewExchange(id) {
-  const d = getExchange();
-  const item = [...d.pending, ...d.published].find(i => i.id === id);
+  const item = [...exchangeData.pending, ...exchangeData.published].find(i => i.id === id);
   if (!item) return;
   const ct = document.getElementById('resident-detail-content'); if (!ct) return;
   ct.innerHTML = `
@@ -791,7 +857,7 @@ function viewExchange(id) {
       <div style="width:60px;height:60px;border-radius:var(--radius-lg);background:var(--green-light);display:flex;align-items:center;justify-content:center;font-size:32px;flex-shrink:0">${escHtml(item.image||'📢')}</div>
       <div>
         <div style="font-size:16px;font-weight:800;color:var(--green)">${escHtml(item.title)}</div>
-        <div style="font-size:12px;color:var(--gray-600)">${escHtml(item.seller)} · ${escHtml(item.sellerLocation||'')}</div>
+        <div style="font-size:12px;color:var(--gray-600)">${escHtml(item.seller)}</div>
         <span class="tag ${item.status==='published'?'tag-green':'tag-yellow'}" style="margin-top:4px">${item.status==='published'?'Published':'Pending'}</span>
       </div>
     </div>
@@ -800,14 +866,14 @@ function viewExchange(id) {
     <div class="form-group"><label>Description</label><div class="text-display" style="white-space:pre-wrap">${escHtml(item.description)}</div></div>
     <div class="form-group"><label>${item.status==='published'?'Published':'Submitted'}</label><div class="text-display">${escHtml(item.publishedAt||item.submittedAt||'—')}</div></div>
     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:4px">
-      ${item.status==='pending'?`<button class="btn btn-primary" onclick="approveExchange('${item.id}');closeModal('residentDetail')"><i class="fas fa-check"></i> Approve</button><button class="btn btn-outline" style="color:var(--red)" onclick="rejectExchange('${item.id}');closeModal('residentDetail')"><i class="fas fa-times"></i> Reject</button>`:''}
+      ${item.status==='pending'?`<button class="btn btn-primary" onclick="approveExchange(${item.id});closeModal('residentDetail')"><i class="fas fa-check"></i> Approve</button><button class="btn btn-outline" style="color:var(--red)" onclick="rejectExchange(${item.id});closeModal('residentDetail')"><i class="fas fa-times"></i> Reject</button>`:''}
       <button class="btn btn-outline" onclick="closeModal('residentDetail')">Close</button>
     </div>`;
   openModal('residentDetail');
 }
 
 function renderExchangeDashboard() {
-  const d = getExchange();
+  const d = exchangeData;
   const badge = document.getElementById('badge-exchange'); if (badge) { badge.textContent = d.pending.length; badge.style.display = d.pending.length > 0 ? '' : 'none'; }
   const cnt = document.getElementById('pending-exchange-count'); if (cnt) cnt.textContent = d.pending.length;
 
@@ -821,13 +887,13 @@ function renderExchangeDashboard() {
           <div class="ad-thumb">${escHtml(item.image||'📢')}</div>
           <div class="ad-body">
             <div class="ad-title">${escHtml(item.title)}</div>
-            <div class="ad-sub">${escHtml(item.seller)} · ${escHtml(item.sellerLocation||'')} · ${escHtml(item.category)}</div>
+            <div class="ad-sub">${escHtml(item.seller)} · ${escHtml(item.category)}</div>
             <div class="ad-meta">${escHtml(item.price||'')} · Submitted ${escHtml(item.submittedAt||'')}</div>
             <div class="ad-actions">
-              <button class="btn btn-primary btn-sm" onclick="approveExchange('${item.id}')"><i class="fas fa-check"></i> Accept</button>
-              <button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="rejectExchange('${item.id}')"><i class="fas fa-times"></i> Reject</button>
-              <button class="btn btn-outline btn-sm" style="color:var(--orange)" onclick="cancelExchange('${item.id}')"><i class="fas fa-ban"></i> Cancel</button>
-              <button class="btn btn-outline btn-sm" onclick="viewExchange('${item.id}')"><i class="fas fa-eye"></i> View</button>
+              <button class="btn btn-primary btn-sm" onclick="approveExchange(${item.id})"><i class="fas fa-check"></i> Accept</button>
+              <button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="rejectExchange(${item.id})"><i class="fas fa-times"></i> Reject</button>
+              <button class="btn btn-outline btn-sm" style="color:var(--orange)" onclick="cancelExchange(${item.id})"><i class="fas fa-ban"></i> Cancel</button>
+              <button class="btn btn-outline btn-sm" onclick="viewExchange(${item.id})"><i class="fas fa-eye"></i> View</button>
             </div>
           </div>
         </div>`).join('');
@@ -841,7 +907,7 @@ function renderExchangeDashboard() {
       pub.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--gray-400)">No published posts yet</td></tr>`;
     } else {
       pub.innerHTML = d.published.map(item => {
-        const tc = item.category==='Food & Catering'?'tag-green':item.category==='Services'?'tag-blue':item.category==='For Sale'?'tag-orange':'tag-gray';
+        const tc = item.category==='Business Ad'?'tag-green':item.category==='Services'?'tag-blue':item.category==='Selling'?'tag-orange':item.category==='Looking For'?'tag-purple':'tag-gray';
         return `<tr>
           <td><strong>${escHtml(item.title)}</strong></td>
           <td><span class="tag ${tc}">${escHtml(item.category)}</span></td>
@@ -849,8 +915,8 @@ function renderExchangeDashboard() {
           <td>${escHtml(item.publishedAt||'')}</td>
           <td><span class="status-pill sp-approved">Published</span></td>
           <td class="ad-actions-table">
-            <button class="btn btn-outline btn-sm" onclick="viewExchange('${item.id}')"><i class="fas fa-eye"></i> View</button>
-            <button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="deleteExchange('${item.id}')"><i class="fas fa-trash"></i> Delete</button>
+            <button class="btn btn-outline btn-sm" onclick="viewExchange(${item.id})"><i class="fas fa-eye"></i> View</button>
+            <button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="deleteExchange(${item.id})"><i class="fas fa-trash"></i> Delete</button>
           </td>
         </tr>`;
       }).join('');
@@ -860,7 +926,7 @@ function renderExchangeDashboard() {
 }
 
 function updateOverviewExchange() {
-  const d = getExchange();
+  const d = exchangeData;
   const sv = document.getElementById('overview-pending-exchange'); if (sv) sv.textContent = d.pending.length;
   const le = document.getElementById('overview-exchange-list'); if (!le) return;
   if (!d.pending.length) { le.innerHTML = `<div class="empty-state-inline" style="padding:20px"><i class="fas fa-check-circle" style="color:var(--green)"></i><span>No pending posts</span></div>`; return; }
@@ -1547,14 +1613,13 @@ function closeNotifModal() { const o = document.getElementById('notif-modal-over
 ============================================================ */
 document.addEventListener('DOMContentLoaded', function() {
   loadIncidents(); loadSettings();
-  renderExchangeDashboard(); renderOverviewIncidents(); updateIncidentStats(); updateDistribution(); updateCommonKeywords();
+  loadExchangeData(); renderOverviewIncidents(); updateIncidentStats(); updateDistribution(); updateCommonKeywords();
   renderIncidentsTable('all'); renderCalendar(); renderEventsList();
   initKanban();
   document.querySelector('.icon-btn[title="Notifications"]')?.addEventListener('click', openNotifModal);
   document.querySelector('.icon-btn[title="Settings"]')?.addEventListener('click', () => openModal('settings'));
   window.addEventListener('storage', e => {
     if (e.key === 'lba4_incidents') { loadIncidents(); renderIncidentsTable('all'); renderOverviewIncidents(); updateIncidentStats(); updateDistribution(); updateCommonKeywords(); _updateNotifBadge(); }
-    if (e.key === 'lba4_exchange')  { renderExchangeDashboard(); }
   });
   _updateNotifBadge();
   loadKeywordsData(); // Load keywords for Word Bank
@@ -1833,24 +1898,65 @@ function updateCommonKeywords() {
    WORD BANK & KEYWORD ANALYSIS
 ============================================================ */
 
+async function checkAiStatus() {
+  const badge = document.getElementById('ai-status-badge');
+  if (!badge) return;
+  try {
+    const res = await fetch('/api/ai/status');
+    const data = await res.json();
+    if (data.available) {
+      badge.style.background = 'var(--green-light)';
+      badge.style.color = 'var(--green)';
+      badge.innerHTML = '<i class="fas fa-circle" style="font-size:8px"></i> AI Online';
+    } else {
+      badge.style.background = '#fdecea';
+      badge.style.color = 'var(--red)';
+      badge.innerHTML = '<i class="fas fa-circle" style="font-size:8px"></i> AI Offline';
+    }
+  } catch (e) {
+    badge.style.background = '#fdecea';
+    badge.style.color = 'var(--red)';
+    badge.innerHTML = '<i class="fas fa-circle" style="font-size:8px"></i> AI Offline';
+  }
+}
+
+async function analyzeAllWithAI() {
+  const btn = document.getElementById('btn-analyze-all');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Analyzing…'; }
+  try {
+    const res = await fetch('/api/ai/analyze-all', { method: 'POST' });
+    const data = await res.json();
+    if (data.success) {
+      showToast(`AI analyzed ${data.processed} item(s), saved ${data.newKeywords} new keyword(s)`);
+      loadKeywordsData();
+      loadWordBank();
+    } else {
+      showToast(data.error || 'AI analysis failed', 'error');
+    }
+  } catch (e) {
+    showToast('Could not reach AI service', 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-robot"></i> Analyze All with AI'; }
+  }
+}
+
 // Load word bank data from API
 async function loadWordBank() {
+  const wordBankList = document.getElementById('wordbank-list');
+  if (!wordBankList) return;
   try {
     const response = await fetch('/api/wordbank');
     const result = await response.json();
 
     if (!result.success || !result.data) {
-      console.error('Failed to load word bank:', result.error);
+      wordBankList.innerHTML = `<div class="empty-state-inline" style="padding:32px;color:var(--red)"><i class="fas fa-exclamation-circle"></i><span>Failed to load: ${escHtml(result.error || 'Unknown error')}</span></div>`;
       return;
     }
 
-    const wordBankList = document.getElementById('wordbank-list');
-    if (!wordBankList) return;
-
-    const html = generateWordBankTable(result.data);
-    wordBankList.innerHTML = html;
+    wordBankList.innerHTML = generateWordBankTable(result.data);
   } catch (error) {
     console.error('Error loading word bank:', error);
+    wordBankList.innerHTML = '<div class="empty-state-inline" style="padding:32px;color:var(--red)"><i class="fas fa-exclamation-circle"></i><span>Could not connect to server</span></div>';
   }
 }
 

@@ -22,6 +22,7 @@ public partial class SqBelAir4Context : DbContext
     public virtual DbSet<Pet> Pets { get; set; }
     public virtual DbSet<ConcernReport> ConcernReports { get; set; }
     public virtual DbSet<KeywordDictionary> KeywordDictionaries { get; set; }
+    public virtual DbSet<Advertisement> Advertisements { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
 #warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
@@ -162,6 +163,29 @@ public partial class SqBelAir4Context : DbContext
             entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("GETUTCDATE()");
             entity.Property(e => e.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("GETUTCDATE()");
             entity.Property(e => e.IsActive).HasColumnName("is_active").HasDefaultValue(true);
+        });
+
+        modelBuilder.Entity<Advertisement>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK_Advertisements");
+            entity.ToTable("advertisements");
+
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.Type).HasMaxLength(50).IsUnicode(false).HasColumnName("type");
+            entity.Property(e => e.Title).HasMaxLength(250).IsUnicode(false).HasColumnName("title");
+            entity.Property(e => e.Description).HasColumnName("description");
+            entity.Property(e => e.Author).HasMaxLength(200).IsUnicode(false).HasColumnName("author");
+            entity.Property(e => e.ContactName).HasMaxLength(200).IsUnicode(false).HasColumnName("contact_name");
+            entity.Property(e => e.ContactPhone).HasMaxLength(50).IsUnicode(false).HasColumnName("contact_phone");
+            entity.Property(e => e.ContactEmail).HasMaxLength(200).IsUnicode(false).HasColumnName("contact_email");
+            entity.Property(e => e.ContactLink).HasMaxLength(500).IsUnicode(false).HasColumnName("contact_link");
+            entity.Property(e => e.Price).HasMaxLength(100).IsUnicode(false).HasColumnName("price");
+            entity.Property(e => e.Availability).HasMaxLength(200).IsUnicode(false).HasColumnName("availability");
+            entity.Property(e => e.Image).HasColumnName("image");
+            entity.Property(e => e.Status).HasMaxLength(20).IsUnicode(false).HasColumnName("status").HasDefaultValue("pending");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("GETUTCDATE()");
+            entity.Property(e => e.ReviewedAt).HasColumnName("reviewed_at");
+            entity.Property(e => e.ReviewedBy).HasMaxLength(100).IsUnicode(false).HasColumnName("reviewed_by");
         });
 
         OnModelCreatingPartial(modelBuilder);

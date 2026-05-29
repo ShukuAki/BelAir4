@@ -17,6 +17,7 @@ namespace WebApplication1.Services
         Task<List<string>> ExtractKeywordsAsync(string? text);
         Task<string> DeterminePriorityAsync(string? text);
         Task<(List<string> keywords, string priority)> AnalyzeAsync(string? text);
+        Task<(List<(string keyword, string severity)> keywordsWithSeverity, string priority)> AnalyzeWithSeveritiesAsync(string? text);
         Task<bool> IsAvailableAsync();
     }
 
@@ -33,12 +34,12 @@ namespace WebApplication1.Services
         private readonly IKeywordAnalysisService _fallbackService;
 
         public OllamaAiService(
-            HttpClient httpClient,
+            IHttpClientFactory httpClientFactory,
             ILogger<OllamaAiService> logger,
             IConfiguration configuration,
             IKeywordAnalysisService fallbackService)
         {
-            _httpClient = httpClient;
+            _httpClient = httpClientFactory.CreateClient("ollama");
             _logger = logger;
             _fallbackService = fallbackService;
 
@@ -168,6 +169,104 @@ Priority:";
 
             var keywords = await ExtractKeywordsAsync(text);
             var priority = await DeterminePriorityAsync(text);
+
+            return (keywords, priority);
+        }
+
+        /// <summary>
+        /// Extracts keywords with individual severity levels using a single optimised prompt.
+        /// Returns each keyword paired with its severity (high/medium/low) plus the overall priority.
+        /// </summary>
+        public async Task<(List<(string keyword, string severity)> keywordsWithSeverity, string priority)> AnalyzeWithSeveritiesAsync(string? text)
+        {
+            if (string.IsNullOrWhiteSpace(text))
+                return (new List<(string, string)>(), "medium");
+
+            try
+            {
+                if (!await IsAvailableAsync())
+                {
+                    _logger.LogWarning("Ollama not available for AnalyzeWithSeveritiesAsync");
+                    return (new List<(string, string)>(), "medium");
+                }
+
+                var prompt =
+                    "You are analyzing a community concern report for a residential subdivision (HOA) in the Philippines. " +
+                    "The report may contain English or Filipino/Tagalog words.\n\n" +
+                    "Extract the key problem words or phrases from the text below and assign a severity level to each word.\n" +
+                    "Output EXACTLY 2 lines — no extra text, no explanations, no numbering:\n" +
+                    "Line 1: PRIORITY: <high|medium|low>\n" +
+                    "Line 2: KEYWORDS: <word>:<severity>, <word>:<severity>, ...\n\n" +
+                    "Example — for the text \"There is a fire near the gate and flooding on the road\":\n" +
+                    "PRIORITY: high\n" +
+                    "KEYWORDS: fire:high, flooding:high, road:medium\n\n" +
+                    "Severity guidelines (use your judgment for words not listed):\n" +
+                    "- high: fire, sunog, flood, baha, tornado, typhoon, storm, bagyo, earthquake, lindol, " +
+                    "crime, robbery, theft, holdap, nakawan, emergency, medical, break-in, suspicious, " +
+                    "terrorizing, terror, threat, danger, attack, destroyed, collapsed, fallen tree, " +
+                    "exposed wiring, gas leak, shooting, bala, assassination, hostage\n" +
+                    "- medium: power outage, kuryente, pothole, kalsada, road damage, broken light, ilaw, " +
+                    "drainage, maintenance, sira, broken, water leak, tubig, leak, damage, cracked, blocked\n" +
+                    "- low: parking, trash, basura, noise, ingay, suggestion, request, minor, smell, dirt\n\n" +
+                    "Report text: " + text + "\n\n" +
+                    "Output (2 lines only):";
+
+                var response = await CallOllamaAsync(prompt);
+                _logger.LogInformation("[Ollama] Raw AnalyzeWithSeverities response: {Response}", response);
+                return ParseWithSeveritiesResponse(response);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in AnalyzeWithSeveritiesAsync");
+                return (new List<(string, string)>(), "medium");
+            }
+        }
+
+        private (List<(string keyword, string severity)> keywordsWithSeverity, string priority) ParseWithSeveritiesResponse(string response)
+        {
+            var priority = "medium";
+            var keywords = new List<(string keyword, string severity)>();
+
+            if (string.IsNullOrWhiteSpace(response))
+                return (keywords, priority);
+
+            foreach (var line in response.Split('\n', StringSplitOptions.RemoveEmptyEntries))
+            {
+                // Strip markdown bold/header chars so **PRIORITY:** or ## KEYWORDS: still match
+                var trimmed = line.Trim().TrimStart('*', '#', '-', ' ', '\t').Trim('*').Trim();
+
+                var priorityIdx = trimmed.IndexOf("PRIORITY:", StringComparison.OrdinalIgnoreCase);
+                if (priorityIdx >= 0)
+                {
+                    var p = trimmed.Substring(priorityIdx + 9).Trim().ToLower();
+                    if (p.Contains("high")) priority = "high";
+                    else if (p.Contains("low")) priority = "low";
+                    else priority = "medium";
+                    continue;
+                }
+
+                var keywordsIdx = trimmed.IndexOf("KEYWORDS:", StringComparison.OrdinalIgnoreCase);
+                if (keywordsIdx >= 0)
+                {
+                    var kwPart = trimmed.Substring(keywordsIdx + 9).Trim();
+                    foreach (var pair in kwPart.Split(',', StringSplitOptions.RemoveEmptyEntries))
+                    {
+                        var colonIdx = pair.LastIndexOf(':');
+                        if (colonIdx > 0)
+                        {
+                            var kw = pair.Substring(0, colonIdx).Trim().ToLower()
+                                        .Trim('*', '_', '`', '"', '\'');
+                            var sev = pair.Substring(colonIdx + 1).Trim().ToLower()
+                                         .Trim('*', '_', '`', '"', '\'');
+                            if (!string.IsNullOrWhiteSpace(kw) && kw.Length >= 2 && kw.Length <= 60)
+                            {
+                                if (!new[] { "high", "medium", "low" }.Contains(sev)) sev = "medium";
+                                keywords.Add((kw, sev));
+                            }
+                        }
+                    }
+                }
+            }
 
             return (keywords, priority);
         }
@@ -309,6 +408,21 @@ Priority:";
             var keywords = await ExtractKeywordsAsync(text);
             var priority = await DeterminePriorityAsync(text);
             return (keywords, priority);
+        }
+
+        public async Task<(List<(string keyword, string severity)> keywordsWithSeverity, string priority)> AnalyzeWithSeveritiesAsync(string? text)
+        {
+            try
+            {
+                var result = await _ollamaService.AnalyzeWithSeveritiesAsync(text);
+                if (result.keywordsWithSeverity.Count > 0)
+                    return result;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning($"Ollama AnalyzeWithSeverities failed: {ex.Message}");
+            }
+            return (new List<(string, string)>(), "medium");
         }
     }
 }

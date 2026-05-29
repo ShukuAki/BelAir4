@@ -33,6 +33,7 @@ namespace WebApplication1.Repository
         Task<ConcernReport> CreateReportAsync(ConcernReport report);
         Task<List<ConcernReport>> GetReportsAsync();
         Task<List<ConcernReport>> GetReportsByPriorityAsync(string priority);
+        Task<bool> UpdateReportAsync(ConcernReport report);
         // Keywords
         Task<List<KeywordDictionary>> GetKeywordsAsync();
         Task<List<KeywordDictionary>> GetActiveKeywordsAsync();
@@ -40,6 +41,14 @@ namespace WebApplication1.Repository
         Task<bool> UpdateKeywordAsync(KeywordDictionary keyword);
         Task<bool> DeleteKeywordAsync(int id);
         Task<KeywordDictionary?> GetKeywordByIdAsync(int id);
+        // Advertisements
+        Task<List<Advertisement>> GetAdvertisementsAsync();
+        Task<List<Advertisement>> GetApprovedAdvertisementsAsync();
+        Task<List<Advertisement>> GetPendingAdvertisementsAsync();
+        Task<Advertisement> CreateAdvertisementAsync(Advertisement ad);
+        Task<bool> UpdateAdvertisementAsync(Advertisement ad);
+        Task<bool> ApproveAdvertisementAsync(int id, string reviewedBy);
+        Task<bool> RejectAdvertisementAsync(int id, string reviewedBy);
     }
 
     public class Repo : IRepo
@@ -255,6 +264,19 @@ namespace WebApplication1.Repository
                 .ToListAsync();
         }
 
+        public async Task<bool> UpdateReportAsync(ConcernReport report)
+        {
+            var existing = await _db.ConcernReports.FindAsync(report.Id);
+            if (existing is null)
+                return false;
+
+            existing.Priority = report.Priority;
+            existing.DetectedKeywords = report.DetectedKeywords;
+
+            await _db.SaveChangesAsync();
+            return true;
+        }
+
         // Keyword Dictionary methods
         public async Task<List<KeywordDictionary>> GetKeywordsAsync()
         {
@@ -316,6 +338,90 @@ namespace WebApplication1.Repository
         public async Task<KeywordDictionary?> GetKeywordByIdAsync(int id)
         {
             return await _db.KeywordDictionaries.FindAsync(id);
+        }
+
+        // Advertisements
+        public async Task<List<Advertisement>> GetAdvertisementsAsync()
+        {
+            return await _db.Advertisements
+                .OrderByDescending(a => a.CreatedAt)
+                .ToListAsync();
+        }
+
+        public async Task<List<Advertisement>> GetApprovedAdvertisementsAsync()
+        {
+            return await _db.Advertisements
+                .Where(a => a.Status == "approved")
+                .OrderByDescending(a => a.CreatedAt)
+                .ToListAsync();
+        }
+
+        public async Task<List<Advertisement>> GetPendingAdvertisementsAsync()
+        {
+            return await _db.Advertisements
+                .Where(a => a.Status == "pending")
+                .OrderByDescending(a => a.CreatedAt)
+                .ToListAsync();
+        }
+
+        public async Task<Advertisement> CreateAdvertisementAsync(Advertisement ad)
+        {
+            ad.CreatedAt = DateTime.UtcNow;
+            ad.Status = "pending";
+            _db.Advertisements.Add(ad);
+            await _db.SaveChangesAsync();
+            return ad;
+        }
+
+        public async Task<bool> UpdateAdvertisementAsync(Advertisement ad)
+        {
+            var existing = await _db.Advertisements.FindAsync(ad.Id);
+            if (existing is null)
+                return false;
+
+            existing.Type = ad.Type;
+            existing.Title = ad.Title;
+            existing.Description = ad.Description;
+            existing.Author = ad.Author;
+            existing.ContactName = ad.ContactName;
+            existing.ContactPhone = ad.ContactPhone;
+            existing.ContactEmail = ad.ContactEmail;
+            existing.ContactLink = ad.ContactLink;
+            existing.Price = ad.Price;
+            existing.Availability = ad.Availability;
+            existing.Image = ad.Image;
+            existing.Status = ad.Status;
+            existing.ReviewedAt = ad.ReviewedAt;
+            existing.ReviewedBy = ad.ReviewedBy;
+
+            await _db.SaveChangesAsync();
+            return true;
+        }
+
+        public async Task<bool> ApproveAdvertisementAsync(int id, string reviewedBy)
+        {
+            var ad = await _db.Advertisements.FindAsync(id);
+            if (ad is null)
+                return false;
+
+            ad.Status = "approved";
+            ad.ReviewedAt = DateTime.UtcNow;
+            ad.ReviewedBy = reviewedBy;
+            await _db.SaveChangesAsync();
+            return true;
+        }
+
+        public async Task<bool> RejectAdvertisementAsync(int id, string reviewedBy)
+        {
+            var ad = await _db.Advertisements.FindAsync(id);
+            if (ad is null)
+                return false;
+
+            ad.Status = "rejected";
+            ad.ReviewedAt = DateTime.UtcNow;
+            ad.ReviewedBy = reviewedBy;
+            await _db.SaveChangesAsync();
+            return true;
         }
     }
 }
