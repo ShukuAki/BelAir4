@@ -23,6 +23,8 @@ public partial class SqBelAir4Context : DbContext
     public virtual DbSet<ConcernReport> ConcernReports { get; set; }
     public virtual DbSet<KeywordDictionary> KeywordDictionaries { get; set; }
     public virtual DbSet<Advertisement> Advertisements { get; set; }
+    public virtual DbSet<Registration> Registrations { get; set; }
+    public virtual DbSet<Reservation> Reservations { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
 #warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
@@ -43,6 +45,9 @@ public partial class SqBelAir4Context : DbContext
             entity.Property(e => e.Username)
                 .HasMaxLength(50)
                 .IsUnicode(false);
+            entity.Property(e => e.IsBanned).HasColumnName("is_banned").HasDefaultValue(false);
+            entity.Property(e => e.BannedUntil).HasColumnName("banned_until");
+            entity.Property(e => e.BanReason).HasMaxLength(500).IsUnicode(false).HasColumnName("ban_reason");
         });
 
         modelBuilder.Entity<Vehicle>(entity =>
@@ -147,6 +152,10 @@ public partial class SqBelAir4Context : DbContext
             entity.Property(e => e.Priority).HasMaxLength(20).IsUnicode(false).HasColumnName("priority").HasDefaultValue("medium");
             entity.Property(e => e.DetectedKeywords).HasColumnName("detected_keywords");
             entity.Property(e => e.IsPublic).HasColumnName("is_public").HasDefaultValue(true);
+            entity.Property(e => e.Status).HasMaxLength(20).IsUnicode(false).HasColumnName("status").HasDefaultValue("open");
+            entity.Property(e => e.StaffComment).HasColumnName("staff_comment");
+            entity.Property(e => e.ResolvedBy).HasMaxLength(200).IsUnicode(false).HasColumnName("resolved_by");
+            entity.Property(e => e.ResolvedAt).HasColumnName("resolved_at");
         });
 
         modelBuilder.Entity<KeywordDictionary>(entity =>
@@ -186,6 +195,49 @@ public partial class SqBelAir4Context : DbContext
             entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("GETUTCDATE()");
             entity.Property(e => e.ReviewedAt).HasColumnName("reviewed_at");
             entity.Property(e => e.ReviewedBy).HasMaxLength(100).IsUnicode(false).HasColumnName("reviewed_by");
+        });
+
+        modelBuilder.Entity<Registration>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK_Registrations");
+            entity.ToTable("registrations");
+
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.FirstName).HasMaxLength(100).IsUnicode(false).HasColumnName("first_name");
+            entity.Property(e => e.LastName).HasMaxLength(100).IsUnicode(false).HasColumnName("last_name");
+            entity.Property(e => e.FullName).HasMaxLength(200).IsUnicode(false).HasColumnName("full_name");
+            entity.Property(e => e.Email).HasMaxLength(100).IsUnicode(false).HasColumnName("email");
+            entity.Property(e => e.Mobile).HasMaxLength(20).IsUnicode(false).HasColumnName("mobile");
+            entity.Property(e => e.Password).HasColumnName("password");
+            entity.Property(e => e.ResidentType).HasMaxLength(20).IsUnicode(false).HasColumnName("resident_type");
+            entity.Property(e => e.Address).HasMaxLength(500).IsUnicode(false).HasColumnName("address");
+            entity.Property(e => e.ProofOfResidencyPath).HasColumnName("proof_of_residency_path");
+            entity.Property(e => e.Status).HasMaxLength(20).IsUnicode(false).HasColumnName("status").HasDefaultValue("pending");
+            entity.Property(e => e.SubmittedAt).HasColumnName("submitted_at").HasDefaultValueSql("GETUTCDATE()");
+            entity.Property(e => e.ReviewedAt).HasColumnName("reviewed_at");
+            entity.Property(e => e.ReviewedBy).HasMaxLength(100).IsUnicode(false).HasColumnName("reviewed_by");
+            entity.Property(e => e.RejectionReason).HasColumnName("rejection_reason");
+        });
+
+        modelBuilder.Entity<Reservation>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK_Reservations");
+            entity.ToTable("reservations");
+
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.UserId).HasMaxLength(100).IsUnicode(false).HasColumnName("user_id");
+            entity.Property(e => e.ResidentName).HasMaxLength(200).IsUnicode(false).HasColumnName("resident_name");
+            entity.Property(e => e.Amenity).HasMaxLength(100).IsUnicode(false).HasColumnName("amenity");
+            entity.Property(e => e.Date).HasMaxLength(20).IsUnicode(false).HasColumnName("date");
+            entity.Property(e => e.StartTime).HasMaxLength(10).IsUnicode(false).HasColumnName("start_time");
+            entity.Property(e => e.EndTime).HasMaxLength(10).IsUnicode(false).HasColumnName("end_time");
+            entity.Property(e => e.Purpose).HasMaxLength(100).IsUnicode(false).HasColumnName("purpose");
+            entity.Property(e => e.Notes).HasColumnName("notes");
+            entity.Property(e => e.Status).HasMaxLength(20).IsUnicode(false).HasColumnName("status").HasDefaultValue("pending");
+            entity.Property(e => e.SubmittedAt).HasColumnName("submitted_at").HasDefaultValueSql("GETUTCDATE()");
+            entity.Property(e => e.ReviewedAt).HasColumnName("reviewed_at");
+            entity.Property(e => e.ReviewedBy).HasMaxLength(100).IsUnicode(false).HasColumnName("reviewed_by");
+            entity.Property(e => e.RejectionReason).HasColumnName("rejection_reason");
         });
 
         OnModelCreatingPartial(modelBuilder);

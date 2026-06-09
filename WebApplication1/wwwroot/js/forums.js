@@ -26,6 +26,8 @@ document.addEventListener('DOMContentLoaded', function () {
   let activeSort     = 'newest';
   let searchQuery    = '';
   let currentPostId  = null;
+  let forumBlocked   = false;   // true when current user is banned/timed-out
+  let forumBlockMsg  = '';
 
   // ─────────────────────────────────────────
   // DOM REFERENCES
@@ -406,6 +408,7 @@ document.addEventListener('DOMContentLoaded', function () {
   // CREATE MODAL
   // ─────────────────────────────────────────
   function openCreate() {
+    if (forumBlocked) { showToast(forumBlockMsg || 'You are restricted from posting in the forums.'); return; }
     createOverlay.classList.add('open');
     document.body.style.overflow = 'hidden';
   }
@@ -542,6 +545,15 @@ document.addEventListener('DOMContentLoaded', function () {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ title, category: cat, status: 'Open', description: desc, author: 'You', date: todayStr(), helpful: 0, image: img, location: loc || null })
         });
+        if (res.status === 403) {
+          let msg = 'You are restricted from posting in the forums.';
+          try { const j = await res.json(); if (j.error) msg = j.error; } catch (_) {}
+          forumBlocked = true; forumBlockMsg = msg;
+          renderForumNotice(); applyBlockToControls();
+          closeCreate();
+          showToast(msg);
+          return;
+        }
         if (!res.ok) {
           const text = await res.text();
           console.error('Create post failed:', res.status, text);
@@ -586,7 +598,15 @@ document.addEventListener('DOMContentLoaded', function () {
       credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: 'You', isStaff: false, date: todayStr(), text })
-    }).then(r => {
+    }).then(async r => {
+      if (r.status === 403) {
+        let msg = 'You are restricted from replying in the forums.';
+        try { const j = await r.json(); if (j.error) msg = j.error; } catch (_) {}
+        forumBlocked = true; forumBlockMsg = msg;
+        renderForumNotice(); applyBlockToControls();
+        showToast(msg);
+        throw new Error('blocked');
+      }
       if (!r.ok) throw new Error('Failed');
       // append locally
       p.replies.push({ name: 'You', isStaff: false, date: todayStr(), text });
@@ -595,9 +615,59 @@ document.addEventListener('DOMContentLoaded', function () {
       renderStats();
       showToast('Reply posted!');
     }).catch(err => {
+      if (err && err.message === 'blocked') return;
       showToast('Failed to post reply.');
     });
   });
+
+  // ─────────────────────────────────────────
+  // FORUM STANDING (ban / timeout notice)
+  // ─────────────────────────────────────────
+  function renderForumNotice() {
+    let banner = document.getElementById('forumNoticeBanner');
+    if (!forumBlocked) { if (banner) banner.remove(); return; }
+
+    if (!banner) {
+      banner = document.createElement('div');
+      banner.id = 'forumNoticeBanner';
+      banner.style.cssText = 'max-width:1100px;margin:16px auto;padding:14px 18px;border-radius:10px;background:#fef2f2;border:1px solid #fca5a5;color:#991b1b;display:flex;align-items:center;gap:12px;font-size:14px;font-weight:500';
+      const anchor = postsGrid?.parentElement || document.querySelector('main') || document.body;
+      anchor.insertBefore(banner, anchor.firstChild);
+    }
+    banner.innerHTML = `<i class="fas fa-ban" style="font-size:20px"></i><span>${escapeHtml(forumBlockMsg || 'You are currently restricted from posting in the forums.')}</span>`;
+  }
+
+  function applyBlockToControls() {
+    if (openCreateBtn) {
+      openCreateBtn.disabled = forumBlocked;
+      openCreateBtn.title = forumBlocked ? (forumBlockMsg || 'You are restricted from posting') : '';
+      openCreateBtn.style.opacity = forumBlocked ? '0.5' : '';
+      openCreateBtn.style.cursor = forumBlocked ? 'not-allowed' : '';
+    }
+    if (replySubmitBtn) {
+      replySubmitBtn.disabled = forumBlocked;
+      replySubmitBtn.style.opacity = forumBlocked ? '0.5' : '';
+    }
+    if (replyInput) {
+      replyInput.disabled = forumBlocked;
+      if (forumBlocked) replyInput.placeholder = forumBlockMsg || 'You are restricted from replying.';
+    }
+  }
+
+  async function checkForumStatus() {
+    try {
+      const res = await fetch('/api/forums/my-status', { credentials: 'same-origin' });
+      if (!res.ok) return;
+      const data = await res.json();
+      forumBlocked = !!data.blocked;
+      forumBlockMsg = data.message || '';
+    } catch (e) {
+      forumBlocked = false;
+      forumBlockMsg = '';
+    }
+    renderForumNotice();
+    applyBlockToControls();
+  }
 
   // ─────────────────────────────────────────
   // INIT
@@ -629,6 +699,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (currentYearEl) currentYearEl.textContent = new Date().getFullYear();
     renderPosts();
     renderStats();
+    checkForumStatus();
   }
 
   loadPosts();

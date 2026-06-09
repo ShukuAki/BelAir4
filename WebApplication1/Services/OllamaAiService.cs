@@ -29,9 +29,14 @@ namespace WebApplication1.Services
     {
         private readonly HttpClient _httpClient;
         private readonly ILogger<OllamaAiService> _logger;
-        private readonly string _ollamaEndpoint;
-        private readonly string _modelName;
+        private readonly IReadOnlyList<string> _candidateEndpoints;
+        private readonly string _preferredModel;
         private readonly IKeywordAnalysisService _fallbackService;
+
+        // Resolved at runtime by probing the live Ollama instance.
+        private string? _resolvedEndpoint;
+        private string? _resolvedModel;
+        private readonly SemaphoreSlim _resolveLock = new SemaphoreSlim(1, 1);
 
         public OllamaAiService(
             IHttpClientFactory httpClientFactory,
@@ -43,24 +48,126 @@ namespace WebApplication1.Services
             _logger = logger;
             _fallbackService = fallbackService;
 
-            _ollamaEndpoint = configuration["Ollama:Endpoint"] ?? "http://localhost:11434";
-            _modelName = configuration["Ollama:Model"] ?? "mistral";
+            // Preferred model from config (optional). If it isn't installed on the
+            // local Ollama instance we auto-detect whatever model IS installed.
+            _preferredModel = configuration["Ollama:Model"] ?? "mistral";
+
+            // Build the list of endpoints to probe. The configured endpoint (if any)
+            // is tried first, followed by common local defaults so the app works on
+            // any device running Ollama without manual configuration.
+            var endpoints = new List<string>();
+            var configured = configuration["Ollama:Endpoint"];
+            if (!string.IsNullOrWhiteSpace(configured))
+                endpoints.Add(configured.TrimEnd('/'));
+
+            var envEndpoint = Environment.GetEnvironmentVariable("OLLAMA_HOST");
+            if (!string.IsNullOrWhiteSpace(envEndpoint))
+                endpoints.Add(NormalizeEndpoint(envEndpoint));
+
+            endpoints.Add("http://localhost:11434");
+            endpoints.Add("http://127.0.0.1:11434");
+            endpoints.Add("http://host.docker.internal:11434");
+
+            _candidateEndpoints = endpoints
+                .Where(e => !string.IsNullOrWhiteSpace(e))
+                .Distinct()
+                .ToList();
+        }
+
+        private static string NormalizeEndpoint(string value)
+        {
+            value = value.Trim().TrimEnd('/');
+            if (!value.StartsWith("http://", StringComparison.OrdinalIgnoreCase) &&
+                !value.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+                value = "http://" + value;
+            return value;
         }
 
         /// <summary>
-        /// Checks if Ollama is running and accessible
+        /// Checks if any Ollama instance is running and accessible, and resolves
+        /// the live endpoint + an installed model to use.
         /// </summary>
         public async Task<bool> IsAvailableAsync()
         {
+            return await EnsureResolvedAsync() != null;
+        }
+
+        /// <summary>
+        /// Probes the candidate endpoints, picks the first reachable Ollama instance,
+        /// and selects an installed model (preferred model if present, otherwise the
+        /// first available model). Results are cached for the lifetime of the service.
+        /// Returns the resolved endpoint, or null if no Ollama instance is reachable.
+        /// </summary>
+        private async Task<string?> EnsureResolvedAsync()
+        {
+            if (_resolvedEndpoint != null && _resolvedModel != null)
+                return _resolvedEndpoint;
+
+            await _resolveLock.WaitAsync();
             try
             {
-                var response = await _httpClient.GetAsync($"{_ollamaEndpoint}/api/tags");
-                return response.IsSuccessStatusCode;
+                if (_resolvedEndpoint != null && _resolvedModel != null)
+                    return _resolvedEndpoint;
+
+                foreach (var endpoint in _candidateEndpoints)
+                {
+                    var models = await GetInstalledModelsAsync(endpoint);
+                    if (models == null || models.Count == 0)
+                        continue;
+
+                    // Prefer the configured model (match by exact name or family prefix,
+                    // e.g. "mistral" matches "mistral:latest").
+                    var chosen = models.FirstOrDefault(m =>
+                                     m.Equals(_preferredModel, StringComparison.OrdinalIgnoreCase))
+                                 ?? models.FirstOrDefault(m =>
+                                     m.StartsWith(_preferredModel + ":", StringComparison.OrdinalIgnoreCase))
+                                 ?? models.FirstOrDefault(m =>
+                                     m.Split(':')[0].Equals(_preferredModel.Split(':')[0], StringComparison.OrdinalIgnoreCase))
+                                 ?? models[0];
+
+                    _resolvedEndpoint = endpoint;
+                    _resolvedModel = chosen;
+                    _logger.LogInformation(
+                        "Ollama resolved at {Endpoint} using model '{Model}' (installed: {Models})",
+                        endpoint, chosen, string.Join(", ", models));
+                    return _resolvedEndpoint;
+                }
+
+                _logger.LogWarning(
+                    "No reachable Ollama instance found among: {Endpoints}",
+                    string.Join(", ", _candidateEndpoints));
+                return null;
+            }
+            finally
+            {
+                _resolveLock.Release();
+            }
+        }
+
+        /// <summary>
+        /// Queries /api/tags on the given endpoint and returns the list of installed
+        /// model names, or null if the endpoint is unreachable.
+        /// </summary>
+        private async Task<List<string>?> GetInstalledModelsAsync(string endpoint)
+        {
+            try
+            {
+                var response = await _httpClient.GetAsync($"{endpoint}/api/tags");
+                if (!response.IsSuccessStatusCode)
+                    return null;
+
+                var json = await response.Content.ReadAsStringAsync();
+                var tags = JsonSerializer.Deserialize<OllamaTagsResponse>(json);
+                return tags?.Models?
+                    .Select(m => m.Name)
+                    .Where(n => !string.IsNullOrWhiteSpace(n))
+                    .Select(n => n!)
+                    .ToList() ?? new List<string>();
             }
             catch (Exception ex)
             {
-                _logger.LogWarning($"Ollama availability check failed: {ex.Message}");
-                return false;
+                _logger.LogDebug("Ollama probe failed for {Endpoint}: {Message}", endpoint, ex.Message);
+                return null;
             }
         }
 
@@ -276,9 +383,17 @@ Priority:";
         /// </summary>
         private async Task<string> CallOllamaAsync(string prompt, int maxRetries = 3)
         {
+            // Make sure we have a reachable endpoint and an installed model resolved.
+            var endpoint = await EnsureResolvedAsync();
+            if (endpoint == null || _resolvedModel == null)
+            {
+                _logger.LogWarning("No Ollama instance/model resolved; cannot call Ollama.");
+                return string.Empty;
+            }
+
             var requestBody = new
             {
-                model = _modelName,
+                model = _resolvedModel,
                 prompt = prompt,
                 stream = false,
                 temperature = 0.3, // Lower temp for more consistent results
@@ -292,7 +407,7 @@ Priority:";
                     var jsonContent = JsonSerializer.Serialize(requestBody);
                     var content = new StringContent(jsonContent, System.Text.Encoding.UTF8, "application/json");
 
-                    var response = await _httpClient.PostAsync($"{_ollamaEndpoint}/api/generate", content);
+                    var response = await _httpClient.PostAsync($"{endpoint}/api/generate", content);
 
                     if (!response.IsSuccessStatusCode)
                     {
@@ -340,6 +455,24 @@ Priority:";
 
             [JsonPropertyName("done")]
             public bool Done { get; set; }
+        }
+
+        /// <summary>
+        /// DTO for Ollama /api/tags response (list of installed models)
+        /// </summary>
+        private class OllamaTagsResponse
+        {
+            [JsonPropertyName("models")]
+            public List<OllamaModelInfo>? Models { get; set; }
+        }
+
+        private class OllamaModelInfo
+        {
+            [JsonPropertyName("name")]
+            public string? Name { get; set; }
+
+            [JsonPropertyName("model")]
+            public string? Model { get; set; }
         }
     }
 

@@ -201,6 +201,50 @@ namespace WebApplication1.Controllers
             }
         }
 
+        // POST /api/incidents/{id}/resolve - Mark an incident resolved (optionally with a comment)
+        [HttpPost("incidents/{id}/resolve")]
+        public async Task<IActionResult> ResolveIncident(int id, [FromBody] IncidentActionRequest? request)
+        {
+            try
+            {
+                var handledBy = HttpContext.Session.GetString("Username") ?? "Staff";
+                var ok = await _repo.UpdateReportStatusAsync(id, "resolved", request?.Comment, handledBy);
+                if (!ok)
+                    return NotFound(new { success = false, error = "Incident not found" });
+
+                return Ok(new { success = true, message = "Incident resolved", resolvedBy = handledBy });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error resolving incident {Id}", id);
+                return StatusCode(500, new { success = false, error = "Failed to resolve incident" });
+            }
+        }
+
+        // POST /api/incidents/{id}/comment - Add/update a staff comment and optionally change status
+        [HttpPost("incidents/{id}/comment")]
+        public async Task<IActionResult> CommentIncident(int id, [FromBody] IncidentActionRequest request)
+        {
+            if (request is null || string.IsNullOrWhiteSpace(request.Comment))
+                return BadRequest(new { success = false, error = "Comment is required" });
+
+            try
+            {
+                var handledBy = HttpContext.Session.GetString("Username") ?? "Staff";
+                var status = string.IsNullOrWhiteSpace(request.Status) ? "in-progress" : request.Status;
+                var ok = await _repo.UpdateReportStatusAsync(id, status, request.Comment, handledBy);
+                if (!ok)
+                    return NotFound(new { success = false, error = "Incident not found" });
+
+                return Ok(new { success = true, message = "Comment saved", status });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error commenting on incident {Id}", id);
+                return StatusCode(500, new { success = false, error = "Failed to save comment" });
+            }
+        }
+
         // GET /api/keyword-statistics - Get keyword usage statistics
         [HttpGet("keyword-statistics")]
         public async Task<IActionResult> GetKeywordStatistics()
@@ -673,5 +717,11 @@ namespace WebApplication1.Controllers
     public class ApproveRejectRequest
     {
         public string? ReviewedBy { get; set; }
+    }
+
+    public class IncidentActionRequest
+    {
+        public string? Comment { get; set; }
+        public string? Status { get; set; } // "open", "in-progress", "resolved"
     }
 }

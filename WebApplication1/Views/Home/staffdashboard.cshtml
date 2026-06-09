@@ -34,21 +34,21 @@
     <div class="nav-link active" onclick="showPage('incidents',this)"><i class="fas fa-exclamation-circle"></i> Incident Reports<span class="nav-badge" id="badge-incidents">0</span></div>
     <!-- <div class="nav-link" onclick="showPage('taskboard',this)"><i class="fas fa-columns"></i> Task Board<span class="nav-badge yellow" id="badge-tasks">7</span></div> -->
     <div class="nav-link" onclick="showPage('exchange',this)"><i class="fas fa-store"></i> Community Exchange<span class="nav-badge yellow" id="badge-exchange">5</span></div>
-    @* <div class="nav-group-label">Approvals</div>
-    <div class="nav-link" onclick="showPage('residents',this)"><i class="fas fa-home"></i> Residents &amp; Verification<span class="nav-badge" id="badge-verif">3</span></div>
-   
+    <div class="nav-group-label">Approvals</div>
+    <div class="nav-link" onclick="showPage('residents',this)"><i class="fas fa-home"></i> Residents &amp; Verification<span class="nav-badge" id="badge-verif">0</span></div>
+
     <div class="nav-link" onclick="showPage('forums',this)"><i class="fas fa-comments"></i> Usap Tayo sa HOA<span class="nav-badge yellow">2</span></div>
     <div class="nav-link" onclick="showPage('reservations',this)"><i class="fas fa-calendar-check"></i> Reservations<span class="nav-badge yellow">3</span></div>
-    <div class="nav-group-label">Content Management</div>
+   @*  <div class="nav-group-label">Content Management</div>
     <div class="nav-link" onclick="showPage('announcements',this)"><i class="fas fa-bullhorn"></i> Announcements</div>
     <div class="nav-link" onclick="showPage('events',this)"><i class="fas fa-calendar-alt"></i> Events / Calendar</div>
     <div class="nav-link" onclick="showPage('bods',this)"><i class="fas fa-users"></i> Committees &amp; BODs</div>
     <div class="nav-link" onclick="showPage('meetings',this)"><i class="fas fa-clipboard-list"></i> Meeting Records</div>
     <div class="nav-link" onclick="showPage('documents',this)"><i class="fas fa-file-alt"></i> Forms &amp; Documents</div>
-    <div class="nav-link" onclick="showPage('contacts',this)"><i class="fas fa-phone-alt"></i> Contacts</div> *@
+    <div class="nav-link" onclick="showPage('contacts',this)"><i class="fas fa-phone-alt"></i> Contacts</div>
     <div class="nav-group-label">Tools</div>
     <div class="nav-link" onclick="showPage('communitymap',this)"><i class="fas fa-map-marked-alt"></i> Community Map</div>
-    <div class="nav-link" onclick="showPage('wordbank',this)"><i class="fas fa-brain"></i> Word Bank</div>
+    <div class="nav-link" onclick="showPage('wordbank',this)"><i class="fas fa-brain"></i> Word Bank</div> *@
     @* <div class="nav-link" onclick="showPage('reports',this)"><i class="fas fa-chart-bar"></i> Reports</div>
     <div class="nav-link" onclick="showPage('subscribers',this)"><i class="fas fa-bell"></i> Subscribers</div> *@
   </nav>
@@ -219,23 +219,19 @@
 <div class="page" id="page-residents">
   <div class="sec-header"><h2><i class="fas fa-home"></i> Residents &amp; Verification</h2></div>
   <div class="res-tabs">
-    <button class="res-tab active" onclick="switchResTab('pending',this)"><i class="fas fa-clock"></i> Pending Verification <span class="nav-badge" id="badge-verif-tab" style="position:static;display:inline-flex;margin-left:4px">3</span></button>
+    <button class="res-tab active" onclick="switchResTab('pending',this)"><i class="fas fa-clock"></i> Pending Verification <span class="nav-badge" id="badge-verif-tab" style="position:static;display:inline-flex;margin-left:4px">0</span></button>
     <button class="res-tab" onclick="switchResTab('verified',this)"><i class="fas fa-check-circle"></i> Verified Residents</button>
   </div>
   <div id="res-tab-pending">
     <div class="card" style="margin-bottom:16px">
       <div class="card-header"><h3><i class="fas fa-clock"></i> Pending Verification</h3><span class="page-note">Residents awaiting staff review</span></div>
       <div id="verif-pending-list">
-        <div class="verif-item" id="verif-SM"><div class="verif-av">SM</div><div class="verif-info"><div class="verif-name">Sofia Mendez</div><div class="verif-sub">Block A, H12 · Today · Gov't ID + Proof of Residency</div></div><div class="verif-actions"><button class="btn btn-primary btn-sm" onclick="approveResident('verif-SM','Sofia Mendez')"><i class="fas fa-check"></i> Approve</button><button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="rejectResident('verif-SM','Sofia Mendez')"><i class="fas fa-times"></i> Reject</button><button class="btn btn-outline btn-sm" onclick="openResidentDetail({name:'Sofia Mendez',unit:'Block A, H12',date:'Today',docs:[{name:'Government ID'},{name:'Proof of Residency'}]})"><i class="fas fa-eye"></i> View</button></div></div>
-        <div class="verif-item" id="verif-JR"><div class="verif-av" style="background:linear-gradient(135deg,#1a5fa8,#4a90e2)">JR</div><div class="verif-info"><div class="verif-name">Joel Ramos</div><div class="verif-sub">Block C, H8 · Feb 17 · Gov't ID submitted</div></div><div class="verif-actions"><button class="btn btn-primary btn-sm" onclick="approveResident('verif-JR','Joel Ramos')"><i class="fas fa-check"></i> Approve</button><button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="rejectResident('verif-JR','Joel Ramos')"><i class="fas fa-times"></i> Reject</button><button class="btn btn-outline btn-sm" onclick="openResidentDetail({name:'Joel Ramos',unit:'Block C, H8',date:'Feb 17',docs:[{name:'Government ID'}]})"><i class="fas fa-eye"></i> View</button></div></div>
-        <div class="verif-item" id="verif-LP"><div class="verif-av" style="background:linear-gradient(135deg,#c06418,#e8903a)">LP</div><div class="verif-info"><div class="verif-name">Liza Pascual</div><div class="verif-sub">Block B, H3 · Feb 16 · ⚠️ Missing address proof</div></div><div class="verif-actions"><button class="btn btn-primary btn-sm" onclick="approveResident('verif-LP','Liza Pascual')"><i class="fas fa-check"></i> Approve</button><button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="rejectResident('verif-LP','Liza Pascual')"><i class="fas fa-times"></i> Reject</button><button class="btn btn-outline btn-sm" onclick="openResidentDetail({name:'Liza Pascual',unit:'Block B, H3',date:'Feb 16',docs:[{name:'Government ID'}],missing:'Proof of Residency'})"><i class="fas fa-eye"></i> View</button></div></div>
+        <div style="padding:32px;text-align:center;color:var(--gray-400)"><i class="fas fa-spinner fa-spin" style="font-size:24px;margin-bottom:8px"></i><p>Loading registrations...</p></div>
       </div>
     </div>
     <div class="card"><div class="card-header"><h3><i class="fas fa-history"></i> Recently Verified</h3></div>
-      <div class="tbl-wrap"><table><thead><tr><th>Resident</th><th>Unit</th><th>Verified By</th><th>Date</th></tr></thead><tbody>
-        <tr><td><strong>Maria Lopez</strong></td><td>Block A, H4</td><td>Maria S.</td><td>Feb 17</td></tr>
-        <tr><td><strong>David Cruz</strong></td><td>Block D, H7</td><td>Jess T.</td><td>Feb 15</td></tr>
-        <tr><td><strong>Karen Dizon</strong></td><td>Block B, H11</td><td>Maria S.</td><td>Feb 12</td></tr>
+      <div class="tbl-wrap"><table><thead><tr><th>Resident</th><th>Unit</th><th>Verified By</th><th>Date</th></tr></thead><tbody id="recently-verified-tbody">
+        <tr><td colspan="4" style="padding:32px;text-align:center;color:var(--gray-400)">Loading...</td></tr>
       </tbody></table></div>
     </div>
   </div>
@@ -245,9 +241,7 @@
         <input type="text" placeholder="Search residents…" style="border:1.5px solid var(--gray-200);border-radius:var(--radius);padding:6px 12px;font-family:inherit;font-size:12.5px;outline:none;width:200px" oninput="searchResidents(this.value)">
       </div>
       <div class="tbl-wrap"><table><thead><tr><th>Name</th><th>Unit</th><th>Contact</th><th>Verified</th><th>Status</th><th>Actions</th></tr></thead><tbody id="residents-tbody">
-        <tr id="res-r1"><td><strong>Juan dela Cruz</strong></td><td>Block C, H5</td><td>09171234567</td><td>Jan 10</td><td><span class="status-pill sp-approved">Verified</span></td><td><button class="btn btn-outline btn-sm" onclick="viewResidentInfo('Juan dela Cruz','Block C, H5')"><i class="fas fa-eye"></i> View</button> <button class="btn btn-outline btn-sm" style="color:var(--orange)" onclick="openSuspendModal('res-r1','Juan dela Cruz')"><i class="fas fa-ban"></i> Suspend</button></td></tr>
-        <tr id="res-r2"><td><strong>Ana Reyes</strong></td><td>Block D, H3</td><td>09181234567</td><td>Jan 12</td><td><span class="status-pill sp-approved">Verified</span></td><td><button class="btn btn-outline btn-sm" onclick="viewResidentInfo('Ana Reyes','Block D, H3')"><i class="fas fa-eye"></i> View</button> <button class="btn btn-outline btn-sm" style="color:var(--orange)" onclick="openSuspendModal('res-r2','Ana Reyes')"><i class="fas fa-ban"></i> Suspend</button></td></tr>
-        <tr id="res-r3"><td><strong>Maria Lopez</strong></td><td>Block A, H4</td><td>09191234567</td><td>Feb 17</td><td><span class="status-pill sp-approved">Verified</span></td><td><button class="btn btn-outline btn-sm" onclick="viewResidentInfo('Maria Lopez','Block A, H4')"><i class="fas fa-eye"></i> View</button> <button class="btn btn-outline btn-sm" style="color:var(--orange)" onclick="openSuspendModal('res-r3','Maria Lopez')"><i class="fas fa-ban"></i> Suspend</button></td></tr>
+        <tr><td colspan="6" style="padding:32px;text-align:center;color:var(--gray-400)">Loading...</td></tr>
       </tbody></table></div>
     </div>
   </div>
@@ -273,39 +267,34 @@
     <a href="forums.html" target="_blank" class="btn btn-primary"><i class="fas fa-external-link-alt"></i> Open Forum Page</a>
   </div>
 
-  <!-- Info banner explaining Option 2 -->
+  <!-- Info banner -->
   <div class="info-banner" style="margin-bottom:20px">
-    <i class="fas fa-info-circle"></i> <strong>Staff manage discussions directly on the forum page.</strong>
-    Moderation, replies, and approvals are done on <a href="forums.html" target="_blank" style="color:var(--green);font-weight:800;text-decoration:underline">forums.html</a>.
-    This dashboard shows a live summary of forum activity.
+    <i class="fas fa-info-circle"></i> <strong>Moderate community discussions.</strong>
+    Review all forum posts below and remove any that violate community guidelines. You can also open the full
+    <a href="forums.html" target="_blank" style="color:var(--green);font-weight:800;text-decoration:underline">forum page</a> to reply.
   </div>
 
-  <!-- Live stats pulled from lba4_forums localStorage -->
+  <!-- Live stats pulled from the database -->
   <div class="stats-row" style="margin-bottom:20px">
-    <div class="stat-card"><div class="stat-icon si-blue"><i class="fas fa-comments"></i></div><div class="stat-info"><div class="stat-val" id="forums-stat-posts">87</div><div class="stat-label">Total Discussions</div><div class="stat-sub sub-up">This month</div></div></div>
-    <div class="stat-card"><div class="stat-icon si-green"><i class="fas fa-reply"></i></div><div class="stat-info"><div class="stat-val" id="forums-stat-replies">234</div><div class="stat-label">Total Replies</div><div class="stat-sub sub-up">Community active</div></div></div>
-    <div class="stat-card"><div class="stat-icon si-green"><i class="fas fa-check-double"></i></div><div class="stat-info"><div class="stat-val" id="forums-stat-resolved">31</div><div class="stat-label">Resolved</div><div class="stat-sub sub-up">Answered by staff</div></div></div>
-    <div class="stat-card"><div class="stat-icon si-red"><i class="fas fa-flag"></i></div><div class="stat-info"><div class="stat-val" id="forums-stat-flagged">2</div><div class="stat-label">Flagged Posts</div><div class="stat-sub sub-down"><i class="fas fa-exclamation"></i> Needs review</div></div></div>
+    <div class="stat-card"><div class="stat-icon si-blue"><i class="fas fa-comments"></i></div><div class="stat-info"><div class="stat-val" id="forums-stat-posts">—</div><div class="stat-label">Total Discussions</div><div class="stat-sub sub-up">All time</div></div></div>
+    <div class="stat-card"><div class="stat-icon si-green"><i class="fas fa-reply"></i></div><div class="stat-info"><div class="stat-val" id="forums-stat-replies">—</div><div class="stat-label">Total Replies</div><div class="stat-sub sub-up">Community active</div></div></div>
+    <div class="stat-card"><div class="stat-icon si-green"><i class="fas fa-check-double"></i></div><div class="stat-info"><div class="stat-val" id="forums-stat-resolved">—</div><div class="stat-label">Resolved</div><div class="stat-sub sub-up">Closed discussions</div></div></div>
+    <div class="stat-card"><div class="stat-icon si-orange"><i class="fas fa-question-circle"></i></div><div class="stat-info"><div class="stat-val" id="forums-stat-unanswered">—</div><div class="stat-label">Unanswered</div><div class="stat-sub sub-down"><i class="fas fa-exclamation"></i> Needs reply</div></div></div>
   </div>
 
   <div class="grid-60-40">
     <div class="card">
-      <div class="card-header"><h3><i class="fas fa-flag" style="color:var(--red)"></i> Flagged Posts — Needs Attention</h3><span class="page-note">Manage on <a href="forums.html" target="_blank" style="color:var(--blue)">forum page</a></span></div>
-      <div class="forum-item"><div class="forum-av" style="background:var(--red)">AK</div><div class="forum-body"><div class="forum-title">"The security guard at Gate 1 is useless!!!"</div><div class="forum-meta"><span>Anonymous Resident</span><span><i class="fas fa-flag"></i> Flagged by 3 users</span><span>Feb 18, 10:23 AM</span></div><div class="forum-actions"><button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="removeForumPost(this)"><i class="fas fa-trash"></i> Remove</button><button class="btn btn-primary btn-sm" onclick="allowForumPost(this)"><i class="fas fa-check"></i> Allow</button><a href="forums.html" target="_blank" class="btn btn-outline btn-sm"><i class="fas fa-external-link-alt"></i> Manage on Page</a></div></div></div>
-      <div class="forum-item"><div class="forum-av" style="background:var(--orange)">RD</div><div class="forum-body"><div class="forum-title">Selling imported perfumes — DM for details [spam]</div><div class="forum-meta"><span>Rina Dela Rosa</span><span><i class="fas fa-flag"></i> Flagged as spam</span><span>Feb 17, 3:45 PM</span></div><div class="forum-actions"><button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="removeForumPost(this)"><i class="fas fa-trash"></i> Remove</button><a href="forums.html" target="_blank" class="btn btn-outline btn-sm"><i class="fas fa-external-link-alt"></i> Manage on Page</a></div></div></div>
+      <div class="card-header">
+        <h3><i class="fas fa-comments" style="color:var(--green)"></i> All Discussions</h3>
+        <button class="btn btn-outline btn-sm" onclick="loadForumPosts()"><i class="fas fa-sync"></i> Refresh</button>
+      </div>
+      <div id="forum-posts-list">
+        <div style="padding:32px;text-align:center;color:var(--gray-400)"><i class="fas fa-spinner fa-spin" style="font-size:24px;margin-bottom:8px"></i><p>Loading discussions...</p></div>
+      </div>
     </div>
     <div class="flex-col gap-16">
-      <div class="card"><div class="card-header"><h3><i class="fas fa-chart-bar"></i> Category Breakdown</h3></div><div class="card-body">
-        <div class="progress-wrap"><div class="progress-label"><span>General</span><span>38%</span></div><div class="progress-bar"><div class="progress-fill pf-green" style="width:38%"></div></div></div>
-        <div class="progress-wrap"><div class="progress-label"><span>Concerns</span><span>27%</span></div><div class="progress-bar"><div class="progress-fill pf-red" style="width:27%"></div></div></div>
-        <div class="progress-wrap"><div class="progress-label"><span>Suggestions</span><span>20%</span></div><div class="progress-bar"><div class="progress-fill pf-orange" style="width:20%"></div></div></div>
-        <div class="progress-wrap"><div class="progress-label"><span>Community Help</span><span>15%</span></div><div class="progress-bar"><div class="progress-fill pf-blue" style="width:15%"></div></div></div>
-      </div></div>
-      <div class="card"><div class="card-header"><h3><i class="fas fa-shield-alt"></i> Moderation Summary</h3></div><div class="card-body">
-        <div class="stat-row-mini"><span>Total Posts (this month)</span><strong>87</strong></div>
-        <div class="stat-row-mini"><span>Posts Removed</span><strong style="color:var(--red)">4</strong></div>
-        <div class="stat-row-mini"><span>Users Warned</span><strong style="color:var(--orange)">2</strong></div>
-        <div class="stat-row-mini"><span>Users Banned</span><strong style="color:var(--red)">0</strong></div>
+      <div class="card"><div class="card-header"><h3><i class="fas fa-chart-bar"></i> Category Breakdown</h3></div><div class="card-body" id="forum-category-breakdown">
+        <div style="padding:16px;text-align:center;color:var(--gray-400)">No data</div>
       </div></div>
       <div class="card" style="text-align:center;padding:20px 16px">
         <i class="fas fa-comments" style="font-size:32px;color:var(--green);display:block;margin-bottom:10px"></i>
@@ -319,12 +308,26 @@
 
 <!-- ═══════ RESERVATIONS ═══════ -->
 <div class="page" id="page-reservations">
-  <div class="sec-header"><h2><i class="fas fa-calendar-check"></i> Amenity Reservations</h2></div>
-  <div class="card"><div class="card-header"><h3><i class="fas fa-clock"></i> Pending Reservations (3)</h3></div>
-  <div class="tbl-wrap"><table><thead><tr><th>Resident</th><th>Amenity</th><th>Date &amp; Time</th><th>Purpose</th><th>Status</th><th>Actions</th></tr></thead><tbody>
-    <tr id="resv-1"><td><strong>Santos Family</strong></td><td>Clubhouse</td><td>Feb 22, 4:00 PM</td><td>Birthday Party</td><td><span class="status-pill sp-pending">Pending</span></td><td><button class="btn btn-primary btn-sm" onclick="approveReservation('resv-1')"><i class="fas fa-check"></i> Approve</button> <button class="btn btn-outline btn-sm" onclick="rejectReservation('resv-1')"><i class="fas fa-times"></i> Reject</button></td></tr>
-    <tr id="resv-2"><td><strong>Reyes Family</strong></td><td>Basketball Court</td><td>Feb 23, 8:00 AM</td><td>Team Practice</td><td><span class="status-pill sp-pending">Pending</span></td><td><button class="btn btn-primary btn-sm" onclick="approveReservation('resv-2')"><i class="fas fa-check"></i> Approve</button> <button class="btn btn-outline btn-sm" onclick="rejectReservation('resv-2')"><i class="fas fa-times"></i> Reject</button></td></tr>
-    <tr id="resv-3"><td><strong>Cruz, Pedro</strong></td><td>Function Room</td><td>Mar 1, 2:00 PM</td><td>Meeting</td><td><span class="status-pill sp-pending">Pending</span></td><td><button class="btn btn-primary btn-sm" onclick="approveReservation('resv-3')"><i class="fas fa-check"></i> Approve</button> <button class="btn btn-outline btn-sm" onclick="rejectReservation('resv-3')"><i class="fas fa-times"></i> Reject</button></td></tr>
+  <div class="sec-header">
+    <h2><i class="fas fa-calendar-check"></i> Amenity Reservations</h2>
+    <button class="btn btn-outline btn-sm" onclick="loadReservations()"><i class="fas fa-sync"></i> Refresh</button>
+  </div>
+
+  <div class="stats-row" style="margin-bottom:20px">
+    <div class="stat-card"><div class="stat-icon si-orange"><i class="fas fa-clock"></i></div><div class="stat-info"><div class="stat-val" id="resv-stat-pending">—</div><div class="stat-label">Pending</div><div class="stat-sub sub-down"><i class="fas fa-exclamation"></i> Needs review</div></div></div>
+    <div class="stat-card"><div class="stat-icon si-green"><i class="fas fa-check-double"></i></div><div class="stat-info"><div class="stat-val" id="resv-stat-approved">—</div><div class="stat-label">Approved</div><div class="stat-sub sub-up">Confirmed</div></div></div>
+    <div class="stat-card"><div class="stat-icon si-red"><i class="fas fa-times-circle"></i></div><div class="stat-info"><div class="stat-val" id="resv-stat-rejected">—</div><div class="stat-label">Rejected</div><div class="stat-sub">Declined</div></div></div>
+    <div class="stat-card"><div class="stat-icon si-blue"><i class="fas fa-calendar-check"></i></div><div class="stat-info"><div class="stat-val" id="resv-stat-total">—</div><div class="stat-label">Total</div><div class="stat-sub sub-up">All time</div></div></div>
+  </div>
+
+  <div class="card"><div class="card-header"><h3><i class="fas fa-clock"></i> Pending Reservations <span id="resv-pending-count"></span></h3></div>
+  <div class="tbl-wrap"><table><thead><tr><th>Resident</th><th>Amenity</th><th>Date &amp; Time</th><th>Purpose</th><th>Status</th><th>Actions</th></tr></thead><tbody id="resv-pending-tbody">
+    <tr><td colspan="6" style="text-align:center;padding:24px;color:var(--gray-400)"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>
+  </tbody></table></div></div>
+
+  <div class="card" style="margin-top:20px"><div class="card-header"><h3><i class="fas fa-list"></i> All Reservations</h3></div>
+  <div class="tbl-wrap"><table><thead><tr><th>Resident</th><th>Amenity</th><th>Date &amp; Time</th><th>Purpose</th><th>Status</th><th>Reviewed By</th></tr></thead><tbody id="resv-all-tbody">
+    <tr><td colspan="6" style="text-align:center;padding:24px;color:var(--gray-400)"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>
   </tbody></table></div></div>
 </div>
 

@@ -126,6 +126,7 @@ function showPage(id, el) {
   if (id === 'events')       { renderCalendar(); renderEventsList(); }
   if (id === 'exchange')     loadExchangeData();
   if (id === 'forums')       renderForumsDashboard();
+  if (id === 'reservations') loadReservations();
   if (id === 'wordbank')     { loadWordBank(); loadKeywordsData(); checkAiStatus(); }
   if (window.innerWidth <= 768) document.getElementById('sidebar').classList.remove('mobile-open');
 }
@@ -646,12 +647,242 @@ function switchResTab(tab, btn) {
   const v = document.getElementById('res-tab-verified');
   if (p) p.style.display = tab === 'pending'  ? '' : 'none';
   if (v) v.style.display = tab === 'verified' ? '' : 'none';
+  if (tab === 'verified') loadApprovedRegistrations();
 }
 
-function approveResident(rowId, name) { const r = document.getElementById(rowId); if (r) r.remove(); showToast(`✅ ${name} approved and verified`); _updateNotifBadge(); }
-function rejectResident(rowId, name)  { const r = document.getElementById(rowId); if (r) r.remove(); showToast(`${name} rejected`, 'error'); }
-function quickApprove(btn, name)      { const i = btn.closest('.verif-item'); if (i) i.remove(); showToast(`✅ ${name} approved`); }
-function quickReject(btn, name)       { const i = btn.closest('.verif-item'); if (i) i.remove(); showToast(`${name} rejected`, 'error'); }
+async function approveResident(rowId, name) {
+  const id = rowId.replace('verif-', '');
+  try {
+    const response = await fetch(`/api/registrations/${id}/approve`, { method: 'POST' });
+    if (response.ok) {
+      const r = document.getElementById(rowId);
+      if (r) r.remove();
+      showToast(`✅ ${name} approved and verified`);
+      _updateNotifBadge();
+      loadPendingRegistrations();
+      loadRecentlyVerified();
+    }
+  } catch (error) {
+    showToast('Failed to approve registration', 'error');
+  }
+}
+
+async function rejectResident(rowId, name) {
+  const id = rowId.replace('verif-', '');
+  const reason = prompt('Enter rejection reason (optional):');
+  try {
+    const response = await fetch(`/api/registrations/${id}/reject`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(reason || '')
+    });
+    if (response.ok) {
+      const r = document.getElementById(rowId);
+      if (r) r.remove();
+      showToast(`${name} rejected`, 'error');
+      _updateNotifBadge();
+      loadPendingRegistrations();
+    }
+  } catch (error) {
+    showToast('Failed to reject registration', 'error');
+  }
+}
+
+async function quickApprove(btn, name) {
+  const rowId = btn.closest('.verif-item')?.id;
+  if (!rowId) return;
+  const id = rowId.replace('verif-', '');
+  try {
+    const response = await fetch(`/api/registrations/${id}/approve`, { method: 'POST' });
+    if (response.ok) {
+      const i = btn.closest('.verif-item');
+      if (i) i.remove();
+      showToast(`✅ ${name} approved`);
+      _updateNotifBadge();
+      loadPendingRegistrations();
+    }
+  } catch (error) {
+    showToast('Failed to approve registration', 'error');
+  }
+}
+
+async function quickReject(btn, name) {
+  const rowId = btn.closest('.verif-item')?.id;
+  if (!rowId) return;
+  const id = rowId.replace('verif-', '');
+  const reason = prompt('Enter rejection reason (optional):');
+  try {
+    const response = await fetch(`/api/registrations/${id}/reject`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(reason || '')
+    });
+    if (response.ok) {
+      const i = btn.closest('.verif-item');
+      if (i) i.remove();
+      showToast(`${name} rejected`, 'error');
+      _updateNotifBadge();
+      loadPendingRegistrations();
+    }
+  } catch (error) {
+    showToast('Failed to reject registration', 'error');
+  }
+}
+
+async function loadPendingRegistrations() {
+  try {
+    console.log('Loading pending registrations...');
+    const response = await fetch('/api/registrations/pending');
+    console.log('Response status:', response.status);
+    if (response.ok) {
+      const registrations = await response.json();
+      console.log('Registrations loaded:', registrations);
+      const container = document.getElementById('verif-pending-list');
+      if (!container) {
+        console.error('Container not found');
+        return;
+      }
+
+      if (registrations.length === 0) {
+        container.innerHTML = '<div style="padding:32px;text-align:center;color:var(--gray-400)"><i class="fas fa-inbox" style="font-size:24px;margin-bottom:8px"></i><p>No pending registrations</p></div>';
+        return;
+      }
+
+      container.innerHTML = registrations.map(reg => {
+        const initials = reg.fullName.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
+        const submittedDate = new Date(reg.submittedAt).toLocaleDateString();
+        return `
+          <div class="verif-item" id="verif-${reg.id}">
+            <div class="verif-av">${initials}</div>
+            <div class="verif-info">
+              <div class="verif-name">${escHtml(reg.fullName)}</div>
+              <div class="verif-sub">${escHtml(reg.address)} · ${submittedDate} · ${escHtml(residentTypeDisplay(reg.residentType))}</div>
+            </div>
+            <div class="verif-actions">
+              <button class="btn btn-primary btn-sm" onclick="approveResident('verif-${reg.id}', '${escHtml(reg.fullName)}')"><i class="fas fa-check"></i> Approve</button>
+              <button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="rejectResident('verif-${reg.id}', '${escHtml(reg.fullName)}')"><i class="fas fa-times"></i> Reject</button>
+              <button class="btn btn-outline btn-sm" onclick="openResidentDetail({
+                name: '${escHtml(reg.fullName)}',
+                unit: '${escHtml(reg.address)}',
+                date: '${submittedDate}',
+                docs: [{name: 'Proof of Residency', url: '${reg.proofOfResidencyPath}'}]
+              })"><i class="fas fa-eye"></i> View</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      // Update badge count
+      const badge = document.getElementById('badge-verif');
+      const badgeTab = document.getElementById('badge-verif-tab');
+      const statPending = document.getElementById('stat-pending-verif');
+      if (badge) badge.textContent = registrations.length;
+      if (badgeTab) badgeTab.textContent = registrations.length;
+      if (statPending) statPending.textContent = registrations.length;
+    } else {
+      console.error('Failed to load registrations:', response.status, response.statusText);
+      const container = document.getElementById('verif-pending-list');
+      if (container) {
+        container.innerHTML = '<div style="padding:32px;text-align:center;color:var(--red)"><i class="fas fa-exclamation-triangle" style="font-size:24px;margin-bottom:8px"></i><p>Failed to load registrations</p></div>';
+      }
+    }
+  } catch (error) {
+    console.error('Failed to load pending registrations:', error);
+    const container = document.getElementById('verif-pending-list');
+    if (container) {
+      container.innerHTML = '<div style="padding:32px;text-align:center;color:var(--red)"><i class="fas fa-exclamation-triangle" style="font-size:24px;margin-bottom:8px"></i><p>Error loading registrations</p></div>';
+    }
+  }
+}
+
+async function loadApprovedRegistrations() {
+  try {
+    const response = await fetch('/api/registrations/approved');
+    if (response.ok) {
+      const registrations = await response.json();
+      const tbody = document.getElementById('residents-tbody');
+      if (!tbody) return;
+
+      if (registrations.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="padding:32px;text-align:center;color:var(--gray-400)">No verified residents</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = registrations.map(reg => {
+        const initials = reg.fullName.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
+        const approvedDate = new Date(reg.submittedAt).toLocaleDateString();
+        return `
+          <tr id="res-r${reg.id}">
+            <td><strong>${escHtml(reg.fullName)}</strong></td>
+            <td>${escHtml(reg.address)}</td>
+            <td>${escHtml(reg.mobile || 'N/A')}</td>
+            <td>${approvedDate}</td>
+            <td><span class="status-pill sp-approved">Verified</span></td>
+            <td>
+              <button class="btn btn-outline btn-sm" onclick="viewResidentInfo('${escHtml(reg.fullName)}','${escHtml(reg.address)}')"><i class="fas fa-eye"></i> View</button>
+              <button class="btn btn-outline btn-sm" style="color:var(--orange)" onclick="openSuspendModal('res-r${reg.id}','${escHtml(reg.fullName)}')"><i class="fas fa-ban"></i> Suspend</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      // Update count in header
+      const headerCount = document.querySelector('#res-tab-verified .card-header h3');
+      if (headerCount) {
+        headerCount.textContent = `All Verified Residents (${registrations.length})`;
+      }
+    }
+  } catch (error) {
+    console.error('Failed to load approved registrations:', error);
+  }
+}
+
+async function loadRecentlyVerified() {
+  console.log('loadRecentlyVerified called');
+  const tbody = document.getElementById('recently-verified-tbody');
+  if (!tbody) {
+    console.error('recently-verified-tbody element not found');
+    return;
+  }
+  try {
+    const response = await fetch('/api/registrations/approved');
+    console.log('Response status:', response.status);
+    if (response.ok) {
+      const registrations = await response.json();
+      console.log('Approved registrations loaded:', registrations);
+
+      // Get 5 most recent
+      const recent = registrations.slice(0, 5);
+
+      if (recent.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" style="padding:32px;text-align:center;color:var(--gray-400)">No recently verified residents</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = recent.map(reg => {
+        const approvedDate = new Date(reg.submittedAt).toLocaleDateString();
+        return `
+          <tr>
+            <td><strong>${escHtml(reg.fullName)}</strong></td>
+            <td>${escHtml(reg.address)}</td>
+            <td>${escHtml(reg.reviewedBy || 'Admin')}</td>
+            <td>${approvedDate}</td>
+          </tr>
+        `;
+      }).join('');
+    } else {
+      console.error('Failed to load approved registrations:', response.status, response.statusText);
+      tbody.innerHTML = '<tr><td colspan="4" style="padding:32px;text-align:center;color:var(--red)">Failed to load</td></tr>';
+    }
+  } catch (error) {
+    console.error('Failed to load recently verified:', error);
+    tbody.innerHTML = '<tr><td colspan="4" style="padding:32px;text-align:center;color:var(--red)">Error loading</td></tr>';
+  }
+}
+
+function residentTypeDisplay(type) {
+  return type === 'homeowner' ? 'Homeowner' : type === 'tenant' ? 'Tenant' : type;
+}
 
 function openResidentDetail(data) {
   const ct = document.getElementById('resident-detail-content'); if (!ct) return;
@@ -941,53 +1172,334 @@ function updateOverviewExchange() {
 }
 
 /* ============================================================
-   USAP TAYO PARA SA HOA — Option 2: staff uses actual forums.html
-   Dashboard shows live stats pulled from lba4_forums localStorage
-   + flagged posts summary + direct link to forums.html
+   USAP TAYO PARA SA HOA — Forum moderation (live database)
 ============================================================ */
+let FORUM_POSTS = [];
+
 function renderForumsDashboard() {
-  /* Try reading data written by forums.js (same lba4_forums key) */
-  let forumsData = null;
+  loadForumPosts();
+}
+
+async function loadForumPosts() {
+  const container = document.getElementById('forum-posts-list');
+  if (container) {
+    container.innerHTML = '<div style="padding:32px;text-align:center;color:var(--gray-400)"><i class="fas fa-spinner fa-spin" style="font-size:24px;margin-bottom:8px"></i><p>Loading discussions...</p></div>';
+  }
   try {
-    const s = localStorage.getItem('lba4_forums');
-    if (s) forumsData = JSON.parse(s);
-  } catch(e) {}
+    const res = await fetch('/api/forums/posts', { credentials: 'same-origin' });
+    if (!res.ok) throw new Error('Network');
+    FORUM_POSTS = await res.json();
+    renderForumPosts();
+    renderForumStats();
+    renderForumCategories();
+  } catch (err) {
+    console.error('Failed to load forum posts:', err);
+    if (container) {
+      container.innerHTML = '<div style="padding:32px;text-align:center;color:var(--red)"><i class="fas fa-exclamation-triangle" style="font-size:24px;margin-bottom:8px"></i><p>Failed to load discussions</p></div>';
+    }
+  }
+}
 
-  /* Fallback sample stats if forums page hasn't been visited yet */
-  const stats = forumsData || { posts: 87, replies: 234, resolved: 31, flagged: 2, unanswered: 14 };
+function renderForumPosts() {
+  const container = document.getElementById('forum-posts-list');
+  if (!container) return;
+  if (!FORUM_POSTS.length) {
+    container.innerHTML = '<div style="padding:32px;text-align:center;color:var(--gray-400)"><i class="fas fa-inbox" style="font-size:24px;margin-bottom:8px"></i><p>No discussions yet</p></div>';
+    return;
+  }
+  container.innerHTML = FORUM_POSTS.map(p => {
+    const author = p.author || 'Anonymous';
+    const initials = author.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
+    const replyCount = (p.replies || []).length;
+    const cat = p.category || 'General';
+    const status = p.status || 'Open';
+    return `
+      <div class="forum-item" id="forum-post-${p.id}">
+        <div class="forum-av">${escHtml(initials)}</div>
+        <div class="forum-body">
+          <div class="forum-title">${escHtml(p.title || '(no title)')}</div>
+          <div class="forum-meta">
+            <span><i class="fas fa-user"></i> ${escHtml(author)}</span>
+            <span><i class="fas fa-tag"></i> ${escHtml(cat)}</span>
+            <span><i class="fas fa-reply"></i> ${replyCount} repl${replyCount === 1 ? 'y' : 'ies'}</span>
+            <span><i class="fas fa-circle" style="font-size:8px;color:${status === 'Resolved' ? 'var(--green)' : 'var(--orange)'}"></i> ${escHtml(status)}</span>
+            <span>${escHtml(p.date || '')}</span>
+          </div>
+          <div style="font-size:13px;color:var(--gray-500);margin:6px 0">${escHtml((p.description || '').substring(0, 160))}${(p.description || '').length > 160 ? '…' : ''}</div>
+          <div class="forum-actions">
+            <button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="deleteForumPost(${p.id})"><i class="fas fa-trash"></i> Remove Post</button>
+            <button class="btn btn-outline btn-sm" onclick="toggleForumReplies(${p.id})"><i class="fas fa-comments"></i> View Replies (${replyCount})</button>
+            <button class="btn btn-outline btn-sm" style="color:var(--orange)" onclick="moderateForumUser('${escHtml(author).replace(/'/g, "\\'")}')"><i class="fas fa-user-slash"></i> Ban / Timeout</button>
+            <a href="forums.html" target="_blank" class="btn btn-outline btn-sm"><i class="fas fa-external-link-alt"></i> Open Forum</a>
+          </div>
+          <div id="forum-replies-${p.id}" class="forum-replies" style="display:none;margin-top:10px;padding-left:12px;border-left:2px solid var(--gray-100)"></div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
 
-  const sc = document.getElementById('forums-stat-posts');    if (sc) sc.textContent = stats.posts    || '—';
-  const sr = document.getElementById('forums-stat-replies');  if (sr) sr.textContent = stats.replies  || '—';
-  const sv = document.getElementById('forums-stat-resolved'); if (sv) sv.textContent = stats.resolved || '—';
-  const sf = document.getElementById('forums-stat-flagged');  if (sf) sf.textContent = stats.flagged  || '—';
+function toggleForumReplies(postId) {
+  const box = document.getElementById(`forum-replies-${postId}`);
+  if (!box) return;
+  if (box.style.display === 'none') {
+    const post = FORUM_POSTS.find(p => p.id === postId);
+    const replies = post?.replies || [];
+    if (!replies.length) {
+      box.innerHTML = '<div style="font-size:12px;color:var(--gray-400);padding:6px 0">No replies</div>';
+    } else {
+      box.innerHTML = replies.map(r => `
+        <div class="forum-reply" id="forum-reply-${r.id}" style="padding:6px 0;display:flex;justify-content:space-between;gap:8px;align-items:flex-start">
+          <div>
+            <strong style="font-size:12px">${escHtml(r.name || 'Anonymous')}</strong>${r.isStaff ? ' <span class="tag tag-green" style="font-size:10px">Staff</span>' : ''}
+            <span style="font-size:11px;color:var(--gray-400)">· ${escHtml(r.date || '')}</span>
+            <div style="font-size:13px;color:var(--gray-600)">${escHtml(r.text || '')}</div>
+          </div>
+          <button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="deleteForumReply(${r.id}, ${postId})"><i class="fas fa-trash"></i></button>
+        </div>
+      `).join('');
+    }
+    box.style.display = 'block';
+  } else {
+    box.style.display = 'none';
+  }
+}
+
+async function deleteForumPost(id) {
+  const post = FORUM_POSTS.find(p => p.id === id);
+  const title = post?.title || 'this post';
+  if (!confirm(`Remove this post?\n"${title.substring(0, 60)}"\n\nThis will also delete all its replies.`)) return;
+  try {
+    const res = await fetch(`/api/forums/posts/${id}`, { method: 'DELETE', credentials: 'same-origin' });
+    if (!res.ok) throw new Error('Failed');
+    FORUM_POSTS = FORUM_POSTS.filter(p => p.id !== id);
+    document.getElementById(`forum-post-${id}`)?.remove();
+    renderForumStats();
+    renderForumCategories();
+    if (!FORUM_POSTS.length) renderForumPosts();
+    showToast('Post removed', 'error');
+  } catch (err) {
+    console.error('Delete post failed:', err);
+    showToast('Failed to remove post', 'error');
+  }
+}
+
+async function deleteForumReply(replyId, postId) {
+  if (!confirm('Remove this reply?')) return;
+  try {
+    const res = await fetch(`/api/forums/replies/${replyId}`, { method: 'DELETE', credentials: 'same-origin' });
+    if (!res.ok) throw new Error('Failed');
+    const post = FORUM_POSTS.find(p => p.id === postId);
+    if (post) post.replies = (post.replies || []).filter(r => r.id !== replyId);
+    document.getElementById(`forum-reply-${replyId}`)?.remove();
+    renderForumStats();
+    showToast('Reply removed', 'error');
+  } catch (err) {
+    console.error('Delete reply failed:', err);
+    showToast('Failed to remove reply', 'error');
+  }
+}
+
+async function moderateForumUser(username) {
+  if (!username || username === 'Anonymous') {
+    showToast('Cannot moderate an anonymous author', 'error');
+    return;
+  }
+  // Duration: 0 / empty = permanent ban; otherwise number of hours = timeout
+  const input = prompt(
+    `Ban or timeout "${username}" from the forums.\n\n` +
+    `Enter a timeout duration in HOURS (e.g. 24 for 1 day),\n` +
+    `or leave blank / 0 for a PERMANENT ban.`,
+    '24'
+  );
+  if (input === null) return; // cancelled
+
+  const durationHours = parseInt(input, 10);
+  const isPermanent = isNaN(durationHours) || durationHours <= 0;
+
+  const reason = prompt(`Reason for ${isPermanent ? 'banning' : 'timing out'} "${username}" (optional):`, '');
+  if (reason === null) return; // cancelled
+
+  try {
+    const res = await fetch(`/api/forums/users/${encodeURIComponent(username)}/ban`, {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ durationHours: isPermanent ? null : durationHours, reason: reason || null })
+    });
+    if (res.status === 403) { showToast('You are not authorized to moderate users', 'error'); return; }
+    if (!res.ok) {
+      const j = await res.json().catch(() => ({}));
+      showToast(j.error || 'Failed to apply moderation', 'error');
+      return;
+    }
+    showToast(isPermanent ? `${username} banned from forums` : `${username} timed out for ${durationHours}h`);
+  } catch (err) {
+    console.error('Moderation failed:', err);
+    showToast('Failed to apply moderation', 'error');
+  }
+}
+
+async function unbanForumUser(username) {
+  if (!username) return;
+  try {
+    const res = await fetch(`/api/forums/users/${encodeURIComponent(username)}/unban`, {
+      method: 'POST',
+      credentials: 'same-origin'
+    });
+    if (!res.ok) { showToast('Failed to lift ban', 'error'); return; }
+    showToast(`${username} can post again`);
+  } catch (err) {
+    console.error('Unban failed:', err);
+    showToast('Failed to lift ban', 'error');
+  }
+}
+
+function renderForumStats() {
+  const totalReplies = FORUM_POSTS.reduce((sum, p) => sum + (p.replies || []).length, 0);
+  const resolved = FORUM_POSTS.filter(p => (p.status || '').toLowerCase() === 'resolved').length;
+  const unanswered = FORUM_POSTS.filter(p => (p.replies || []).length === 0).length;
+
+  const sc = document.getElementById('forums-stat-posts');      if (sc) sc.textContent = FORUM_POSTS.length;
+  const sr = document.getElementById('forums-stat-replies');    if (sr) sr.textContent = totalReplies;
+  const sv = document.getElementById('forums-stat-resolved');   if (sv) sv.textContent = resolved;
+  const su = document.getElementById('forums-stat-unanswered'); if (su) su.textContent = unanswered;
+}
+
+function renderForumCategories() {
+  const box = document.getElementById('forum-category-breakdown');
+  if (!box) return;
+  if (!FORUM_POSTS.length) { box.innerHTML = '<div style="padding:16px;text-align:center;color:var(--gray-400)">No data</div>'; return; }
+  const counts = {};
+  FORUM_POSTS.forEach(p => { const c = p.category || 'General'; counts[c] = (counts[c] || 0) + 1; });
+  const total = FORUM_POSTS.length;
+  const colors = ['pf-green', 'pf-red', 'pf-orange', 'pf-blue'];
+  box.innerHTML = Object.entries(counts)
+    .sort((a, b) => b[1] - a[1])
+    .map(([cat, count], i) => {
+      const pct = Math.round((count / total) * 100);
+      return `<div class="progress-wrap"><div class="progress-label"><span>${escHtml(cat)}</span><span>${pct}%</span></div><div class="progress-bar"><div class="progress-fill ${colors[i % colors.length]}" style="width:${pct}%"></div></div></div>`;
+    }).join('');
 }
 
 /* ============================================================
-   FORUM — moderation helpers (for the dashboard flagged-post cards)
+   RESERVATIONS — Amenity reservations (live database)
 ============================================================ */
-function removeForumPost(btn) {
-  const item  = btn.closest('.forum-item');
-  const title = item?.querySelector('.forum-title')?.textContent || 'Post';
-  if (confirm(`Remove this post?\n"${title.substring(0,60)}"`)) { item?.remove(); showToast('Post removed', 'error'); }
-}
-function allowForumPost(btn) {
-  const item = btn.closest('.forum-item');
-  if (item) { item.style.opacity = '.5'; item.querySelectorAll('.forum-actions button').forEach(b => b.disabled = true); }
-  showToast('Post allowed — no action taken');
+let RESERVATIONS = [];
+
+async function loadReservations() {
+  const pendingTbody = document.getElementById('resv-pending-tbody');
+  const allTbody = document.getElementById('resv-all-tbody');
+  if (pendingTbody) pendingTbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--gray-400)"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>';
+  try {
+    const res = await fetch('/api/reservations', { credentials: 'same-origin' });
+    if (!res.ok) throw new Error('Network');
+    RESERVATIONS = await res.json();
+    renderReservations();
+    renderReservationStats();
+  } catch (err) {
+    console.error('Failed to load reservations:', err);
+    if (pendingTbody) pendingTbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--red)"><i class="fas fa-exclamation-triangle"></i> Failed to load reservations</td></tr>';
+    if (allTbody) allTbody.innerHTML = '';
+  }
 }
 
-/* ============================================================
-   RESERVATIONS
-============================================================ */
-function approveReservation(id) {
-  const row = document.getElementById(id); if (!row) return;
-  const sc = row.querySelector('td:nth-child(5)'); if (sc) sc.innerHTML = '<span class="status-pill sp-approved">Approved</span>';
-  row.querySelectorAll('button').forEach(b => b.style.display = 'none'); showToast('Reservation approved');
+function _resvStatusPill(status) {
+  const s = (status || '').toLowerCase();
+  if (s === 'approved') return '<span class="status-pill sp-approved">Approved</span>';
+  if (s === 'rejected') return '<span class="status-pill sp-open">Rejected</span>';
+  return '<span class="status-pill sp-pending">Pending</span>';
 }
-function rejectReservation(id) {
-  const row = document.getElementById(id); if (!row) return;
-  const sc = row.querySelector('td:nth-child(5)'); if (sc) sc.innerHTML = '<span class="status-pill sp-open">Rejected</span>';
-  row.querySelectorAll('button').forEach(b => b.style.display = 'none'); showToast('Reservation rejected', 'error');
+
+function _resvDateTime(r) {
+  const d = r.date ? new Date(r.date + 'T00:00:00') : null;
+  const dateStr = d ? d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : escHtml(r.date || '');
+  const time = [r.startTime, r.endTime].filter(Boolean).join(' - ');
+  return `${dateStr}${time ? ', ' + escHtml(time) : ''}`;
+}
+
+function renderReservations() {
+  const pendingTbody = document.getElementById('resv-pending-tbody');
+  const allTbody = document.getElementById('resv-all-tbody');
+  const countLabel = document.getElementById('resv-pending-count');
+
+  const pending = RESERVATIONS.filter(r => (r.status || '').toLowerCase() === 'pending');
+  if (countLabel) countLabel.textContent = `(${pending.length})`;
+
+  if (pendingTbody) {
+    pendingTbody.innerHTML = pending.length
+      ? pending.map(r => `
+          <tr id="resv-${r.id}">
+            <td><strong>${escHtml(r.residentName || r.userId || 'Resident')}</strong></td>
+            <td>${escHtml(r.amenity || '')}</td>
+            <td>${_resvDateTime(r)}</td>
+            <td>${escHtml(r.purpose || '')}</td>
+            <td>${_resvStatusPill(r.status)}</td>
+            <td>
+              <button class="btn btn-primary btn-sm" onclick="approveReservation(${r.id})"><i class="fas fa-check"></i> Approve</button>
+              <button class="btn btn-outline btn-sm" onclick="rejectReservation(${r.id})"><i class="fas fa-times"></i> Reject</button>
+            </td>
+          </tr>`).join('')
+      : '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--gray-400)"><i class="fas fa-inbox"></i> No pending reservations</td></tr>';
+  }
+
+  if (allTbody) {
+    allTbody.innerHTML = RESERVATIONS.length
+      ? RESERVATIONS.map(r => `
+          <tr>
+            <td><strong>${escHtml(r.residentName || r.userId || 'Resident')}</strong></td>
+            <td>${escHtml(r.amenity || '')}</td>
+            <td>${_resvDateTime(r)}</td>
+            <td>${escHtml(r.purpose || '')}</td>
+            <td>${_resvStatusPill(r.status)}</td>
+            <td>${escHtml(r.reviewedBy || '—')}</td>
+          </tr>`).join('')
+      : '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--gray-400)"><i class="fas fa-inbox"></i> No reservations yet</td></tr>';
+  }
+}
+
+function renderReservationStats() {
+  const lc = s => RESERVATIONS.filter(r => (r.status || '').toLowerCase() === s).length;
+  const sp = document.getElementById('resv-stat-pending');  if (sp) sp.textContent = lc('pending');
+  const sa = document.getElementById('resv-stat-approved'); if (sa) sa.textContent = lc('approved');
+  const sr = document.getElementById('resv-stat-rejected'); if (sr) sr.textContent = lc('rejected');
+  const st = document.getElementById('resv-stat-total');    if (st) st.textContent = RESERVATIONS.length;
+}
+
+async function approveReservation(id) {
+  try {
+    const res = await fetch(`/api/reservations/${id}/approve`, { method: 'POST', credentials: 'same-origin' });
+    if (!res.ok) throw new Error('Failed');
+    const r = RESERVATIONS.find(x => x.id === id);
+    if (r) { r.status = 'approved'; r.reviewedBy = 'You'; }
+    renderReservations();
+    renderReservationStats();
+    showToast('Reservation approved');
+  } catch (err) {
+    console.error('Approve reservation failed:', err);
+    showToast('Failed to approve reservation', 'error');
+  }
+}
+
+async function rejectReservation(id) {
+  const reason = prompt('Enter rejection reason (optional):');
+  try {
+    const res = await fetch(`/api/reservations/${id}/reject`, {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(reason || '')
+    });
+    if (!res.ok) throw new Error('Failed');
+    const r = RESERVATIONS.find(x => x.id === id);
+    if (r) { r.status = 'rejected'; r.reviewedBy = 'You'; }
+    renderReservations();
+    renderReservationStats();
+    showToast('Reservation rejected', 'error');
+  } catch (err) {
+    console.error('Reject reservation failed:', err);
+    showToast('Failed to reject reservation', 'error');
+  }
 }
 
 /* ============================================================
@@ -1613,16 +2125,24 @@ function closeNotifModal() { const o = document.getElementById('notif-modal-over
 ============================================================ */
 document.addEventListener('DOMContentLoaded', function() {
   loadIncidents(); loadSettings();
-  loadExchangeData(); renderOverviewIncidents(); updateIncidentStats(); updateDistribution(); updateCommonKeywords();
-  renderIncidentsTable('all'); renderCalendar(); renderEventsList();
+  loadExchangeData();
+  if (document.getElementById('incidents-tbody')) {
+    renderOverviewIncidents(); updateIncidentStats(); updateDistribution(); updateCommonKeywords();
+    renderIncidentsTable('all');
+  }
+  renderCalendar(); renderEventsList();
   initKanban();
+  loadPendingRegistrations();
+  loadRecentlyVerified();
   document.querySelector('.icon-btn[title="Notifications"]')?.addEventListener('click', openNotifModal);
   document.querySelector('.icon-btn[title="Settings"]')?.addEventListener('click', () => openModal('settings'));
   window.addEventListener('storage', e => {
-    if (e.key === 'lba4_incidents') { loadIncidents(); renderIncidentsTable('all'); renderOverviewIncidents(); updateIncidentStats(); updateDistribution(); updateCommonKeywords(); _updateNotifBadge(); }
+    if (e.key === 'lba4_incidents') { loadIncidents(); if (document.getElementById('incidents-tbody')) { renderIncidentsTable('all'); renderOverviewIncidents(); updateIncidentStats(); updateDistribution(); updateCommonKeywords(); } _updateNotifBadge(); }
   });
   _updateNotifBadge();
-  loadKeywordsData(); // Load keywords for Word Bank
+  if (document.getElementById('kw-high-grid')) {
+    loadKeywordsData(); // Load keywords for Word Bank
+  }
   showPage('overview', document.querySelector('.nav-link.active'));
   console.log('%c LBA4 Staff Dashboard v4 loaded ✓', 'color:#0a4d3c;font-weight:bold;font-size:13px');
 });
@@ -1829,24 +2349,92 @@ function renderIncidentsTable(filter = 'all') {
     `;
   }).join('');
 
-  document.getElementById('resultCount').textContent = filtered.length;
+  const resultCount = document.getElementById('resultCount');
+  if (resultCount) resultCount.textContent = filtered.length;
 }
 
 function viewIncidentDetail(id) {
   const incident = INCIDENTS.find(r => r.id === id);
   if (!incident) return;
 
+  const status = (incident.status || 'open').toLowerCase();
+  const statusLabels = { open: 'Open', 'in-progress': 'In Progress', resolved: 'Resolved' };
+  const statusColors = { open: 'var(--orange)', 'in-progress': '#2980b9', resolved: 'var(--green)' };
+  const isResolved = status === 'resolved';
+  const resolvedInfo = isResolved && incident.resolvedBy
+    ? `<div class="form-group"><label>Resolved By</label><input type="text" readonly value="${escHtml(incident.resolvedBy)}${incident.resolvedAt ? ' · ' + new Date(incident.resolvedAt).toLocaleString() : ''}" style="background:var(--gray-50)"></div>`
+    : '';
+
   const html = `
-    <div class="form-group"><label>Reference</label><input type="text" readonly value="${incident.reference}" style="background:var(--gray-50)"></div>
-    <div class="form-group"><label>Priority</label><input type="text" readonly value="${incident.priority}" style="background:var(--gray-50)"></div>
-    <div class="form-group"><label>Description</label><textarea readonly style="background:var(--gray-50)">${incident.description}</textarea></div>
-    <div class="form-group"><label>Location</label><input type="text" readonly value="${incident.street || incident.address}" style="background:var(--gray-50)"></div>
-    <div class="form-group"><label>Detected Keywords</label><input type="text" readonly value="${incident.detectedKeywords || '-'}" style="background:var(--gray-50)"></div>
-    <div class="form-group"><label>Reporter</label><input type="text" readonly value="${incident.reporterName || 'Anonymous'}" style="background:var(--gray-50)"></div>
+    <div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:12px;align-items:center">
+      <div><div class="field-label">Reference</div><strong class="mono">${escHtml(incident.reference || 'INC-' + incident.id)}</strong></div>
+      <div><div class="field-label">Priority</div><span class="priority p-${incident.priority}">${escHtml((incident.priority || 'medium').toUpperCase())}</span></div>
+      <div><div class="field-label">Status</div><span style="font-weight:700;color:${statusColors[status] || 'var(--gray-500)'}">${statusLabels[status] || status}</span></div>
+      <div><div class="field-label">Date</div><span style="font-size:12px">${incident.timestamp ? new Date(incident.timestamp).toLocaleString() : '-'}</span></div>
+    </div>
+    <div class="form-group"><label>Category</label><input type="text" readonly value="${escHtml(incident.category || 'Uncategorized')}" style="background:var(--gray-50)"></div>
+    <div class="form-group"><label>Description</label><textarea readonly style="background:var(--gray-50);min-height:90px">${escHtml(incident.description || '')}</textarea></div>
+    <div class="form-group"><label>Location</label><input type="text" readonly value="${escHtml(incident.street || incident.address || '-')}" style="background:var(--gray-50)"></div>
+    <div class="form-group"><label>Detected Keywords</label><input type="text" readonly value="${escHtml(incident.detectedKeywords || '-')}" style="background:var(--gray-50)"></div>
+    <div class="form-group"><label>Reporter</label><input type="text" readonly value="${escHtml(incident.reporterName || (incident.anonymous ? 'Anonymous' : '-'))}" style="background:var(--gray-50)"></div>
+    ${resolvedInfo}
+    <hr style="border:none;border-top:1px solid var(--gray-100);margin:14px 0">
+    <div class="form-group"><label>Staff Comment / Resolution Note</label>
+      <textarea id="inc-staff-comment" style="min-height:80px" placeholder="Add a note, steps taken, or resolution details…">${escHtml(incident.staffComment || '')}</textarea>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">
+      <button class="btn btn-outline" onclick="saveIncidentComment(${incident.id})"><i class="fas fa-comment-dots"></i> Save Comment</button>
+      <button class="btn btn-primary" ${isResolved ? 'disabled' : ''} onclick="resolveIncident(${incident.id})"><i class="fas fa-check-circle"></i> ${isResolved ? 'Resolved' : 'Mark Resolved'}</button>
+    </div>
   `;
 
   document.getElementById('view-incident-content').innerHTML = html;
   openModal('viewIncident');
+}
+
+async function saveIncidentComment(id) {
+  const comment = (document.getElementById('inc-staff-comment')?.value || '').trim();
+  if (!comment) { showToast('Please enter a comment first', 'error'); return; }
+  try {
+    const response = await fetch(`/api/incidents/${id}/comment`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ comment })
+    });
+    const result = await response.json();
+    if (result.success) {
+      showToast('Comment saved');
+      closeModal('viewIncident');
+      loadIncidentReportsWithAnalysis();
+    } else {
+      showToast(result.error || 'Failed to save comment', 'error');
+    }
+  } catch (error) {
+    console.error('Save comment failed:', error);
+    showToast('Failed to save comment', 'error');
+  }
+}
+
+async function resolveIncident(id) {
+  const comment = (document.getElementById('inc-staff-comment')?.value || '').trim();
+  try {
+    const response = await fetch(`/api/incidents/${id}/resolve`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ comment })
+    });
+    const result = await response.json();
+    if (result.success) {
+      showToast('Incident marked resolved');
+      closeModal('viewIncident');
+      loadIncidentReportsWithAnalysis();
+    } else {
+      showToast(result.error || 'Failed to resolve incident', 'error');
+    }
+  } catch (error) {
+    console.error('Resolve failed:', error);
+    showToast('Failed to resolve incident', 'error');
+  }
 }
 
 async function updateIncidentStats() {

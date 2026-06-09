@@ -7,8 +7,10 @@
 // Configuration
 const MAX_BOOKING_DAYS = 14;
 const MAX_RESERVATIONS_PER_DAY = 2;
-const STORAGE_KEY = 'laguna_belair_reservations';
-const CURRENT_USER = 'homeowner@lagunabelair.com';
+const CURRENT_USER = window.CURRENT_USER || '';
+
+// In-memory cache of reservations loaded from the server
+let RESERVATIONS = [];
 
 // Time slots (30-minute increments from 8 AM to 8 PM)
 const TIME_SLOTS = [];
@@ -29,71 +31,28 @@ let flatpickrInstance = null;
 // INITIALIZATION
 // ========================================
 document.addEventListener('DOMContentLoaded', function() {
-  initializeData();
   initializeDatePicker();
   setupEventListeners();
+  loadReservations();
 });
 
-function initializeData() {
-  const reservations = getReservations();
-  if (reservations.length === 0) {
-    // Add sample data for demonstration
-    const today = new Date();
-    const sampleReservations = [
-      {
-        id: "1735123456789",
-        userId: CURRENT_USER,
-        amenity: "Basketball Court",
-        date: new Date(today.getTime() + 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-        startTime: "14:00",
-        endTime: "16:00",
-        purpose: "Practice",
-        notes: "Regular practice session",
-        status: "approved",
-        createdAt: new Date().toISOString()
-      },
-      {
-        id: "1735123456790",
-        userId: CURRENT_USER,
-        amenity: "Multi-Purpose Hall",
-        date: new Date(today.getTime() + 5 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-        startTime: "10:00",
-        endTime: "12:00",
-        purpose: "Meeting",
-        notes: "HOA committee meeting",
-        status: "pending",
-        createdAt: new Date().toISOString()
-      },
-      {
-        id: "1735123456791",
-        userId: "other_user@example.com",
-        amenity: "Basketball Court",
-        date: new Date(today.getTime() + 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-        startTime: "15:00",
-        endTime: "17:00",
-        purpose: "Game",
-        notes: "",
-        status: "approved",
-        createdAt: new Date().toISOString()
-      }
-    ];
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(sampleReservations));
+// ========================================
+// SERVER DATA FUNCTIONS
+// ========================================
+async function loadReservations() {
+  try {
+    const res = await fetch('/api/reservations', { credentials: 'same-origin' });
+    if (!res.ok) throw new Error('Network');
+    RESERVATIONS = await res.json();
+  } catch (err) {
+    console.error('Failed to load reservations:', err);
+    RESERVATIONS = [];
   }
+  if (flatpickrInstance) styleCalendarDates(flatpickrInstance);
 }
 
-// ========================================
-// STORAGE FUNCTIONS
-// ========================================
 function getReservations() {
-  const stored = localStorage.getItem(STORAGE_KEY);
-  if (!stored) return [];
-  return JSON.parse(stored);
-}
-
-function saveReservation(reservation) {
-  const reservations = getReservations();
-  reservations.push(reservation);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(reservations));
+  return RESERVATIONS;
 }
 
 // ========================================
@@ -430,8 +389,14 @@ function resetForm() {
   document.getElementById('agreeTerms').checked = false;
 }
 
-function handleFormSubmit(event) {
+async function handleFormSubmit(event) {
   event.preventDefault();
+  
+  // Check if user is logged in
+  if (!CURRENT_USER) {
+    showToast('Please log in to make a reservation', 'error');
+    return;
+  }
   
   const amenity = currentAmenity;
   const date = selectedDate;
@@ -477,28 +442,47 @@ function handleFormSubmit(event) {
     return;
   }
   
-  // Create reservation
+  // Create reservation on the server
   const reservation = {
-    id: Date.now().toString(),
     userId: CURRENT_USER,
     amenity: amenity,
     date: date,
     startTime: startTime,
     endTime: endTime,
     purpose: purpose,
-    notes: notes,
-    status: 'pending',
-    createdAt: new Date().toISOString()
+    notes: notes
   };
   
-  saveReservation(reservation);
+  const submitBtn = document.querySelector('.submit-btn');
+  if (submitBtn) submitBtn.disabled = true;
   
-  showToast(`Reservation request for ${amenity} on ${new Date(date).toLocaleDateString()} has been submitted!`, 'success');
-  
-  resetForm();
-  
-  if (flatpickrInstance) {
-    styleCalendarDates(flatpickrInstance);
+  try {
+    const res = await fetch('/api/reservations', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(reservation)
+    });
+    if (!res.ok) {
+      const text = await res.text();
+      console.error('Create reservation failed:', res.status, text);
+      showToast('Failed to submit reservation. Please try again.', 'error');
+      return;
+    }
+    
+    showToast(`Reservation request for ${amenity} on ${new Date(date).toLocaleDateString()} has been submitted!`, 'success');
+    
+    resetForm();
+    await loadReservations();
+    
+    if (flatpickrInstance) {
+      styleCalendarDates(flatpickrInstance);
+    }
+  } catch (err) {
+    console.error('Create reservation exception:', err);
+    showToast('Failed to submit reservation. Please try again.', 'error');
+  } finally {
+    if (submitBtn) submitBtn.disabled = false;
   }
 }
 
@@ -517,23 +501,24 @@ function formatDate(date) {
 // TOAST NOTIFICATIONS
 // ========================================
 function showToast(message, type = 'info') {
+  console.log('showToast called:', message, type);
   const existing = document.querySelector('.lba4-toast');
   if (existing) existing.remove();
-  
+
   const icons = {
     info: 'fa-circle-info',
     success: 'fa-circle-check',
     warn: 'fa-triangle-exclamation',
     error: 'fa-circle-xmark'
   };
-  
+
   const colors = {
     info: '#0a4d3c',
     success: '#5aaa4f',
     warn: '#d97706',
     error: '#c0392b'
   };
-  
+
   const toast = document.createElement('div');
   toast.className = 'lba4-toast';
   toast.setAttribute('role', 'alert');
@@ -560,9 +545,11 @@ function showToast(message, type = 'info') {
     white-space: pre-line;
     cursor: pointer;
   `;
-  
+
   toast.innerHTML = `<i class="fas ${icons[type]}"></i><span>${message}</span>`;
+  console.log('Toast element created, appending to body');
   document.body.appendChild(toast);
+  console.log('Toast appended to body, current body children:', document.body.children.length);
   
   toast.addEventListener('click', () => {
     toast.style.opacity = '0';

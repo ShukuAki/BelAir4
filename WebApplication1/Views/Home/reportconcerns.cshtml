@@ -29,76 +29,76 @@
 </head>
 <body>
 
-        <!-- ═══════════════════════════════════════
+    <!-- ═══════════════════════════════════════
           HEADER / NAV (updated to match advertisements style)
-        ═══════════════════════════════════════ -->
-        <div class="top-header-container">
-            <!-- Logo Section -->
-            <div class="logo-section">
-                <a asp-controller="Home" asp-action="Index" class="logo-link">
-                    <img src="@(Url.Content("~/assets/LBAlogo.png"))" alt="Bel-Air Village Logo" class="logo-image">
-                </a>
-            </div>
-            <!-- Navbar Wrapper -->
-            <div class="header-center-wrapper">
-                <div class="navbar-two-rows">
-                    <!-- Top Row: Utility Links -->
-                    <div class="navbar-top-row">
-                        @if (!string.IsNullOrEmpty(username))
-                        {
-                            <span class="nav-user">Hello, @username</span>
-                            <form id="logoutForm" method="post" asp-controller="Home" asp-action="Logout" style="display:inline">
-                                @Html.AntiForgeryToken()
-                                <button type="submit" class="nav-link btn-logout">Logout</button>
-                            </form>
-                        }
-                        else
-                        {
-                            <a asp-controller="Home" asp-action="login"><i class="fas fa-sign-in-alt"></i> Login</a>
-                            <span class="nav-separator">|</span>
-                            <a asp-controller="Home" asp-action="register"><i class="fas fa-user-plus"></i> Register</a>
-                        }
-                    </div>
-                    <!-- Bottom Row: Main Navigation -->
-                    <div class="navbar-bottom-row">
-                        <a asp-controller="Home" asp-action="Index" class="nav-link">Home</a>
-                        <div class="dropdown">
-                            <a href="#" class="dropdown-toggle">About <i class="fas fa-chevron-down"></i></a>
-                            <div class="dropdown-menu">
-                                <a asp-controller="Home" asp-action="aboutlagunabelair">Laguna BelAir 4</a>
-                                @* <a asp-controller="Home" asp-action="committeesBods">Committees/BODs</a> *@
-                                <a asp-controller="Home" asp-action="landMarks">Landmarks</a>
-                                <a asp-controller="Home" asp-action="contacts">Contacts</a>
-                            </div>
+        ═════════════════════════════════════ -->
+    <div class="top-header-container">
+        <!-- Logo Section -->
+        <div class="logo-section">
+            <a asp-controller="Home" asp-action="Index" class="logo-link">
+                <img src="@(Url.Content("~/assets/LBAlogo.png"))" alt="Bel-Air Village Logo" class="logo-image">
+            </a>
+        </div>
+        <!-- Navbar Wrapper -->
+        <div class="header-center-wrapper">
+            <div class="navbar-two-rows">
+                <!-- Top Row: Utility Links -->
+                <div class="navbar-top-row">
+                    @if (!string.IsNullOrEmpty(username))
+                    {
+                        <span class="nav-user">Hello, @username</span>
+                        <form id="logoutForm" method="post" asp-controller="Home" asp-action="Logout" style="display:inline">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="nav-link btn-logout">Logout</button>
+                        </form>
+                    }
+                    else
+                    {
+                        <a asp-controller="Home" asp-action="login"><i class="fas fa-sign-in-alt"></i> Login</a>
+                        <span class="nav-separator">|</span>
+                        <a asp-controller="Home" asp-action="register"><i class="fas fa-user-plus"></i> Register</a>
+                    }
+                </div>
+                <!-- Bottom Row: Main Navigation -->
+                <div class="navbar-bottom-row">
+                    <a asp-controller="Home" asp-action="Index" class="nav-link">Home</a>
+                    <div class="dropdown">
+                        <a href="#" class="dropdown-toggle">About <i class="fas fa-chevron-down"></i></a>
+                        <div class="dropdown-menu">
+                            <a asp-controller="Home" asp-action="aboutlagunabelair">Laguna BelAir 4</a>
+                            @* <a asp-controller="Home" asp-action="committeesBods">Committees/BODs</a> *@
+                            <a asp-controller="Home" asp-action="landMarks">Landmarks</a>
+                            <a asp-controller="Home" asp-action="contacts">Contacts</a>
                         </div>
-                        <div class="dropdown">
-                            <a href="#" class="dropdown-toggle">Community <i class="fas fa-chevron-down"></i></a>
-                            <div class="dropdown-menu">
-                                @*  <a asp-controller="Home" asp-action="announcement">Announcements</a> *@
-                                <a asp-controller="Home" asp-action="forums">Forums/Discussions</a>
-                                <a asp-controller="Home" asp-action="advertisements">Advertisements</a>
-                                @*   <a asp-controller="Home" asp-action="calendars">Calendars</a>
+                    </div>
+                    <div class="dropdown">
+                        <a href="#" class="dropdown-toggle">Community <i class="fas fa-chevron-down"></i></a>
+                        <div class="dropdown-menu">
+                             @* <a asp-controller="Home" asp-action="announcement">Announcements</a> *@
+                            <a asp-controller="Home" asp-action="forums">Forums/Discussions</a>
+                            <a asp-controller="Home" asp-action="advertisements">Advertisements</a>
+                              @* <a asp-controller="Home" asp-action="calendars">Calendars</a>
                                     <a asp-controller="Home" asp-action="meetingAgendas">Meeting Record/Governance</a>
                                     <a asp-controller="Home" asp-action="communityMap">Community Map</a> *@
-                            </div>
                         </div>
-                        <div class="dropdown">
-                            <a href="#" class="dropdown-toggle">Services <i class="fas fa-chevron-down"></i></a>
-                            <div class="dropdown-menu">
-                                @*  <a asp-controller="Home" asp-action="reserve">Reserve Amenities</a> *@
-                                <a asp-controller="Home" asp-action="reportConcerns">Report Concerns/Incidents</a>
-                            </div>
+                    </div>
+                    <div class="dropdown">
+                        <a href="#" class="dropdown-toggle">Services <i class="fas fa-chevron-down"></i></a>
+                        <div class="dropdown-menu">
+                             <a asp-controller="Home" asp-action="reserve">Reserve Amenities</a>
+                            <a asp-controller="Home" asp-action="reportConcerns">Report Concerns/Incidents</a>
                         </div>
-                        @* <div class="dropdown">
+                    </div>
+                    @* <div class="dropdown">
                                 <a href="#" class="dropdown-toggle">Others <i class="fas fa-chevron-down"></i></a>
                                 <div class="dropdown-menu">
                                     <a asp-controller="Home" asp-action="formsDocuments">Downloadable Forms and Documents</a>
                                 </div>
                             </div> *@
-                    </div>
                 </div>
             </div>
         </div>
+    </div>
 
   <!-- ═══════════════════════════════════════
        HERO SECTION (matching advertisements style with added <p>)
@@ -147,6 +147,28 @@
           </div>
         </div>
 
+        <!-- Issue Category (shown first, broad — NLP still primary) -->
+        <div class="field-block">
+          <label for="f-category" class="field-label">
+            Issue Category
+            <span class="badge-optional">Optional</span>
+          </label>
+          <select id="f-category" name="category" class="field-select">
+            <option value="">Select a broad category (optional)</option>
+            <option value="maintenance">Maintenance / Infrastructure</option>
+            <option value="cleanliness">Cleanliness / Waste</option>
+            <option value="safety">Safety / Hazard</option>
+            <option value="security">Security Concern</option>
+            <option value="noise">Noise Complaint</option>
+            <option value="parking">Parking / Traffic</option>
+            <option value="others">Others</option>
+          </select>
+          <p class="field-note">
+            <i class="fas fa-circle-info"></i>
+            This is a broad hint only. Our staff's NLP system will perform detailed classification regardless of your selection.
+          </p>
+        </div>
+
         <div class="field-block">
           <label for="f-description" class="field-label">
             What's happening? <span class="req" aria-label="required">*</span>
@@ -166,28 +188,6 @@
           <p class="field-note">
             <i class="fas fa-robot"></i>
             Our staff system will automatically classify the type, priority, and visibility of your report based on your description.
-          </p>
-        </div>
-
-        <!-- Issue Category (optional, broad — NLP still primary) -->
-        <div class="field-block">
-          <label for="f-category" class="field-label">
-            Issue Category
-            <span class="badge-optional">Optional</span>
-          </label>
-          <select id="f-category" name="category" class="field-select">
-            <option value="">Select a broad category (optional)</option>
-            <option value="maintenance">Maintenance / Infrastructure</option>
-            <option value="cleanliness">Cleanliness / Waste</option>
-            <option value="safety">Safety / Hazard</option>
-            <option value="security">Security Concern</option>
-            <option value="noise">Noise Complaint</option>
-            <option value="parking">Parking / Traffic</option>
-            <option value="others">Others</option>
-          </select>
-          <p class="field-note">
-            <i class="fas fa-circle-info"></i>
-            This is a broad hint only. Our staff's NLP system will perform detailed classification regardless of your selection.
           </p>
         </div>
       </div>

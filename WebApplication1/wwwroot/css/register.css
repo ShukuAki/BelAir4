@@ -570,7 +570,7 @@ REGISTRATION SECTION
 }
 
 .file-upload-input {
-  display: none;
+  /* display: none; */
 }
 
 .file-upload-label {

@@ -170,13 +170,11 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
-  // Form validation and submission
+  // Form validation (client-side only, let server handle submission)
   const registerForm = document.getElementById('registerForm');
   if (registerForm) {
     registerForm.addEventListener('submit', function(e) {
-      e.preventDefault();
-
-      // Get form values
+      // Get form values for validation
       const password = document.getElementById('password').value;
       const confirmPassword = document.getElementById('confirmPassword').value;
       const termsAgreement = document.getElementById('termsAgreement').checked;
@@ -184,30 +182,39 @@ document.addEventListener('DOMContentLoaded', function() {
 
       // Validate passwords match
       if (password !== confirmPassword) {
+        e.preventDefault();
         alert('Passwords do not match. Please try again.');
         return;
       }
 
       // Validate password strength (minimum 8 characters)
       if (password.length < 8) {
+        e.preventDefault();
         alert('Password must be at least 8 characters long.');
         return;
       }
 
       // Validate terms agreement
       if (!termsAgreement) {
+        e.preventDefault();
         alert('Please confirm that the information provided is true and accurate.');
         return;
       }
 
       // Validate file upload
+      console.log('File input element:', document.getElementById('proofOfResidency'));
+      console.log('Files array:', document.getElementById('proofOfResidency')?.files);
+      console.log('First file:', proofOfResidency);
+
       if (!proofOfResidency) {
+        e.preventDefault();
         alert('Please upload proof of residency.');
         return;
       }
 
       // Validate file size (max 5MB)
       if (proofOfResidency.size > 5 * 1024 * 1024) {
+        e.preventDefault();
         alert('File size must be less than 5MB.');
         return;
       }
@@ -215,6 +222,7 @@ document.addEventListener('DOMContentLoaded', function() {
       // Validate file type
       const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
       if (!allowedTypes.includes(proofOfResidency.type)) {
+        e.preventDefault();
         alert('Only JPG, PNG, and PDF files are allowed.');
         return;
       }
@@ -223,61 +231,14 @@ document.addEventListener('DOMContentLoaded', function() {
       const addressInputs = document.querySelectorAll('.address-input');
       for (let input of addressInputs) {
         if (!input.value.trim()) {
+          e.preventDefault();
           alert('Please fill in all address fields, or remove empty ones.');
           input.focus();
           return;
         }
       }
 
-      // Collect form data
-      const formData = new FormData(this);
-
-      // Log form data (for development)
-      console.log('Registration Data:');
-      for (let [key, value] of formData.entries()) {
-        if (key !== 'password' && key !== 'confirmPassword') {
-          console.log(`${key}: ${value}`);
-        }
-      }
-
-      // Submit to server
-      const tokenEl = document.querySelector('input[name="__RequestVerificationToken"]');
-      const token = tokenEl ? tokenEl.value : '';
-      const submitData = new FormData(registerForm);
-
-      try {
-        const res = await fetch('/register', {
-          method: 'POST',
-          headers: token ? { 'RequestVerificationToken': token } : {},
-          body: submitData
-        });
-
-        if (res.ok) {
-          // Show success message and hide form
-          document.querySelector('.register-form').style.display = 'none';
-          document.getElementById('successMessage').classList.add('show');
-        } else {
-          alert('Registration failed. Please try again.');
-        }
-      } catch (ex) {
-        alert('Error submitting registration.');
-      }
-
-      // Scroll to success message
-      document.getElementById('successMessage').scrollIntoView({ 
-        behavior: 'smooth',
-        block: 'center'
-      });
-
-      /* 
-      Backend Implementation Notes:
-      1. Set registration_status to 'pending' by default
-      2. Store the uploaded file securely
-      3. Save additional lot addresses (address[] array) as JSON array
-      4. Send confirmation email to user
-      5. Notify admin/staff of new registration
-      6. Do NOT allow login until status is 'approved'
-      */
+      // Let the form submit normally to the server
     });
   }
 

@@ -15,6 +15,8 @@ namespace WebApplication1.Repository
         Task<bool> UpdateAsync(UserAccount user);
         Task<bool> DeleteAsync(int id);
         Task<UserAccount?> AuthenticateAsync(string username, string password);
+        Task<UserAccount?> GetByUsernameAsync(string username);
+        Task<bool> SetUserBanAsync(string username, bool isBanned, DateTime? bannedUntil, string? reason);
         Task SeedAsync();
         // Forum
         Task<List<Post>> GetPostsAsync();
@@ -24,6 +26,8 @@ namespace WebApplication1.Repository
         Task<bool> MarkHelpfulAsync(int postId);
         Task<List<Post>> GetPostsByPriorityAsync(string priority);
         Task<bool> UpdatePostAsync(Post post);
+        Task<bool> DeletePostAsync(int id);
+        Task<bool> DeleteReplyAsync(int id);
         // Vehicles & Pets
         Task<List<Models.Vehicle>> GetVehiclesAsync();
         Task<Models.Vehicle> CreateVehicleAsync(Models.Vehicle vehicle);
@@ -34,6 +38,9 @@ namespace WebApplication1.Repository
         Task<List<ConcernReport>> GetReportsAsync();
         Task<List<ConcernReport>> GetReportsByPriorityAsync(string priority);
         Task<bool> UpdateReportAsync(ConcernReport report);
+        Task<int> GetMonthlyReportCountAsync(int year, int month);
+        Task<ConcernReport?> GetReportByIdAsync(int id);
+        Task<bool> UpdateReportStatusAsync(int id, string status, string? comment, string? handledBy);
         // Keywords
         Task<List<KeywordDictionary>> GetKeywordsAsync();
         Task<List<KeywordDictionary>> GetActiveKeywordsAsync();
@@ -49,6 +56,20 @@ namespace WebApplication1.Repository
         Task<bool> UpdateAdvertisementAsync(Advertisement ad);
         Task<bool> ApproveAdvertisementAsync(int id, string reviewedBy);
         Task<bool> RejectAdvertisementAsync(int id, string reviewedBy);
+        // Registrations
+        Task<List<Registration>> GetRegistrationsAsync();
+        Task<List<Registration>> GetApprovedRegistrationsAsync();
+        Task<List<Registration>> GetPendingRegistrationsAsync();
+        Task<Registration> CreateRegistrationAsync(Registration registration);
+        Task<bool> ApproveRegistrationAsync(int id, string reviewedBy);
+        Task<bool> RejectRegistrationAsync(int id, string reviewedBy, string reason);
+        // Reservations
+        Task<List<Reservation>> GetReservationsAsync();
+        Task<List<Reservation>> GetReservationsByStatusAsync(string status);
+        Task<List<Reservation>> GetReservationsByAmenityAsync(string amenity);
+        Task<Reservation> CreateReservationAsync(Reservation reservation);
+        Task<bool> ApproveReservationAsync(int id, string reviewedBy);
+        Task<bool> RejectReservationAsync(int id, string reviewedBy, string reason);
     }
 
     public class Repo : IRepo
@@ -116,6 +137,33 @@ namespace WebApplication1.Repository
             return await _db.UserAccounts
                 .AsNoTracking()
                 .FirstOrDefaultAsync(u => u.Username.ToLower() == normalized && u.Password == password);
+        }
+
+        public async Task<UserAccount?> GetByUsernameAsync(string username)
+        {
+            if (string.IsNullOrWhiteSpace(username))
+                return null;
+            var normalized = username.Trim().ToLowerInvariant();
+            return await _db.UserAccounts
+                .AsNoTracking()
+                .FirstOrDefaultAsync(u => u.Username.ToLower() == normalized);
+        }
+
+        public async Task<bool> SetUserBanAsync(string username, bool isBanned, DateTime? bannedUntil, string? reason)
+        {
+            if (string.IsNullOrWhiteSpace(username))
+                return false;
+            var normalized = username.Trim().ToLowerInvariant();
+            var user = await _db.UserAccounts.FirstOrDefaultAsync(u => u.Username.ToLower() == normalized);
+            if (user is null)
+                return false;
+
+            user.IsBanned = isBanned;
+            user.BannedUntil = bannedUntil;
+            user.BanReason = isBanned ? reason : null;
+
+            await _db.SaveChangesAsync();
+            return true;
         }
 
         // Simple seeding example to trigger DB operations on startup or as-needed.
@@ -240,6 +288,29 @@ namespace WebApplication1.Repository
             return true;
         }
 
+        public async Task<bool> DeletePostAsync(int id)
+        {
+            var post = await _db.Posts
+                .Include(p => p.Replies)
+                .FirstOrDefaultAsync(p => p.Id == id);
+            if (post is null) return false;
+
+            if (post.Replies != null && post.Replies.Count > 0)
+                _db.Replies.RemoveRange(post.Replies);
+            _db.Posts.Remove(post);
+            await _db.SaveChangesAsync();
+            return true;
+        }
+
+        public async Task<bool> DeleteReplyAsync(int id)
+        {
+            var reply = await _db.Replies.FindAsync(id);
+            if (reply is null) return false;
+            _db.Replies.Remove(reply);
+            await _db.SaveChangesAsync();
+            return true;
+        }
+
         public async Task<ConcernReport> CreateReportAsync(ConcernReport report)
         {
             _db.ConcernReports.Add(report);
@@ -272,6 +343,42 @@ namespace WebApplication1.Repository
 
             existing.Priority = report.Priority;
             existing.DetectedKeywords = report.DetectedKeywords;
+            existing.Status = report.Status;
+            existing.StaffComment = report.StaffComment;
+            existing.ResolvedBy = report.ResolvedBy;
+            existing.ResolvedAt = report.ResolvedAt;
+
+            await _db.SaveChangesAsync();
+            return true;
+        }
+
+        public async Task<int> GetMonthlyReportCountAsync(int year, int month)
+        {
+            return await _db.ConcernReports
+                .AsNoTracking()
+                .CountAsync(r => r.Timestamp.Year == year && r.Timestamp.Month == month);
+        }
+
+        public async Task<ConcernReport?> GetReportByIdAsync(int id)
+        {
+            return await _db.ConcernReports.FindAsync(id);
+        }
+
+        public async Task<bool> UpdateReportStatusAsync(int id, string status, string? comment, string? handledBy)
+        {
+            var existing = await _db.ConcernReports.FindAsync(id);
+            if (existing is null)
+                return false;
+
+            existing.Status = status;
+            if (comment != null)
+                existing.StaffComment = comment;
+
+            if (string.Equals(status, "resolved", StringComparison.OrdinalIgnoreCase))
+            {
+                existing.ResolvedBy = handledBy;
+                existing.ResolvedAt = DateTime.Now;
+            }
 
             await _db.SaveChangesAsync();
             return true;
@@ -420,6 +527,149 @@ namespace WebApplication1.Repository
             ad.Status = "rejected";
             ad.ReviewedAt = DateTime.UtcNow;
             ad.ReviewedBy = reviewedBy;
+            await _db.SaveChangesAsync();
+            return true;
+        }
+
+        // Registrations
+        public async Task<List<Registration>> GetRegistrationsAsync()
+        {
+            return await _db.Registrations
+                .AsNoTracking()
+                .OrderByDescending(r => r.SubmittedAt)
+                .ToListAsync();
+        }
+
+        public async Task<List<Registration>> GetPendingRegistrationsAsync()
+        {
+            return await _db.Registrations
+                .AsNoTracking()
+                .Where(r => r.Status == "pending")
+                .OrderByDescending(r => r.SubmittedAt)
+                .ToListAsync();
+        }
+
+        public async Task<List<Registration>> GetApprovedRegistrationsAsync()
+        {
+            return await _db.Registrations
+                .AsNoTracking()
+                .Where(r => r.Status == "approved")
+                .OrderByDescending(r => r.SubmittedAt)
+                .ToListAsync();
+        }
+
+        public async Task<Registration> CreateRegistrationAsync(Registration registration)
+        {
+            registration.SubmittedAt = DateTime.UtcNow;
+            registration.Status = "pending";
+            _db.Registrations.Add(registration);
+            await _db.SaveChangesAsync();
+            return registration;
+        }
+
+        public async Task<bool> ApproveRegistrationAsync(int id, string reviewedBy)
+        {
+            var registration = await _db.Registrations.FindAsync(id);
+            if (registration is null)
+            {
+                Console.WriteLine($"Registration with ID {id} not found");
+                return false;
+            }
+
+            Console.WriteLine($"Found registration: {registration.FullName}, Status: {registration.Status}");
+
+            registration.Status = "approved";
+            registration.ReviewedAt = DateTime.UtcNow;
+            registration.ReviewedBy = reviewedBy;
+
+            // Create user account from approved registration
+            var user = new UserAccount
+            {
+                Username = registration.Email,
+                Password = registration.Password,
+                Type = 1 // Regular member
+            };
+            _db.UserAccounts.Add(user);
+
+            Console.WriteLine($"Saving changes to database...");
+            await _db.SaveChangesAsync();
+            Console.WriteLine($"Changes saved successfully");
+            return true;
+        }
+
+        public async Task<bool> RejectRegistrationAsync(int id, string reviewedBy, string reason)
+        {
+            var registration = await _db.Registrations.FindAsync(id);
+            if (registration is null)
+                return false;
+
+            registration.Status = "rejected";
+            registration.ReviewedAt = DateTime.UtcNow;
+            registration.ReviewedBy = reviewedBy;
+            registration.RejectionReason = reason;
+
+            await _db.SaveChangesAsync();
+            return true;
+        }
+
+        // Reservations
+        public async Task<List<Reservation>> GetReservationsAsync()
+        {
+            return await _db.Reservations
+                .AsNoTracking()
+                .OrderByDescending(r => r.SubmittedAt)
+                .ToListAsync();
+        }
+
+        public async Task<List<Reservation>> GetReservationsByStatusAsync(string status)
+        {
+            return await _db.Reservations
+                .AsNoTracking()
+                .Where(r => r.Status == status)
+                .OrderByDescending(r => r.SubmittedAt)
+                .ToListAsync();
+        }
+
+        public async Task<List<Reservation>> GetReservationsByAmenityAsync(string amenity)
+        {
+            return await _db.Reservations
+                .AsNoTracking()
+                .Where(r => r.Amenity == amenity && (r.Status == "pending" || r.Status == "approved"))
+                .ToListAsync();
+        }
+
+        public async Task<Reservation> CreateReservationAsync(Reservation reservation)
+        {
+            reservation.Status = "pending";
+            reservation.SubmittedAt = DateTime.UtcNow;
+            _db.Reservations.Add(reservation);
+            await _db.SaveChangesAsync();
+            return reservation;
+        }
+
+        public async Task<bool> ApproveReservationAsync(int id, string reviewedBy)
+        {
+            var reservation = await _db.Reservations.FindAsync(id);
+            if (reservation is null) return false;
+
+            reservation.Status = "approved";
+            reservation.ReviewedAt = DateTime.UtcNow;
+            reservation.ReviewedBy = reviewedBy;
+
+            await _db.SaveChangesAsync();
+            return true;
+        }
+
+        public async Task<bool> RejectReservationAsync(int id, string reviewedBy, string reason)
+        {
+            var reservation = await _db.Reservations.FindAsync(id);
+            if (reservation is null) return false;
+
+            reservation.Status = "rejected";
+            reservation.ReviewedAt = DateTime.UtcNow;
+            reservation.ReviewedBy = reviewedBy;
+            reservation.RejectionReason = reason;
+
             await _db.SaveChangesAsync();
             return true;
         }

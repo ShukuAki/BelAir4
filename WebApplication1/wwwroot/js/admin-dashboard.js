@@ -776,6 +776,7 @@ document.addEventListener('DOMContentLoaded', function() {
   initAuditExport();
   initSaveSettings();
   initRolesPage();
+  loadRecentActivities();
   document.querySelectorAll('.stat-card').forEach((c,i)=>c.style.animationDelay=(i*0.07)+'s');
   showPage('overview', document.querySelector('.nav-link.active'));
   console.log('%c LBA4 Admin Panel ready','background:#0d1f3c;color:#f0b429;font-weight:bold;padding:3px 8px;border-radius:3px');
@@ -985,4 +986,55 @@ function deleteRole(roleId) {
 function initRolesPage() {
   renderPermEditor('admin');
   window.addEventListener('beforeunload',e=>{if(hasUnsaved){e.preventDefault();e.returnValue='';}});
+}
+
+/* ─────────────────────────────────────────────
+   RECENT ACTIVITIES FEED
+───────────────────────────────────────────── */
+async function loadRecentActivities() {
+  const container = document.querySelector('.card-header h3 i.fa-clock')?.closest('.card')?.querySelector('.scroll-y');
+  if (!container) return;
+
+  try {
+    const res = await fetch('/api/admin/recent-activities', { credentials: 'same-origin' });
+    if (!res.ok) throw new Error('Failed to load activities');
+    const result = await res.json();
+    if (!result.success || !result.data) throw new Error('Invalid response');
+
+    const activities = result.data;
+    if (!activities.length) {
+      container.innerHTML = '<div style="padding:24px;text-align:center;color:var(--gray-400);font-size:13px">No recent activity</div>';
+      return;
+    }
+
+    container.innerHTML = activities.map(a => {
+      const time = formatRelativeTime(a.time);
+      return `
+        <div class="activity-item">
+          <div class="act-dot" style="background:${a.color}"></div>
+          <div class="act-body">
+            <p>${a.text}</p>
+            <div class="act-time">${time} · <span style="opacity:0.7">${a.meta || ''}</span></div>
+          </div>
+        </div>`;
+    }).join('');
+  } catch (err) {
+    console.error('Failed to load recent activities:', err);
+    container.innerHTML = '<div style="padding:24px;text-align:center;color:var(--red);font-size:13px">Failed to load activities</div>';
+  }
+}
+
+function formatRelativeTime(dateStr) {
+  const d = new Date(dateStr);
+  const now = new Date();
+  const diffMs = now - d;
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMins < 1) return 'Just now';
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays < 7) return `${diffDays}d ago`;
+  return d.toLocaleDateString();
 }

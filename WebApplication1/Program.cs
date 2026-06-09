@@ -26,6 +26,12 @@ builder.Services.AddScoped<IKeywordAnalysisService, KeywordAnalysisService>();
 
 // Register Ollama AI services for keyword extraction and priority determination
 builder.Services.AddHttpClient(); // registers IHttpClientFactory
+builder.Services.AddHttpClient("ollama", client =>
+{
+    // Generous timeout: model generation can take a while, but probing
+    // unreachable endpoints still fails fast (connection refused / DNS).
+    client.Timeout = System.TimeSpan.FromSeconds(120);
+});
 builder.Services.AddScoped<OllamaAiService>();
 builder.Services.AddScoped<HybridAiService>();
 builder.Services.AddScoped<IAiAnalysisService>(sp => sp.GetRequiredService<HybridAiService>());

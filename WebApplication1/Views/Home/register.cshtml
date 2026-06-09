@@ -9,66 +9,84 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<link rel="stylesheet" href="register.css">
+<link rel="stylesheet" href="~/css/register.css">
 </head>
 <body>
 
-<!-- ═══════════════════════════════════════
-  HEADER / NAV (updated to match advertisements style)
-═══════════════════════════════════════ -->
-<div class="top-header-container">
-  <div class="logo-section">
-    <a href="index.html" class="logo-link">
-      <img src="LBAlogo.png" alt="Laguna BelAir 4 Logo" class="logo-image">
-    </a>
-  </div>
-  <div class="header-center-wrapper">
-    <div class="navbar-two-rows">
-      <div class="navbar-top-row">
-        <a href="login.html"><i class="fas fa-sign-in-alt"></i> Login</a>
-        <span class="nav-sep">|</span>
-        <a href="register.html"><i class="fas fa-user-plus"></i> Register</a>
-      </div>
-      <div class="navbar-bottom-row">
-        <a href="./index.html" class="nav-link">Home</a>
-        <div class="dropdown">
-          <a href="#" class="dropdown-toggle">About <i class="fas fa-chevron-down"></i></a>
-          <div class="dropdown-menu">
-            <a href="about-laguna-belair.html">Laguna BelAir 4</a>
-            <a href="committees-bods.html">Committees / BODs</a>
-            <a href="landmarks.html">Landmarks</a>
-            <a href="contacts.html">Contacts</a>
-          </div>
+    <!-- ═══════════════════════════════════════
+          HEADER / NAV (updated to match advertisements style)
+        ═════════════════════════════════════ -->
+    <div class="top-header-container">
+        <!-- Logo Section -->
+        <div class="logo-section">
+            <a asp-controller="Home" asp-action="Index" class="logo-link">
+                <img src="@(Url.Content("~/assets/LBAlogo.png"))" alt="Bel-Air Village Logo" class="logo-image">
+            </a>
         </div>
-        <div class="dropdown">
-          <a href="#" class="dropdown-toggle">Community <i class="fas fa-chevron-down"></i></a>
-          <div class="dropdown-menu">
-            <a href="announcement.html">Announcements</a>
-            <a href="forums.html">Forums / Discussions</a>
-            <a href="advertisements.html">Community Exchange</a>
-            <a href="calendars.html">Calendars</a>
-            <a href="meeting-agendas.html">Meeting Records</a>
-            <a href="community-map.html">Community Map</a>
-          </div>
+        <!-- Navbar Wrapper -->
+        <div class="header-center-wrapper">
+            <div class="navbar-two-rows">
+                <!-- Top Row: Utility Links -->
+                <div class="navbar-top-row">
+                    @{
+                        var username = Context.Session.GetString("Username");
+                        var userType = Context.Session.GetInt32("UserType") ?? 0;
+                    }
+                    @if (!string.IsNullOrEmpty(username))
+                    {
+                        <span class="nav-user">Hello, @username</span>
+                        <form id="logoutForm" method="post" asp-controller="Home" asp-action="Logout" style="display:inline">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="nav-link btn-logout">Logout</button>
+                        </form>
+                    }
+                    else
+                    {
+                        <a asp-controller="Home" asp-action="login"><i class="fas fa-sign-in-alt"></i> Login</a>
+                        <span class="nav-separator">|</span>
+                        <a asp-controller="Home" asp-action="register"><i class="fas fa-user-plus"></i> Register</a>
+                    }
+                </div>
+                <!-- Bottom Row: Main Navigation -->
+                <div class="navbar-bottom-row">
+                    <a asp-controller="Home" asp-action="Index" class="nav-link">Home</a>
+                    <div class="dropdown">
+                        <a href="#" class="dropdown-toggle">About <i class="fas fa-chevron-down"></i></a>
+                        <div class="dropdown-menu">
+                            <a asp-controller="Home" asp-action="aboutlagunabelair">Laguna BelAir 4</a>
+                            @* <a asp-controller="Home" asp-action="committeesBods">Committees/BODs</a> *@
+                            <a asp-controller="Home" asp-action="landMarks">Landmarks</a>
+                            <a asp-controller="Home" asp-action="contacts">Contacts</a>
+                        </div>
+                    </div>
+                    <div class="dropdown">
+                        <a href="#" class="dropdown-toggle">Community <i class="fas fa-chevron-down"></i></a>
+                        <div class="dropdown-menu">
+                             @* <a asp-controller="Home" asp-action="announcement">Announcements</a> *@
+                            <a asp-controller="Home" asp-action="forums">Forums/Discussions</a>
+                            <a asp-controller="Home" asp-action="advertisements">Advertisements</a>
+                              @* <a asp-controller="Home" asp-action="calendars">Calendars</a>
+                                    <a asp-controller="Home" asp-action="meetingAgendas">Meeting Record/Governance</a>
+                                    <a asp-controller="Home" asp-action="communityMap">Community Map</a> *@
+                        </div>
+                    </div>
+                    <div class="dropdown">
+                        <a href="#" class="dropdown-toggle">Services <i class="fas fa-chevron-down"></i></a>
+                        <div class="dropdown-menu">
+                             <a asp-controller="Home" asp-action="reserve">Reserve Amenities</a>
+                            <a asp-controller="Home" asp-action="reportConcerns">Report Concerns/Incidents</a>
+                        </div>
+                    </div>
+                    @* <div class="dropdown">
+                                <a href="#" class="dropdown-toggle">Others <i class="fas fa-chevron-down"></i></a>
+                                <div class="dropdown-menu">
+                                    <a asp-controller="Home" asp-action="formsDocuments">Downloadable Forms and Documents</a>
+                                </div>
+                            </div> *@
+                </div>
+            </div>
         </div>
-        <div class="dropdown">
-          <a href="#" class="dropdown-toggle">Services <i class="fas fa-chevron-down"></i></a>
-          <div class="dropdown-menu">
-            <a href="reserve.html">Reserve Amenities</a>
-            <a href="report-concerns.html">Report an Issue</a>
-          </div>
-        </div>
-        <div class="dropdown">
-          <a href="#" class="dropdown-toggle">Others <i class="fas fa-chevron-down"></i></a>
-          <div class="dropdown-menu">
-            <a href="forms-documents.html">Forms &amp; Documents</a>
-            <a href="vehicle-pet-registration.html">Register Pet/Vehicle</a>
-          </div>
-        </div>
-      </div>
     </div>
-  </div>
-</div>
 
 <!-- ═══════════════════════════════════════
   HERO SECTION (matching advertisements style with added <p>)
@@ -102,7 +120,9 @@
       </div>
 
       <!-- Registration Form -->
-      <form class="register-form" id="registerForm">
+      <form class="register-form" id="registerForm" asp-action="RegisterPost" asp-controller="Home" method="post" enctype="multipart/form-data">
+        @Html.AntiForgeryToken()
+        <div asp-validation-summary="All" class="text-danger"></div>
         <!-- Account Information Section -->
         <div class="form-section">
           <div class="section-heading">
@@ -112,20 +132,37 @@
 
           <div class="form-row">
             <div class="form-group">
-              <label for="fullName">
+              <label for="firstName">
                 <i class="fas fa-id-card"></i>
-                Full Name
+                First Name
                 <span class="required">*</span>
               </label>
               <input 
                 type="text" 
-                id="fullName" 
-                name="fullName" 
-                placeholder="Enter your full name"
+                id="firstName" 
+                name="firstName" 
+                placeholder="Enter your first name"
                 required
               >
             </div>
 
+            <div class="form-group">
+              <label for="lastName">
+                <i class="fas fa-id-card"></i>
+                Last Name
+                <span class="required">*</span>
+              </label>
+              <input 
+                type="text" 
+                id="lastName" 
+                name="lastName" 
+                placeholder="Enter your last name"
+                required
+              >
+            </div>
+          </div>
+
+          <div class="form-row">
             <div class="form-group">
               <label for="email">
                 <i class="fas fa-envelope"></i>
@@ -234,7 +271,16 @@
               Address
               <span class="required">*</span>
             </label>
-            <div id="addressList"></div>
+            <div class="form-group">
+              <input 
+                type="text" 
+                id="address" 
+                name="address" 
+                placeholder="e.g., P3 B15, Alpine St., LBA4"
+                required
+                class="address-input"
+              >
+            </div>
           </div>
         </div>
 
@@ -335,7 +381,7 @@
   <div class="footer-content">
     <div class="footer-section footer-logo-section">
       <a href="index.html" class="footer-logo-link">
-        <img src="LBAlogo.png" alt="Bel-Air Village Logo" class="footer-logo">
+        <img src="@(Url.Content("~/assets/LBAlogo.png"))" alt="Bel-Air Village Logo" class="footer-logo">
       </a>
     </div>
     <div class="footer-section">
@@ -371,7 +417,7 @@
 </footer>
 
 <!-- JavaScript -->
-<script src="register.js"></script>
+<script src="/js/register.js"></script>
 <script>
   // Set current year in footer
   document.getElementById('current-year').textContent = new Date().getFullYear();

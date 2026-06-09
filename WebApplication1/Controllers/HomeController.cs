@@ -34,7 +34,111 @@ namespace WebApplication1.Controllers
         public IActionResult Index() => View();
         public IActionResult landMarks() => View();
         public IActionResult meetingAgendas() => View();
-        public IActionResult register() => View();
+        [HttpGet]
+        public IActionResult Register() => View();
+
+        [HttpGet("/api/registrations/pending")]
+        public async Task<IActionResult> GetPendingRegistrations()
+        {
+            var pendingRegistrations = await _repo.GetPendingRegistrationsAsync();
+            return Json(pendingRegistrations);
+        }
+
+        [HttpGet("/api/registrations/approved")]
+        public async Task<IActionResult> GetApprovedRegistrations()
+        {
+            var approvedRegistrations = await _repo.GetApprovedRegistrationsAsync();
+            return Json(approvedRegistrations);
+        }
+
+        [HttpPost("/api/registrations/{id}/approve")]
+        public async Task<IActionResult> ApproveRegistration(int id)
+        {
+            _logger?.LogInformation("ApproveRegistration called for ID: {Id}", id);
+            var reviewedBy = HttpContext.Session.GetString("Username") ?? "Admin";
+            _logger?.LogInformation("Reviewed by: {ReviewedBy}", reviewedBy);
+            var result = await _repo.ApproveRegistrationAsync(id, reviewedBy);
+            _logger?.LogInformation("ApproveRegistration result: {Result}", result);
+            return Ok(new { success = result });
+        }
+
+        [HttpPost("/api/registrations/{id}/reject")]
+        public async Task<IActionResult> RejectRegistration(int id, [FromBody] string reason)
+        {
+            var reviewedBy = HttpContext.Session.GetString("Username") ?? "Admin";
+            await _repo.RejectRegistrationAsync(id, reviewedBy, reason);
+            return Ok(new { success = true });
+        }
+
+        // Reservation APIs
+        [HttpGet("/api/reservations")]
+        public async Task<IActionResult> GetReservations()
+        {
+            var reservations = await _repo.GetReservationsAsync();
+            return Json(reservations);
+        }
+
+        [HttpGet("/api/reservations/pending")]
+        public async Task<IActionResult> GetPendingReservations()
+        {
+            var reservations = await _repo.GetReservationsByStatusAsync("pending");
+            return Json(reservations);
+        }
+
+        [HttpGet("/api/reservations/amenity/{amenity}")]
+        public async Task<IActionResult> GetReservationsByAmenity(string amenity)
+        {
+            var reservations = await _repo.GetReservationsByAmenityAsync(amenity);
+            return Json(reservations);
+        }
+
+        [HttpPost("/api/reservations")]
+        [IgnoreAntiforgeryToken]
+        public async Task<IActionResult> CreateReservation([FromBody] Reservation reservation)
+        {
+            if (reservation == null || string.IsNullOrWhiteSpace(reservation.Amenity)
+                || string.IsNullOrWhiteSpace(reservation.Date)
+                || string.IsNullOrWhiteSpace(reservation.StartTime)
+                || string.IsNullOrWhiteSpace(reservation.EndTime))
+            {
+                return BadRequest(new { success = false, message = "Missing required reservation fields." });
+            }
+
+            var username = HttpContext.Session.GetString("Username");
+            if (string.IsNullOrWhiteSpace(username))
+            {
+                return Unauthorized(new { success = false, message = "You must be logged in to make a reservation." });
+            }
+
+            reservation.UserId = username;
+            if (string.IsNullOrWhiteSpace(reservation.ResidentName))
+                reservation.ResidentName = username;
+
+            _logger?.LogInformation("CreateReservation by {User} for {Amenity} on {Date}", reservation.UserId, reservation.Amenity, reservation.Date);
+            var created = await _repo.CreateReservationAsync(reservation);
+            return Json(created);
+        }
+
+        [HttpPost("/api/reservations/{id}/approve")]
+        [WebApplication1.Filters.UserTypeAuthorize(2,3)]
+        public async Task<IActionResult> ApproveReservation(int id)
+        {
+            var reviewedBy = HttpContext.Session.GetString("Username") ?? "Staff";
+            var ok = await _repo.ApproveReservationAsync(id, reviewedBy);
+            if (!ok) return NotFound();
+            return Ok(new { success = true });
+        }
+
+        [HttpPost("/api/reservations/{id}/reject")]
+        [IgnoreAntiforgeryToken]
+        [WebApplication1.Filters.UserTypeAuthorize(2,3)]
+        public async Task<IActionResult> RejectReservation(int id, [FromBody] string reason)
+        {
+            var reviewedBy = HttpContext.Session.GetString("Username") ?? "Staff";
+            var ok = await _repo.RejectReservationAsync(id, reviewedBy, reason ?? "");
+            if (!ok) return NotFound();
+            return Ok(new { success = true });
+        }
         public IActionResult reportConcerns () => View();
         public IActionResult reserve () => View();
         [WebApplication1.Filters.UserTypeAuthorize(2,3)]
@@ -97,35 +201,116 @@ namespace WebApplication1.Controllers
             return View(users);
         }
 
-        [HttpPost("/register")] 
-        [ValidateAntiForgeryToken] 
-        public async Task<IActionResult> Register() 
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> RegisterPost()
         {
+            _logger?.LogInformation("RegisterPost called");
             var form = Request.Form;
+            var firstName = form["firstName"].ToString().Trim();
+            var lastName = form["lastName"].ToString().Trim();
+            // Compose full name from first + last; fall back to legacy single fullName field.
+            var fullName = string.Join(" ", new[] { firstName, lastName }
+                .Where(s => !string.IsNullOrWhiteSpace(s))).Trim();
+            if (string.IsNullOrWhiteSpace(fullName))
+                fullName = form["fullName"].ToString().Trim();
             var email = form["email"].ToString().Trim();
+            var mobile = form["mobile"].ToString().Trim();
             var password = form["password"].ToString();
+            var confirmPassword = form["confirmPassword"].ToString();
+            var residentType = form["residentType"].ToString().Trim();
 
-            if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
+            _logger?.LogInformation("Form data: fullName={FullName}, email={Email}, mobile={Mobile}, residentType={ResidentType}", fullName, email, mobile, residentType);
+
+            // Handle address array from JavaScript (name="address[]")
+            var addressValues = form["address[]"];
+            _logger?.LogInformation("Address values count: {Count}", addressValues.Count);
+
+            string address;
+            if (addressValues.Count > 0)
             {
-                ModelState.AddModelError(string.Empty, "Email and password are required.");
+                address = string.Join(", ", addressValues.Select(a => a.ToString().Trim())).Trim();
+            }
+            else
+            {
+                // Fallback: try to get single address field
+                address = form["address"].ToString().Trim();
+            }
+
+            _logger?.LogInformation("Address: {Address}", address);
+
+            var termsAgreement = form["termsAgreement"].ToString();
+
+            // Validation
+            if (string.IsNullOrWhiteSpace(fullName))
+            {
+                ModelState.AddModelError(string.Empty, "Full name is required.");
                 return View("register");
             }
 
-            var existing = (await _repo.GetAllAsync()).FirstOrDefault(u => u.Username.ToLower() == email.ToLower());
-            if (existing != null)
+            if (string.IsNullOrWhiteSpace(email))
+            {
+                ModelState.AddModelError(string.Empty, "Email is required.");
+                return View("register");
+            }
+
+            if (string.IsNullOrWhiteSpace(mobile))
+            {
+                ModelState.AddModelError(string.Empty, "Mobile number is required.");
+                return View("register");
+            }
+
+            if (string.IsNullOrWhiteSpace(password))
+            {
+                ModelState.AddModelError(string.Empty, "Password is required.");
+                return View("register");
+            }
+
+            if (password != confirmPassword)
+            {
+                ModelState.AddModelError(string.Empty, "Passwords do not match.");
+                return View("register");
+            }
+
+            if (string.IsNullOrWhiteSpace(residentType))
+            {
+                ModelState.AddModelError(string.Empty, "Resident type is required.");
+                return View("register");
+            }
+
+            if (string.IsNullOrWhiteSpace(address))
+            {
+                ModelState.AddModelError(string.Empty, "Address is required.");
+                return View("register");
+            }
+
+            if (string.IsNullOrWhiteSpace(termsAgreement))
+            {
+                ModelState.AddModelError(string.Empty, "You must agree to the terms.");
+                return View("register");
+            }
+
+            // Check if email already exists in registrations or user accounts
+            var existingUser = (await _repo.GetAllAsync()).FirstOrDefault(u => u.Username.ToLower() == email.ToLower());
+            if (existingUser != null)
             {
                 ModelState.AddModelError(string.Empty, "An account with that email already exists.");
                 return View("register");
             }
 
-            var user = new UserAccount { Username = email, Password = password, Type = 1 };
-            await _repo.CreateAsync(user);
-
-            // handle file upload (optional)
+            // Handle file upload
+            string? proofOfResidencyPath = null;
+            _logger?.LogInformation("Total files in request: {Count}", Request.Form.Files.Count);
+            foreach (var formFile in Request.Form.Files)
+            {
+                _logger?.LogInformation("File found: {Name}, {FileName}, {Length}", formFile.Name, formFile.FileName, formFile.Length);
+            }
             var file = Request.Form.Files.GetFile("proofOfResidency");
+            _logger?.LogInformation("File upload: file={File}, length={Length}", file?.FileName, file?.Length);
+
             if (file != null && file.Length > 0)
             {
-                var uploads = System.IO.Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
+                var uploads = System.IO.Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "registrations");
                 if (!Directory.Exists(uploads)) Directory.CreateDirectory(uploads);
                 var fileName = System.Guid.NewGuid().ToString() + System.IO.Path.GetExtension(file.FileName);
                 var filePath = System.IO.Path.Combine(uploads, fileName);
@@ -133,13 +318,106 @@ namespace WebApplication1.Controllers
                 {
                     await file.CopyToAsync(stream);
                 }
+                proofOfResidencyPath = $"/uploads/registrations/{fileName}";
+                _logger?.LogInformation("File saved: {Path}", proofOfResidencyPath);
+            }
+            else
+            {
+                _logger?.LogWarning("No file uploaded");
+                ModelState.AddModelError(string.Empty, "Proof of residency document is required.");
+                return View("register");
             }
 
-            TempData["RegisterSuccess"] = "Registration submitted. You may now log in.";
+            // Create registration record
+            var registration = new Registration
+            {
+                FirstName = string.IsNullOrWhiteSpace(firstName) ? null : firstName,
+                LastName = string.IsNullOrWhiteSpace(lastName) ? null : lastName,
+                FullName = fullName,
+                Email = email,
+                Mobile = mobile,
+                Password = password,
+                ResidentType = residentType,
+                Address = address,
+                ProofOfResidencyPath = proofOfResidencyPath,
+                Status = "pending",
+                SubmittedAt = DateTime.UtcNow
+            };
+
+            _logger?.LogInformation("Creating registration: {Email}", email);
+            await _repo.CreateRegistrationAsync(registration);
+            _logger?.LogInformation("Registration created successfully");
+
+            TempData["RegisterSuccess"] = "Registration submitted successfully. Your application is pending approval by the HOA administration. You will be notified via email once your account is approved.";
             return RedirectToAction("login");
         }
 
         // Forum APIs
+
+        // Returns (blocked, message) describing whether the user may post/reply in the forums.
+        private async Task<(bool blocked, string? message)> GetForumBlockAsync(string? username)
+        {
+            if (string.IsNullOrWhiteSpace(username))
+                return (false, null);
+
+            var user = await _repo.GetByUsernameAsync(username);
+            if (user is null)
+                return (false, null);
+
+            var reasonSuffix = string.IsNullOrWhiteSpace(user.BanReason) ? string.Empty : $" Reason: {user.BanReason}";
+
+            // Permanent ban (flag set, no expiry)
+            if (user.IsBanned && user.BannedUntil == null)
+                return (true, $"You are banned from the community forums and cannot post or reply.{reasonSuffix}");
+
+            // Active timeout (expiry in the future)
+            if (user.BannedUntil.HasValue && user.BannedUntil.Value > DateTime.Now)
+                return (true, $"You are timed out from the forums until {user.BannedUntil.Value:MMM d, yyyy h:mm tt}.{reasonSuffix}");
+
+            return (false, null);
+        }
+
+        // GET /api/forums/my-status - current user's forum standing (for the notice banner)
+        [HttpGet("/api/forums/my-status")]
+        public async Task<IActionResult> GetMyForumStatus()
+        {
+            var username = HttpContext.Session.GetString("Username");
+            var (blocked, message) = await GetForumBlockAsync(username);
+            return Json(new { authenticated = !string.IsNullOrEmpty(username), blocked, message });
+        }
+
+        // POST /api/forums/users/{username}/ban - ban or timeout a user (staff/admin only)
+        // Body: { durationHours: int|null (null = permanent), reason: string }
+        [HttpPost("/api/forums/users/{username}/ban")]
+        [WebApplication1.Filters.UserTypeAuthorize(2, 3)]
+        public async Task<IActionResult> BanForumUser(string username, [FromBody] ForumBanRequest? request)
+        {
+            DateTime? until = null;
+            if (request?.DurationHours is int hours && hours > 0)
+                until = DateTime.Now.AddHours(hours);
+
+            var ok = await _repo.SetUserBanAsync(username, true, until, request?.Reason);
+            if (!ok)
+                return NotFound(new { success = false, error = "User not found" });
+
+            var moderator = HttpContext.Session.GetString("Username") ?? "Staff";
+            _logger?.LogInformation("Forum {Action} applied to {User} by {Moderator}", until == null ? "ban" : "timeout", username, moderator);
+            return Json(new { success = true, banned = true, until });
+        }
+
+        // POST /api/forums/users/{username}/unban - lift ban/timeout (staff/admin only)
+        [HttpPost("/api/forums/users/{username}/unban")]
+        [WebApplication1.Filters.UserTypeAuthorize(2, 3)]
+        public async Task<IActionResult> UnbanForumUser(string username)
+        {
+            var ok = await _repo.SetUserBanAsync(username, false, null, null);
+            if (!ok)
+                return NotFound(new { success = false, error = "User not found" });
+
+            _logger?.LogInformation("Forum ban lifted for {User}", username);
+            return Json(new { success = true, banned = false });
+        }
+
         [HttpGet("/api/forums/posts")]
         public async Task<IActionResult> GetPosts()
         {
@@ -161,6 +439,12 @@ namespace WebApplication1.Controllers
         {
             if (post == null) return BadRequest();
             var username = HttpContext.Session.GetString("Username") ?? "Anonymous";
+            var (blocked, blockMsg) = await GetForumBlockAsync(username);
+            if (blocked)
+            {
+                _logger?.LogInformation("Blocked post attempt by banned/timed-out user {User}", username);
+                return StatusCode(403, new { success = false, error = blockMsg });
+            }
             post.Author = username;
             post.Date = System.DateTime.Now.ToString("MMM d, yyyy");
             _logger?.LogInformation("CreatePost called by {User} with title={Title}", username, post.Title);
@@ -174,14 +458,43 @@ namespace WebApplication1.Controllers
         public async Task<IActionResult> AddReply(int id, [FromBody] Reply reply)
         {
             if (reply == null) return BadRequest();
+            var replyUser = HttpContext.Session.GetString("Username");
+            var (replyBlocked, replyBlockMsg) = await GetForumBlockAsync(replyUser);
+            if (replyBlocked)
+            {
+                _logger?.LogInformation("Blocked reply attempt by banned/timed-out user {User}", replyUser);
+                return StatusCode(403, new { success = false, error = replyBlockMsg });
+            }
             reply.PostId = id;
-            reply.Name = HttpContext.Session.GetString("Username") ?? reply.Name ?? "Anonymous";
+            reply.Name = replyUser ?? reply.Name ?? "Anonymous";
             reply.Date = System.DateTime.Now.ToString("MMM d, yyyy");
             _logger?.LogInformation("AddReply called by {User} on post {PostId}", reply.Name, id);
             var ok = await _repo.AddReplyAsync(reply);
             if (ok) _logger?.LogInformation("Reply added to post {PostId}", id);
             if (!ok) return NotFound();
             return Ok();
+        }
+
+        [HttpDelete("/api/forums/posts/{id}")]
+        [WebApplication1.Filters.UserTypeAuthorize(2,3)]
+        public async Task<IActionResult> DeletePost(int id)
+        {
+            var moderator = HttpContext.Session.GetString("Username") ?? "Staff";
+            _logger?.LogInformation("DeletePost {PostId} by {Moderator}", id, moderator);
+            var ok = await _repo.DeletePostAsync(id);
+            if (!ok) return NotFound();
+            return Ok(new { success = true });
+        }
+
+        [HttpDelete("/api/forums/replies/{id}")]
+        [WebApplication1.Filters.UserTypeAuthorize(2,3)]
+        public async Task<IActionResult> DeleteReply(int id)
+        {
+            var moderator = HttpContext.Session.GetString("Username") ?? "Staff";
+            _logger?.LogInformation("DeleteReply {ReplyId} by {Moderator}", id, moderator);
+            var ok = await _repo.DeleteReplyAsync(id);
+            if (!ok) return NotFound();
+            return Ok(new { success = true });
         }
 
         // Vehicles & Pets API
@@ -252,9 +565,13 @@ namespace WebApplication1.Controllers
                 report.ReporterName = form["reporterName"].ToString();
                 report.ReporterContact = form["reporterContact"].ToString();
                 report.Timestamp = DateTime.Now;
+                report.Status = "open";
 
-                // Generate reference number
-                report.Reference = $"REF-{DateTime.Now:yyyyMMdd}-{Guid.NewGuid().ToString().Substring(0, 6).ToUpper()}";
+                // Generate a short, meaningful reference: INC-YYMM-NNN
+                // INC = Incident, YYMM = year+month, NNN = sequential number within that month.
+                var now = DateTime.Now;
+                var monthlyCount = await _repo.GetMonthlyReportCountAsync(now.Year, now.Month);
+                report.Reference = $"INC-{now:yyMM}-{(monthlyCount + 1):D3}";
 
                 // Handle photo upload
                 var photoFile = Request.Form.Files.GetFile("photo");
@@ -323,5 +640,88 @@ namespace WebApplication1.Controllers
                 return Json(new { success = false, error = ex.Message });
             }
         }
+
+        // GET /api/admin/recent-activities - aggregated live activity feed for the admin dashboard
+        [HttpGet("/api/admin/recent-activities")]
+        [WebApplication1.Filters.UserTypeAuthorize(3)]
+        public async Task<IActionResult> GetRecentActivities()
+        {
+            var activities = new List<ActivityItem>();
+
+            try
+            {
+                var registrations = await _repo.GetRegistrationsAsync();
+                activities.AddRange(registrations.Select(r => new ActivityItem
+                {
+                    Type = "registration",
+                    Icon = "fa-user-plus",
+                    Color = "var(--navy)",
+                    Text = $"New member registration from <em>{r.FullName}</em>",
+                    Meta = r.Status,
+                    Time = r.SubmittedAt
+                }));
+
+                var reports = await _repo.GetReportsAsync();
+                activities.AddRange(reports.Select(c => new ActivityItem
+                {
+                    Type = "incident",
+                    Icon = "fa-triangle-exclamation",
+                    Color = "var(--red)",
+                    Text = $"New report <strong>{c.Reference}</strong> filed by <em>{(c.Anonymous ? "Anonymous" : (string.IsNullOrWhiteSpace(c.ReporterName) ? "A resident" : c.ReporterName))}</em>",
+                    Meta = c.Priority,
+                    Time = c.Timestamp
+                }));
+
+                var posts = await _repo.GetPostsAsync();
+                activities.AddRange(posts.Select(p => new ActivityItem
+                {
+                    Type = "forum",
+                    Icon = "fa-comments",
+                    Color = "var(--gold)",
+                    Text = $"New forum post \"{p.Title}\" by <em>{p.Author}</em>",
+                    Meta = p.Category,
+                    Time = p.CreatedAt
+                }));
+
+                var reservations = await _repo.GetReservationsAsync();
+                activities.AddRange(reservations.Select(v => new ActivityItem
+                {
+                    Type = "reservation",
+                    Icon = "fa-calendar-check",
+                    Color = "var(--green)",
+                    Text = $"Reservation request for <strong>{v.Amenity}</strong> by <em>{v.ResidentName ?? "A resident"}</em>",
+                    Meta = v.Status,
+                    Time = v.SubmittedAt
+                }));
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error building recent activities feed");
+                return Json(new { success = false, error = ex.Message });
+            }
+
+            var ordered = activities
+                .OrderByDescending(a => a.Time)
+                .Take(25)
+                .ToList();
+
+            return Json(new { success = true, data = ordered });
+        }
+    }
+
+    public class ForumBanRequest
+    {
+        public int? DurationHours { get; set; } // null = permanent ban
+        public string? Reason { get; set; }
+    }
+
+    public class ActivityItem
+    {
+        public string Type { get; set; } = "";
+        public string Icon { get; set; } = "";
+        public string Color { get; set; } = "";
+        public string Text { get; set; } = "";
+        public string Meta { get; set; } = "";
+        public DateTime Time { get; set; }
     }
 }
