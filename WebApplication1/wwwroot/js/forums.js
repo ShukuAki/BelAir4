@@ -656,11 +656,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
   async function checkForumStatus() {
     try {
-      const res = await fetch('/api/forums/my-status', { credentials: 'same-origin' });
-      if (!res.ok) return;
-      const data = await res.json();
-      forumBlocked = !!data.blocked;
-      forumBlockMsg = data.message || '';
+      const response = await PageCoordinator.api.get('/api/forums/my-status');
+      forumBlocked = !!response.blocked;
+      forumBlockMsg = response.message || '';
     } catch (e) {
       forumBlocked = false;
       forumBlockMsg = '';
@@ -674,11 +672,9 @@ document.addEventListener('DOMContentLoaded', function () {
   // ─────────────────────────────────────────
   async function loadPosts() {
     try {
-      const res = await fetch('/api/forums/posts', { credentials: 'same-origin' });
-      if (!res.ok) throw new Error('Network');
-      const data = await res.json();
+      const response = await PageCoordinator.api.get('/api/forums/posts');
       // adapt server shape to client expected fields
-      POSTS = data.map(p => ({
+      POSTS = (response.data || []).map(p => ({
         id: p.id,
         title: p.title,
         category: p.category,

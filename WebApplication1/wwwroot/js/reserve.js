@@ -41,9 +41,8 @@ document.addEventListener('DOMContentLoaded', function() {
 // ========================================
 async function loadReservations() {
   try {
-    const res = await fetch('/api/reservations', { credentials: 'same-origin' });
-    if (!res.ok) throw new Error('Network');
-    RESERVATIONS = await res.json();
+    const response = await PageCoordinator.api.get('/api/reservations');
+    RESERVATIONS = response.data || [];
   } catch (err) {
     console.error('Failed to load reservations:', err);
     RESERVATIONS = [];
@@ -455,26 +454,15 @@ async function handleFormSubmit(event) {
   
   const submitBtn = document.querySelector('.submit-btn');
   if (submitBtn) submitBtn.disabled = true;
-  
+
   try {
-    const res = await fetch('/api/reservations', {
-      method: 'POST',
-      credentials: 'same-origin',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(reservation)
-    });
-    if (!res.ok) {
-      const text = await res.text();
-      console.error('Create reservation failed:', res.status, text);
-      showToast('Failed to submit reservation. Please try again.', 'error');
-      return;
-    }
-    
+    const response = await PageCoordinator.api.post('/api/reservations', reservation);
+
     showToast(`Reservation request for ${amenity} on ${new Date(date).toLocaleDateString()} has been submitted!`, 'success');
-    
+
     resetForm();
     await loadReservations();
-    
+
     if (flatpickrInstance) {
       styleCalendarDates(flatpickrInstance);
     }

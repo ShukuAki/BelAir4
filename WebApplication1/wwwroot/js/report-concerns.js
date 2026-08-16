@@ -437,39 +437,32 @@ function bindFormSubmit() {
     }
 
     // Build FormData for multipart (supports photo upload)
-    const fd = new FormData();
-    fd.append('description', description);
-    fd.append('category', dom.categorySelect.value || '');
-    fd.append('anonymous', dom.anonymousChk.checked ? 'true' : 'false');
-
-    if (searchType === 'address') {
-      fd.append('address', dom.addressInput.value.trim() || '');
-      fd.append('street',  dom.streetInput.value.trim()  || '');
-    }
-    if (state.lat) fd.append('latitude',  state.lat.toFixed(7));
-    if (state.lng) fd.append('longitude', state.lng.toFixed(7));
-    if (dom.additionalLoc.value.trim()) fd.append('additionalLocation', dom.additionalLoc.value.trim());
-
-    if (!dom.anonymousChk.checked) {
-      fd.append('reporterName',    $('f-name')?.value.trim()    || '');
-      fd.append('reporterContact', $('f-contact')?.value.trim() || '');
-    }
-    if (state.photoFile) fd.append('photo', state.photoFile);
+    const payload = {
+      description,
+      category: dom.categorySelect.value || '',
+      anonymous: dom.anonymousChk.checked,
+      address: searchType === 'address' ? dom.addressInput.value.trim() || '' : '',
+      street: searchType === 'address' ? dom.streetInput.value.trim() || '' : '',
+      latitude: state.lat ? state.lat.toFixed(7) : null,
+      longitude: state.lng ? state.lng.toFixed(7) : null,
+      additionalLocation: dom.additionalLoc.value.trim() || '',
+      reporterName: !dom.anonymousChk.checked ? ($('f-name')?.value.trim() || '') : '',
+      reporterContact: !dom.anonymousChk.checked ? ($('f-contact')?.value.trim() || '') : ''
+    };
 
     setSubmitLoading(true);
 
     try {
-      const res  = await fetch('/api/concerns/report', { method: 'POST', body: fd });
-      const data = await res.json();
+      const response = await PageCoordinator.api.post('/api/concerns/report', payload);
 
-      if (!res.ok || data.success === false) {
-        showToast(data.error || 'Failed to submit report. Please try again.', 'error');
+      if (!response.success) {
+        showToast(response.error || 'Failed to submit report. Please try again.', 'error');
         setSubmitLoading(false);
         return;
       }
 
       setSubmitLoading(false);
-      showSuccess(data.reference || data.id || 'REF-???');
+      showSuccess(response.reference || response.id || 'REF-???');
     } catch (err) {
       console.error('[LBA4] Submit error:', err);
       showToast('Failed to submit report. Please try again.', 'error');

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using TaskModel = WebApplication1.Models.Task;
 
 namespace WebApplication1.Repository
 {
@@ -17,7 +18,7 @@ namespace WebApplication1.Repository
         Task<UserAccount?> AuthenticateAsync(string username, string password);
         Task<UserAccount?> GetByUsernameAsync(string username);
         Task<bool> SetUserBanAsync(string username, bool isBanned, DateTime? bannedUntil, string? reason);
-        Task SeedAsync();
+        System.Threading.Tasks.Task SeedAsync();
         // Forum
         Task<List<Post>> GetPostsAsync();
         Task<Post?> GetPostByIdAsync(int id);
@@ -100,6 +101,92 @@ namespace WebApplication1.Repository
         Task<Contact> CreateContactAsync(Contact c);
         Task<bool> UpdateContactAsync(Contact c);
         Task<bool> DeleteContactAsync(int id);
+
+        // Admin Dashboard - Staff Management
+        Task<List<AdminUser>> GetAdminUsersAsync();
+        Task<AdminUser?> GetAdminUserByIdAsync(int id);
+        Task<AdminUser> CreateAdminUserAsync(AdminUser adminUser);
+        Task<bool> UpdateAdminUserAsync(AdminUser adminUser);
+        Task<bool> DeleteAdminUserAsync(int id);
+        Task<AdminUser?> GetAdminUserByEmailAsync(string email);
+        Task<bool> UpdateAdminUserLastLoginAsync(int id, DateTime loginTime, string ipAddress);
+
+        // Admin Dashboard - Audit Logging
+        Task<List<AuditLog>> GetAuditLogsAsync(int? adminUserId = null, DateTime? fromDate = null, DateTime? toDate = null);
+        Task<AuditLog> LogAuditActionAsync(AuditLog auditLog);
+        Task<List<AuditLog>> GetAuditLogsByMonthAsync(int year, int month);
+        Task<List<AuditLog>> GetAuditLogsByCategoryAsync(string category);
+        Task<int> GetAuditLogCountAsync();
+
+        // Admin Dashboard - Roles & Permissions
+        Task<List<AdminRole>> GetAdminRolesAsync();
+        Task<AdminRole?> GetAdminRoleByIdAsync(int id);
+        Task<AdminRole> CreateAdminRoleAsync(AdminRole role);
+        Task<bool> UpdateAdminRoleAsync(AdminRole role);
+        Task<bool> DeleteAdminRoleAsync(int id);
+        Task<List<Permission>> GetPermissionsAsync();
+        Task<Permission?> GetPermissionByIdAsync(int id);
+        Task<Permission> CreatePermissionAsync(Permission permission);
+        Task<bool> UpdatePermissionAsync(Permission permission);
+        Task<bool> DeletePermissionAsync(int id);
+        Task<List<RolePermission>> GetRolePermissionsAsync(int roleId);
+        Task<RolePermission> AssignPermissionToRoleAsync(RolePermission rolePermission);
+        Task<bool> RemovePermissionFromRoleAsync(int roleId, int permissionId);
+
+        // Admin Dashboard - Staff Invitations
+        Task<List<StaffInvitation>> GetStaffInvitationsAsync();
+        Task<List<StaffInvitation>> GetPendingStaffInvitationsAsync();
+        Task<StaffInvitation?> GetStaffInvitationByIdAsync(int id);
+        Task<StaffInvitation?> GetStaffInvitationByTokenAsync(string token);
+        Task<StaffInvitation> CreateStaffInvitationAsync(StaffInvitation invitation);
+        Task<bool> UpdateStaffInvitationStatusAsync(int id, string status);
+        Task<bool> ResendStaffInvitationAsync(int id);
+        Task<bool> DeleteStaffInvitationAsync(int id);
+
+        // Admin Dashboard - Admin Settings
+        Task<List<AdminSetting>> GetAdminSettingsAsync();
+        Task<AdminSetting?> GetAdminSettingByKeyAsync(string settingKey);
+        Task<AdminSetting> CreateAdminSettingAsync(AdminSetting setting);
+        Task<bool> UpdateAdminSettingAsync(AdminSetting setting);
+        Task<bool> DeleteAdminSettingAsync(int id);
+
+        // Admin Dashboard - Ban Management
+        Task<List<BanRecord>> GetBanRecordsAsync();
+        Task<List<BanRecord>> GetActiveBanRecordsAsync();
+        Task<BanRecord?> GetBanRecordByIdAsync(int id);
+        Task<BanRecord> CreateBanRecordAsync(BanRecord banRecord);
+        Task<bool> UpdateBanRecordAsync(BanRecord banRecord);
+        Task<bool> UnbanUserAsync(int banRecordId, int unbannedByAdminUserId, string? reason);
+        Task<bool> DeleteBanRecordAsync(int id);
+
+        // Admin Dashboard - Backup Management
+        Task<List<BackupRecord>> GetBackupRecordsAsync();
+        Task<BackupRecord?> GetBackupRecordByIdAsync(int id);
+        Task<BackupRecord> CreateBackupRecordAsync(BackupRecord backupRecord);
+        Task<bool> UpdateBackupRecordAsync(BackupRecord backupRecord);
+        Task<bool> DeleteBackupRecordAsync(int id);
+
+        // Staff Dashboard - Tasks
+        Task<List<TaskModel>> GetTasksAsync();
+        Task<TaskModel?> GetTaskByIdAsync(int id);
+        Task<TaskModel> CreateTaskAsync(TaskModel task);
+        Task<bool> UpdateTaskAsync(TaskModel task);
+        Task<bool> DeleteTaskAsync(int id);
+        Task<List<TaskModel>> GetTasksByStatusAsync(string status);
+        Task<List<TaskModel>> GetTasksByCategoryAsync(string category);
+        Task<bool> UpdateTaskStatusAsync(int id, string newStatus);
+
+        // Landmarks
+        Task<List<Landmark>> GetLandmarksAsync();
+        Task<int> CreateLandmarkAsync(Landmark landmark);
+        Task<bool> UpdateLandmarkAsync(Landmark landmark);
+        Task<bool> DeleteLandmarkAsync(int id);
+
+        // Projects
+        Task<List<Project>> GetProjectsAsync();
+        Task<int> CreateProjectAsync(Project project);
+        Task<bool> UpdateProjectAsync(Project project);
+        Task<bool> DeleteProjectAsync(int id);
     }
 
     public class Repo : IRepo
@@ -197,7 +284,7 @@ namespace WebApplication1.Repository
         }
 
         // Simple seeding example to trigger DB operations on startup or as-needed.
-        public async Task SeedAsync()
+        public async System.Threading.Tasks.Task SeedAsync()
         {
             if (!await _db.UserAccounts.AnyAsync())
             if (!await _db.UserAccounts.AnyAsync())
@@ -800,5 +887,573 @@ namespace WebApplication1.Repository
 
         public async Task<bool> DeleteContactAsync(int id)
         { var e = await _db.Contacts.FindAsync(id); if (e is null) return false; _db.Contacts.Remove(e); return await _db.SaveChangesAsync() > 0; }
+
+        // ── ADMIN DASHBOARD - Staff Management ─────────────────────
+        public async Task<List<AdminUser>> GetAdminUsersAsync() =>
+            await _db.AdminUsers.AsNoTracking()
+                .Include(u => u.Role)
+                .OrderBy(u => u.Name)
+                .ToListAsync();
+
+        public async Task<AdminUser?> GetAdminUserByIdAsync(int id) =>
+            await _db.AdminUsers.Include(u => u.Role).FirstOrDefaultAsync(u => u.Id == id);
+
+        public async Task<AdminUser> CreateAdminUserAsync(AdminUser adminUser)
+        {
+            adminUser.CreatedAt = DateTime.UtcNow;
+            _db.AdminUsers.Add(adminUser);
+            await _db.SaveChangesAsync();
+            return adminUser;
+        }
+
+        public async Task<bool> UpdateAdminUserAsync(AdminUser adminUser)
+        {
+            var existing = await _db.AdminUsers.FindAsync(adminUser.Id);
+            if (existing is null) return false;
+
+            existing.Name = adminUser.Name;
+            existing.Email = adminUser.Email;
+            existing.PhoneNumber = adminUser.PhoneNumber;
+            existing.RoleId = adminUser.RoleId;
+            existing.IsActive = adminUser.IsActive;
+            existing.Status = adminUser.Status;
+            existing.IsSuspended = adminUser.IsSuspended;
+            existing.SuspendedUntil = adminUser.SuspendedUntil;
+            existing.SuspensionReason = adminUser.SuspensionReason;
+
+            return await _db.SaveChangesAsync() > 0;
+        }
+
+        public async Task<bool> DeleteAdminUserAsync(int id)
+        {
+            var existing = await _db.AdminUsers.FindAsync(id);
+            if (existing is null) return false;
+            _db.AdminUsers.Remove(existing);
+            return await _db.SaveChangesAsync() > 0;
+        }
+
+        public async Task<AdminUser?> GetAdminUserByEmailAsync(string email) =>
+            await _db.AdminUsers.Include(u => u.Role)
+                .FirstOrDefaultAsync(u => u.Email.ToLower() == email.ToLower());
+
+        public async Task<bool> UpdateAdminUserLastLoginAsync(int id, DateTime loginTime, string ipAddress)
+        {
+            var user = await _db.AdminUsers.FindAsync(id);
+            if (user is null) return false;
+            user.LastLoginAt = loginTime;
+            user.IPAddress = ipAddress;
+            return await _db.SaveChangesAsync() > 0;
+        }
+
+        // ── ADMIN DASHBOARD - Audit Logging ────────────────────────
+        public async Task<List<AuditLog>> GetAuditLogsAsync(int? adminUserId = null, DateTime? fromDate = null, DateTime? toDate = null)
+        {
+            var query = _db.AuditLogs.AsNoTracking()
+                .Include(a => a.AdminUser)
+                .AsQueryable();
+
+            if (adminUserId.HasValue)
+                query = query.Where(a => a.AdminUserId == adminUserId);
+
+            if (fromDate.HasValue)
+                query = query.Where(a => a.Timestamp >= fromDate);
+
+            if (toDate.HasValue)
+                query = query.Where(a => a.Timestamp <= toDate);
+
+            return await query.OrderByDescending(a => a.Timestamp).Take(1000).ToListAsync();
+        }
+
+        public async Task<AuditLog> LogAuditActionAsync(AuditLog auditLog)
+        {
+            auditLog.Timestamp = DateTime.UtcNow;
+            auditLog.CreatedDate = DateTime.UtcNow;
+            auditLog.Month = DateTime.UtcNow.Month;
+            auditLog.Year = DateTime.UtcNow.Year;
+            _db.AuditLogs.Add(auditLog);
+            await _db.SaveChangesAsync();
+            return auditLog;
+        }
+
+        public async Task<List<AuditLog>> GetAuditLogsByMonthAsync(int year, int month) =>
+            await _db.AuditLogs.AsNoTracking()
+                .Include(a => a.AdminUser)
+                .Where(a => a.Year == year && a.Month == month)
+                .OrderByDescending(a => a.Timestamp)
+                .ToListAsync();
+
+        public async Task<List<AuditLog>> GetAuditLogsByCategoryAsync(string category) =>
+            await _db.AuditLogs.AsNoTracking()
+                .Include(a => a.AdminUser)
+                .Where(a => a.ActionCategory == category)
+                .OrderByDescending(a => a.Timestamp)
+                .Take(500)
+                .ToListAsync();
+
+        public async Task<int> GetAuditLogCountAsync() =>
+            await _db.AuditLogs.CountAsync();
+
+        // ── ADMIN DASHBOARD - Roles & Permissions ──────────────────
+        public async Task<List<AdminRole>> GetAdminRolesAsync() =>
+            await _db.AdminRoles.AsNoTracking()
+                .Include(r => r.Permissions)
+                .OrderBy(r => r.Name)
+                .ToListAsync();
+
+        public async Task<AdminRole?> GetAdminRoleByIdAsync(int id) =>
+            await _db.AdminRoles.Include(r => r.Permissions)
+                .FirstOrDefaultAsync(r => r.Id == id);
+
+        public async Task<AdminRole> CreateAdminRoleAsync(AdminRole role)
+        {
+            role.CreatedAt = DateTime.UtcNow;
+            _db.AdminRoles.Add(role);
+            await _db.SaveChangesAsync();
+            return role;
+        }
+
+        public async Task<bool> UpdateAdminRoleAsync(AdminRole role)
+        {
+            var existing = await _db.AdminRoles.FindAsync(role.Id);
+            if (existing is null || existing.IsProtected) return false;
+
+            existing.Name = role.Name;
+            existing.Description = role.Description;
+            existing.UpdatedAt = DateTime.UtcNow;
+
+            return await _db.SaveChangesAsync() > 0;
+        }
+
+        public async Task<bool> DeleteAdminRoleAsync(int id)
+        {
+            var existing = await _db.AdminRoles.FindAsync(id);
+            if (existing is null || existing.IsProtected) return false;
+            _db.AdminRoles.Remove(existing);
+            return await _db.SaveChangesAsync() > 0;
+        }
+
+        public async Task<List<Permission>> GetPermissionsAsync() =>
+            await _db.Permissions.AsNoTracking().OrderBy(p => p.Module).ThenBy(p => p.Resource).ToListAsync();
+
+        public async Task<Permission?> GetPermissionByIdAsync(int id) =>
+            await _db.Permissions.FirstOrDefaultAsync(p => p.Id == id);
+
+        public async Task<Permission> CreatePermissionAsync(Permission permission)
+        {
+            permission.CreatedAt = DateTime.UtcNow;
+            _db.Permissions.Add(permission);
+            await _db.SaveChangesAsync();
+            return permission;
+        }
+
+        public async Task<bool> UpdatePermissionAsync(Permission permission)
+        {
+            var existing = await _db.Permissions.FindAsync(permission.Id);
+            if (existing is null) return false;
+
+            existing.Module = permission.Module;
+            existing.Resource = permission.Resource;
+            existing.Action = permission.Action;
+            existing.Description = permission.Description;
+
+            return await _db.SaveChangesAsync() > 0;
+        }
+
+        public async Task<bool> DeletePermissionAsync(int id)
+        {
+            var existing = await _db.Permissions.FindAsync(id);
+            if (existing is null) return false;
+            _db.Permissions.Remove(existing);
+            return await _db.SaveChangesAsync() > 0;
+        }
+
+        public async Task<List<RolePermission>> GetRolePermissionsAsync(int roleId) =>
+            await _db.RolePermissions.AsNoTracking()
+                .Include(rp => rp.Permission)
+                .Where(rp => rp.RoleId == roleId)
+                .OrderBy(rp => rp.Permission!.Module)
+                .ToListAsync();
+
+        public async Task<RolePermission> AssignPermissionToRoleAsync(RolePermission rolePermission)
+        {
+            rolePermission.AssignedAt = DateTime.UtcNow;
+            _db.RolePermissions.Add(rolePermission);
+            await _db.SaveChangesAsync();
+            return rolePermission;
+        }
+
+        public async Task<bool> RemovePermissionFromRoleAsync(int roleId, int permissionId)
+        {
+            var rolePermission = await _db.RolePermissions
+                .FirstOrDefaultAsync(rp => rp.RoleId == roleId && rp.PermissionId == permissionId);
+            if (rolePermission is null) return false;
+            _db.RolePermissions.Remove(rolePermission);
+            return await _db.SaveChangesAsync() > 0;
+        }
+
+        // ── ADMIN DASHBOARD - Staff Invitations ────────────────────
+        public async Task<List<StaffInvitation>> GetStaffInvitationsAsync() =>
+            await _db.StaffInvitations.AsNoTracking()
+                .Include(si => si.Role)
+                .Include(si => si.InvitedByAdminUser)
+                .OrderByDescending(si => si.CreatedAt)
+                .ToListAsync();
+
+        public async Task<List<StaffInvitation>> GetPendingStaffInvitationsAsync() =>
+            await _db.StaffInvitations.AsNoTracking()
+                .Include(si => si.Role)
+                .Where(si => si.Status == "Pending" && si.ExpiresAt > DateTime.UtcNow)
+                .OrderByDescending(si => si.CreatedAt)
+                .ToListAsync();
+
+        public async Task<StaffInvitation?> GetStaffInvitationByIdAsync(int id) =>
+            await _db.StaffInvitations
+                .Include(si => si.Role)
+                .Include(si => si.InvitedByAdminUser)
+                .FirstOrDefaultAsync(si => si.Id == id);
+
+        public async Task<StaffInvitation?> GetStaffInvitationByTokenAsync(string token) =>
+            await _db.StaffInvitations
+                .Include(si => si.Role)
+                .FirstOrDefaultAsync(si => si.InvitationToken == token);
+
+        public async Task<StaffInvitation> CreateStaffInvitationAsync(StaffInvitation invitation)
+        {
+            invitation.CreatedAt = DateTime.UtcNow;
+            invitation.ExpiresAt = DateTime.UtcNow.AddDays(7);
+            invitation.Status = "Pending";
+            _db.StaffInvitations.Add(invitation);
+            await _db.SaveChangesAsync();
+            return invitation;
+        }
+
+        public async Task<bool> UpdateStaffInvitationStatusAsync(int id, string status)
+        {
+            var invitation = await _db.StaffInvitations.FindAsync(id);
+            if (invitation is null) return false;
+
+            invitation.Status = status;
+            if (status == "Accepted")
+                invitation.AcceptedAt = DateTime.UtcNow;
+            else if (status == "Rejected")
+                invitation.RejectedAt = DateTime.UtcNow;
+
+            return await _db.SaveChangesAsync() > 0;
+        }
+
+        public async Task<bool> ResendStaffInvitationAsync(int id)
+        {
+            var invitation = await _db.StaffInvitations.FindAsync(id);
+            if (invitation is null) return false;
+
+            invitation.ResendCount++;
+            invitation.LastResendAt = DateTime.UtcNow;
+            invitation.ExpiresAt = DateTime.UtcNow.AddDays(7);
+
+            return await _db.SaveChangesAsync() > 0;
+        }
+
+        public async Task<bool> DeleteStaffInvitationAsync(int id)
+        {
+            var invitation = await _db.StaffInvitations.FindAsync(id);
+            if (invitation is null) return false;
+            _db.StaffInvitations.Remove(invitation);
+            return await _db.SaveChangesAsync() > 0;
+        }
+
+        // ── ADMIN DASHBOARD - Admin Settings ───────────────────────
+        public async Task<List<AdminSetting>> GetAdminSettingsAsync() =>
+            await _db.AdminSettings.AsNoTracking()
+                .Where(s => s.IsActive)
+                .OrderBy(s => s.Category)
+                .ThenBy(s => s.DisplayOrder)
+                .ToListAsync();
+
+        public async Task<AdminSetting?> GetAdminSettingByKeyAsync(string settingKey) =>
+            await _db.AdminSettings.FirstOrDefaultAsync(s => s.SettingKey == settingKey);
+
+        public async Task<AdminSetting> CreateAdminSettingAsync(AdminSetting setting)
+        {
+            setting.CreatedAt = DateTime.UtcNow;
+            _db.AdminSettings.Add(setting);
+            await _db.SaveChangesAsync();
+            return setting;
+        }
+
+        public async Task<bool> UpdateAdminSettingAsync(AdminSetting setting)
+        {
+            var existing = await _db.AdminSettings.FindAsync(setting.Id);
+            if (existing is null || !existing.IsEditable) return false;
+
+            existing.SettingValue = setting.SettingValue;
+            existing.UpdatedAt = DateTime.UtcNow;
+
+            return await _db.SaveChangesAsync() > 0;
+        }
+
+        public async Task<bool> DeleteAdminSettingAsync(int id)
+        {
+            var existing = await _db.AdminSettings.FindAsync(id);
+            if (existing is null) return false;
+            _db.AdminSettings.Remove(existing);
+            return await _db.SaveChangesAsync() > 0;
+        }
+
+        // ── ADMIN DASHBOARD - Ban Management ───────────────────────
+        public async Task<List<BanRecord>> GetBanRecordsAsync() =>
+            await _db.BanRecords.AsNoTracking()
+                .Include(b => b.BannedByAdminUser)
+                .Include(b => b.UnbannedByAdminUser)
+                .OrderByDescending(b => b.BannedAt)
+                .ToListAsync();
+
+        public async Task<List<BanRecord>> GetActiveBanRecordsAsync() =>
+            await _db.BanRecords.AsNoTracking()
+                .Include(b => b.BannedByAdminUser)
+                .Where(b => b.Status == "Active" && (b.ExpiresAt == null || b.ExpiresAt > DateTime.UtcNow))
+                .OrderByDescending(b => b.BannedAt)
+                .ToListAsync();
+
+        public async Task<BanRecord?> GetBanRecordByIdAsync(int id) =>
+            await _db.BanRecords
+                .Include(b => b.BannedByAdminUser)
+                .Include(b => b.UnbannedByAdminUser)
+                .FirstOrDefaultAsync(b => b.Id == id);
+
+        public async Task<BanRecord> CreateBanRecordAsync(BanRecord banRecord)
+        {
+            banRecord.BannedAt = DateTime.UtcNow;
+            banRecord.Status = "Active";
+            _db.BanRecords.Add(banRecord);
+            await _db.SaveChangesAsync();
+            return banRecord;
+        }
+
+        public async Task<bool> UpdateBanRecordAsync(BanRecord banRecord)
+        {
+            var existing = await _db.BanRecords.FindAsync(banRecord.Id);
+            if (existing is null) return false;
+
+            existing.BanReason = banRecord.BanReason;
+            existing.Duration = banRecord.Duration;
+            existing.ExpiresAt = banRecord.ExpiresAt;
+
+            return await _db.SaveChangesAsync() > 0;
+        }
+
+        public async Task<bool> UnbanUserAsync(int banRecordId, int unbannedByAdminUserId, string? reason)
+        {
+            var banRecord = await _db.BanRecords.FindAsync(banRecordId);
+            if (banRecord is null) return false;
+
+            banRecord.Status = "Lifted";
+            banRecord.UnbannedAt = DateTime.UtcNow;
+            banRecord.UnbannedByAdminUserId = unbannedByAdminUserId;
+            banRecord.UnbanReason = reason;
+
+            return await _db.SaveChangesAsync() > 0;
+        }
+
+        public async Task<bool> DeleteBanRecordAsync(int id)
+        {
+            var existing = await _db.BanRecords.FindAsync(id);
+            if (existing is null) return false;
+            _db.BanRecords.Remove(existing);
+            return await _db.SaveChangesAsync() > 0;
+        }
+
+        // ── ADMIN DASHBOARD - Backup Management ────────────────────
+        public async Task<List<BackupRecord>> GetBackupRecordsAsync() =>
+            await _db.BackupRecords.AsNoTracking()
+                .Include(b => b.CreatedByAdminUser)
+                .OrderByDescending(b => b.CreatedAt)
+                .ToListAsync();
+
+        public async Task<BackupRecord?> GetBackupRecordByIdAsync(int id) =>
+            await _db.BackupRecords
+                .Include(b => b.CreatedByAdminUser)
+                .FirstOrDefaultAsync(b => b.Id == id);
+
+        public async Task<BackupRecord> CreateBackupRecordAsync(BackupRecord backupRecord)
+        {
+            backupRecord.CreatedAt = DateTime.UtcNow;
+            _db.BackupRecords.Add(backupRecord);
+            await _db.SaveChangesAsync();
+            return backupRecord;
+        }
+
+        public async Task<bool> UpdateBackupRecordAsync(BackupRecord backupRecord)
+        {
+            var existing = await _db.BackupRecords.FindAsync(backupRecord.Id);
+            if (existing is null) return false;
+
+            existing.Status = backupRecord.Status;
+            existing.ErrorMessage = backupRecord.ErrorMessage;
+            existing.CompletedAt = backupRecord.CompletedAt;
+
+            return await _db.SaveChangesAsync() > 0;
+        }
+
+        public async Task<bool> DeleteBackupRecordAsync(int id)
+        {
+            var existing = await _db.BackupRecords.FindAsync(id);
+            if (existing is null) return false;
+            _db.BackupRecords.Remove(existing);
+            return await _db.SaveChangesAsync() > 0;
+        }
+
+        // ── STAFF DASHBOARD - Tasks ────────────────────
+        public async Task<List<TaskModel>> GetTasksAsync() =>
+            await _db.Tasks.AsNoTracking()
+                .OrderByDescending(t => t.CreatedAt)
+                .ToListAsync();
+
+        public async Task<TaskModel?> GetTaskByIdAsync(int id) =>
+            await _db.Tasks.FirstOrDefaultAsync(t => t.Id == id);
+
+        public async Task<TaskModel> CreateTaskAsync(TaskModel task)
+        {
+            task.CreatedAt = DateTime.UtcNow;
+            _db.Tasks.Add(task);
+            await _db.SaveChangesAsync();
+            return task;
+        }
+
+        public async Task<bool> UpdateTaskAsync(TaskModel task)
+        {
+            var existing = await _db.Tasks.FindAsync(task.Id);
+            if (existing is null) return false;
+
+            existing.Title = task.Title;
+            existing.Description = task.Description;
+            existing.Category = task.Category;
+            existing.Priority = task.Priority;
+            existing.Status = task.Status;
+            existing.DueDate = task.DueDate;
+            existing.CompletedAt = task.CompletedAt;
+            existing.AssignedTo = task.AssignedTo;
+            existing.AutoDeleteAfterDays = task.AutoDeleteAfterDays;
+            existing.Notes = task.Notes;
+
+            return await _db.SaveChangesAsync() > 0;
+        }
+
+        public async Task<bool> DeleteTaskAsync(int id)
+        {
+            var existing = await _db.Tasks.FindAsync(id);
+            if (existing is null) return false;
+            _db.Tasks.Remove(existing);
+            return await _db.SaveChangesAsync() > 0;
+        }
+
+        public async Task<List<TaskModel>> GetTasksByStatusAsync(string status) =>
+            await _db.Tasks.AsNoTracking()
+                .Where(t => t.Status == status)
+                .OrderByDescending(t => t.CreatedAt)
+                .ToListAsync();
+
+        public async Task<List<TaskModel>> GetTasksByCategoryAsync(string category) =>
+            await _db.Tasks.AsNoTracking()
+                .Where(t => t.Category == category)
+                .OrderByDescending(t => t.CreatedAt)
+                .ToListAsync();
+
+        public async Task<bool> UpdateTaskStatusAsync(int id, string newStatus)
+        {
+            var existing = await _db.Tasks.FindAsync(id);
+            if (existing is null) return false;
+
+            existing.Status = newStatus;
+            if (newStatus == "done")
+                existing.CompletedAt = DateTime.UtcNow;
+
+            return await _db.SaveChangesAsync() > 0;
+        }
+
+        // ── Landmarks ─────────────────────────────────────────────
+        public async Task<List<Landmark>> GetLandmarksAsync() =>
+            await _db.Landmarks.AsNoTracking()
+                .Where(l => l.IsActive)
+                .OrderBy(l => l.Name)
+                .ToListAsync();
+
+        public async Task<int> CreateLandmarkAsync(Landmark landmark)
+        {
+            _db.Landmarks.Add(landmark);
+            await _db.SaveChangesAsync();
+            return landmark.Id;
+        }
+
+        public async Task<bool> UpdateLandmarkAsync(Landmark landmark)
+        {
+            var existing = await _db.Landmarks.FindAsync(landmark.Id);
+            if (existing is null) return false;
+
+            existing.Name = landmark.Name;
+            existing.Description = landmark.Description;
+            existing.Category = landmark.Category;
+            existing.Icon = landmark.Icon;
+            existing.Latitude = landmark.Latitude;
+            existing.Longitude = landmark.Longitude;
+            existing.LocationNotes = landmark.LocationNotes;
+            existing.IsActive = landmark.IsActive;
+            existing.UpdatedAt = DateTime.UtcNow;
+
+            return await _db.SaveChangesAsync() > 0;
+        }
+
+        public async Task<bool> DeleteLandmarkAsync(int id)
+        {
+            var landmark = await _db.Landmarks.FindAsync(id);
+            if (landmark is null) return false;
+            _db.Landmarks.Remove(landmark);
+            return await _db.SaveChangesAsync() > 0;
+        }
+
+        // ── Projects ───────────────────────────────────────────────
+        public async Task<List<Project>> GetProjectsAsync() =>
+            await _db.Projects.AsNoTracking()
+                .OrderByDescending(p => p.CreatedAt)
+                .ToListAsync();
+
+        public async Task<int> CreateProjectAsync(Project project)
+        {
+            _db.Projects.Add(project);
+            await _db.SaveChangesAsync();
+            return project.Id;
+        }
+
+        public async Task<bool> UpdateProjectAsync(Project project)
+        {
+            var existing = await _db.Projects.FindAsync(project.Id);
+            if (existing is null) return false;
+
+            existing.Title = project.Title;
+            existing.Description = project.Description;
+            existing.Status = project.Status;
+            existing.Category = project.Category;
+            existing.Location = project.Location;
+            existing.Latitude = project.Latitude;
+            existing.Longitude = project.Longitude;
+            existing.StartDate = project.StartDate;
+            existing.EndDate = project.EndDate;
+            existing.Budget = project.Budget;
+            existing.ContactPerson = project.ContactPerson;
+            existing.ContactPhone = project.ContactPhone;
+            existing.BeforePhotoUrl = project.BeforePhotoUrl;
+            existing.AfterPhotoUrl = project.AfterPhotoUrl;
+            existing.ProgressPercentage = project.ProgressPercentage;
+            existing.UpdatedAt = DateTime.UtcNow;
+
+            return await _db.SaveChangesAsync() > 0;
+        }
+
+        public async Task<bool> DeleteProjectAsync(int id)
+        {
+            var project = await _db.Projects.FindAsync(id);
+            if (project is null) return false;
+            _db.Projects.Remove(project);
+            return await _db.SaveChangesAsync() > 0;
+        }
     }
 }

@@ -5,64 +5,9 @@
  */
 
 // ========================================
-// DATA STRUCTURE
+// DATA STRUCTURE - LOADED FROM API
 // ========================================
-const boardMembers = [
-  {
-    id: 1,
-    name: "Maria Santos",
-    position: "President",
-    term: "2025-2026",
-    level: "President",
-    image: "https://via.placeholder.com/200/0a4d3c/ffffff?text=MS",
-    description: "Maria Santos leads the Board of Directors with a vision for community development and sustainable growth. She oversees all board operations, represents the homeowners in external affairs, and ensures that our village maintains its high standards of living. With over 15 years of community leadership experience, Maria is committed to transparency, innovation, and resident satisfaction."
-  },
-  {
-    id: 2,
-    name: "Juan Dela Cruz",
-    position: "Vice President",
-    term: "2025-2026",
-    level: "Officer",
-    image: "https://via.placeholder.com/200/7bc96f/ffffff?text=JD",
-    description: "Juan Dela Cruz supports the President in all administrative matters and assumes leadership duties when needed. He coordinates with various committees and ensures smooth communication between the board and residents. Juan specializes in conflict resolution and community engagement, bringing a collaborative approach to village governance."
-  },
-  {
-    id: 3,
-    name: "Ana Reyes",
-    position: "Secretary",
-    term: "2025-2026",
-    level: "Officer",
-    image: "https://via.placeholder.com/200/7bc96f/ffffff?text=AR",
-    description: "Ana Reyes maintains all official records, documents board meetings, and manages correspondence. She ensures that all homeowners have access to important documents and meeting minutes. Ana's meticulous attention to detail and organizational skills keep our board operations running efficiently and transparently."
-  },
-  {
-    id: 4,
-    name: "Roberto Garcia",
-    position: "Treasurer",
-    term: "2025-2026",
-    level: "Officer",
-    image: "https://via.placeholder.com/200/7bc96f/ffffff?text=RG",
-    description: "Roberto Garcia oversees all financial operations of the homeowners association. He manages the budget, tracks expenses, collects dues, and provides financial reports to the community. With a background in accounting and finance, Roberto ensures fiscal responsibility and financial transparency for all residents."
-  },
-  {
-    id: 5,
-    name: "Carmen Lopez",
-    position: "Auditor",
-    term: "2025-2026",
-    level: "Officer",
-    image: "https://via.placeholder.com/200/7bc96f/ffffff?text=CL",
-    description: "Carmen Lopez conducts regular audits of the association's financial records and ensures compliance with established policies and procedures. She provides independent oversight and reports directly to the homeowners, ensuring accountability and proper use of association funds."
-  },
-  {
-    id: 6,
-    name: "Pedro Martinez",
-    position: "Public Relations Officer",
-    term: "2025-2026",
-    level: "Officer",
-    image: "https://via.placeholder.com/200/7bc96f/ffffff?text=PM",
-    description: "Pedro Martinez manages all communications between the board and residents, coordinates community events, and maintains the association's public image. He handles media relations, manages our online presence, and ensures that residents stay informed about important updates and activities within Laguna BelAir 4."
-  }
-];
+let boardMembers = [];
 
 // ========================================
 // STATE MANAGEMENT
@@ -107,7 +52,25 @@ document.addEventListener('DOMContentLoaded', () => {
 // ========================================
 // INITIALIZATION
 // ========================================
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+  try {
+    // Load BOD members from API
+    const response = await PageCoordinator.api.get('/api/bod-members');
+    boardMembers = response.data || [];
+
+    if (!boardMembers.length) {
+      orgTree.innerHTML = '<div style="padding: 40px; text-align: center; color: #999;"><p>No board members available at this time.</p></div>';
+      return;
+    }
+  } catch (err) {
+    console.error('Error loading BOD members:', err);
+    // Fallback: show error message
+    if (orgTree) {
+      orgTree.innerHTML = '<div style="padding: 40px; color: red;"><p>Failed to load board members. Please try again later.</p></div>';
+    }
+    return;
+  }
+
   renderOrgTree();
   setupEventListeners();
 });

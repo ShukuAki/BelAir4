@@ -1146,14 +1146,6 @@ namespace WebApplication1.Controllers
     {
         public string? Reason { get; set; }
     }
-
-    // DTO helpers used by content-management endpoints
-    public class AnnouncementRequest { public string? Title{get;set;} public string? Body{get;set;} public string? Category{get;set;} public string? PostedBy{get;set;} public string? Status{get;set;} public DateTime? ScheduledAt{get;set;} }
-    public class EventRequest { public string? Title{get;set;} public string? Description{get;set;} public string? Date{get;set;} public string? Time{get;set;} public string? Location{get;set;} public string? Category{get;set;} public string? CreatedBy{get;set;} }
-    public class BodMemberRequest { public string? Name{get;set;} public string? Position{get;set;} public string? Term{get;set;} public string? Phone{get;set;} public string? Email{get;set;} }
-    public class MeetingRecordRequest { public string? Title{get;set;} public string? Date{get;set;} public string? Type{get;set;} public string? UploadedBy{get;set;} }
-    public class DocumentRequest { public string? Name{get;set;} public string? Category{get;set;} public string? UploadedBy{get;set;} }
-    public class ContactRequest { public string? Name{get;set;} public string? Role{get;set;} public string? Phone{get;set;} public string? Email{get;set;} }
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -1381,4 +1373,230 @@ public class ContentApiController : ControllerBase
         try { return Ok(new { success = await _repo.DeleteContactAsync(id) }); }
         catch (Exception ex) { _logger.LogError(ex, "DeleteContact"); return StatusCode(500, new { success = false, error = ex.Message }); }
     }
+
+    // ── Tasks ─────────────────────────────────────────────────
+    [HttpGet("tasks")]
+    [WebApplication1.Filters.UserTypeAuthorize(2, 3)]
+    public async Task<IActionResult> GetTasks()
+    {
+        try { return Ok(new { success = true, data = await _repo.GetTasksAsync() }); }
+        catch (Exception ex) { _logger.LogError(ex, "GetTasks"); return StatusCode(500, new { success = false, error = ex.Message }); }
+    }
+
+    [HttpPost("tasks")]
+    [WebApplication1.Filters.UserTypeAuthorize(2, 3)]
+    public async Task<IActionResult> CreateTask([FromBody] TaskRequest req)
+    {
+        try {
+            var t = new WebApplication1.Models.Task 
+            { 
+                Title = req.Title ?? "", 
+                Description = req.Description, 
+                Category = req.Category ?? "General", 
+                Priority = req.Priority ?? "medium",
+                Status = req.Status ?? "todo",
+                DueDate = req.DueDate,
+                AssignedTo = req.AssignedTo,
+                AutoDeleteAfterDays = req.AutoDeleteAfterDays,
+                Notes = req.Notes
+            };
+            return Ok(new { success = true, data = await _repo.CreateTaskAsync(t) });
+        } catch (Exception ex) { _logger.LogError(ex, "CreateTask"); return StatusCode(500, new { success = false, error = ex.Message }); }
+    }
+
+    [HttpPut("tasks/{id}")]
+    [WebApplication1.Filters.UserTypeAuthorize(2, 3)]
+    public async Task<IActionResult> UpdateTask(int id, [FromBody] TaskRequest req)
+    {
+        try {
+            var t = new WebApplication1.Models.Task 
+            { 
+                Id = id,
+                Title = req.Title ?? "", 
+                Description = req.Description, 
+                Category = req.Category ?? "General", 
+                Priority = req.Priority ?? "medium",
+                Status = req.Status ?? "todo",
+                DueDate = req.DueDate,
+                AssignedTo = req.AssignedTo,
+                AutoDeleteAfterDays = req.AutoDeleteAfterDays,
+                Notes = req.Notes
+            };
+            return Ok(new { success = await _repo.UpdateTaskAsync(t) });
+        } catch (Exception ex) { _logger.LogError(ex, "UpdateTask"); return StatusCode(500, new { success = false, error = ex.Message }); }
+    }
+
+    [HttpDelete("tasks/{id}")]
+    [WebApplication1.Filters.UserTypeAuthorize(2, 3)]
+    public async Task<IActionResult> DeleteTask(int id)
+    {
+        try { return Ok(new { success = await _repo.DeleteTaskAsync(id) }); }
+        catch (Exception ex) { _logger.LogError(ex, "DeleteTask"); return StatusCode(500, new { success = false, error = ex.Message }); }
+    }
+
+    [HttpGet("tasks/status/{status}")]
+    [WebApplication1.Filters.UserTypeAuthorize(2, 3)]
+    public async Task<IActionResult> GetTasksByStatus(string status)
+    {
+        try { return Ok(new { success = true, data = await _repo.GetTasksByStatusAsync(status) }); }
+        catch (Exception ex) { _logger.LogError(ex, "GetTasksByStatus"); return StatusCode(500, new { success = false, error = ex.Message }); }
+    }
+
+    [HttpPut("tasks/{id}/status")]
+    [WebApplication1.Filters.UserTypeAuthorize(2, 3)]
+    public async Task<IActionResult> UpdateTaskStatus(int id, [FromBody] UpdateTaskStatusRequest req)
+    {
+        try { return Ok(new { success = await _repo.UpdateTaskStatusAsync(id, req.Status ?? "todo") }); }
+        catch (Exception ex) { _logger.LogError(ex, "UpdateTaskStatus"); return StatusCode(500, new { success = false, error = ex.Message }); }
+    }
+
+    // ── Landmarks ─────────────────────────────────────────────
+    [HttpGet("landmarks")]
+    public async Task<IActionResult> GetLandmarks()
+    {
+        try { return Ok(new { success = true, data = await _repo.GetLandmarksAsync() }); }
+        catch (Exception ex) { _logger.LogError(ex, "GetLandmarks"); return StatusCode(500, new { success = false, error = ex.Message }); }
+    }
+
+    [HttpPost("landmarks")]
+    [WebApplication1.Filters.UserTypeAuthorize(2, 3)]
+    public async Task<IActionResult> CreateLandmark([FromBody] LandmarkRequest req)
+    {
+        try 
+        { 
+            var landmark = new WebApplication1.Models.Landmark 
+            { 
+                Name = req.Name, 
+                Description = req.Description, 
+                Category = req.Category, 
+                Icon = req.Icon,
+                Latitude = req.Latitude ?? 0,
+                Longitude = req.Longitude ?? 0,
+                LocationNotes = req.LocationNotes,
+                IsActive = req.IsActive ?? true
+            };
+            var id = await _repo.CreateLandmarkAsync(landmark);
+            return Ok(new { success = id > 0, id = id });
+        } 
+        catch (Exception ex) { _logger.LogError(ex, "CreateLandmark"); return StatusCode(500, new { success = false, error = ex.Message }); }
+    }
+
+    [HttpPut("landmarks/{id}")]
+    [WebApplication1.Filters.UserTypeAuthorize(2, 3)]
+    public async Task<IActionResult> UpdateLandmark(int id, [FromBody] LandmarkRequest req)
+    {
+        try
+        {
+            var landmark = new WebApplication1.Models.Landmark
+            {
+                Id = id,
+                Name = req.Name,
+                Description = req.Description,
+                Category = req.Category,
+                Icon = req.Icon,
+                Latitude = req.Latitude ?? 0,
+                Longitude = req.Longitude ?? 0,
+                LocationNotes = req.LocationNotes,
+                IsActive = req.IsActive ?? true
+            };
+            return Ok(new { success = await _repo.UpdateLandmarkAsync(landmark) });
+        }
+        catch (Exception ex) { _logger.LogError(ex, "UpdateLandmark"); return StatusCode(500, new { success = false, error = ex.Message }); }
+    }
+
+    [HttpDelete("landmarks/{id}")]
+    [WebApplication1.Filters.UserTypeAuthorize(2, 3)]
+    public async Task<IActionResult> DeleteLandmark(int id)
+    {
+        try { return Ok(new { success = await _repo.DeleteLandmarkAsync(id) }); }
+        catch (Exception ex) { _logger.LogError(ex, "DeleteLandmark"); return StatusCode(500, new { success = false, error = ex.Message }); }
+    }
+
+    // ── Projects ───────────────────────────────────────────────
+    [HttpGet("projects")]
+    public async Task<IActionResult> GetProjects()
+    {
+        try { return Ok(new { success = true, data = await _repo.GetProjectsAsync() }); }
+        catch (Exception ex) { _logger.LogError(ex, "GetProjects"); return StatusCode(500, new { success = false, error = ex.Message }); }
+    }
+
+    [HttpPost("projects")]
+    [WebApplication1.Filters.UserTypeAuthorize(2, 3)]
+    public async Task<IActionResult> CreateProject([FromBody] ProjectRequest req)
+    {
+        try
+        {
+            var project = new WebApplication1.Models.Project
+            {
+                Title = req.Title,
+                Description = req.Description,
+                Status = req.Status ?? "planned",
+                Category = req.Category,
+                Location = req.Location,
+                Latitude = req.Latitude,
+                Longitude = req.Longitude,
+                StartDate = req.StartDate,
+                EndDate = req.EndDate,
+                Budget = req.Budget,
+                ContactPerson = req.ContactPerson,
+                ContactPhone = req.ContactPhone,
+                BeforePhotoUrl = req.BeforePhotoUrl,
+                AfterPhotoUrl = req.AfterPhotoUrl,
+                ProgressPercentage = req.ProgressPercentage ?? 0
+            };
+            var id = await _repo.CreateProjectAsync(project);
+            return Ok(new { success = id > 0, id = id });
+        }
+        catch (Exception ex) { _logger.LogError(ex, "CreateProject"); return StatusCode(500, new { success = false, error = ex.Message }); }
+    }
+
+    [HttpPut("projects/{id}")]
+    [WebApplication1.Filters.UserTypeAuthorize(2, 3)]
+    public async Task<IActionResult> UpdateProject(int id, [FromBody] ProjectRequest req)
+    {
+        try
+        {
+            var project = new WebApplication1.Models.Project
+            {
+                Id = id,
+                Title = req.Title,
+                Description = req.Description,
+                Status = req.Status ?? "planned",
+                Category = req.Category,
+                Location = req.Location,
+                Latitude = req.Latitude,
+                Longitude = req.Longitude,
+                StartDate = req.StartDate,
+                EndDate = req.EndDate,
+                Budget = req.Budget,
+                ContactPerson = req.ContactPerson,
+                ContactPhone = req.ContactPhone,
+                BeforePhotoUrl = req.BeforePhotoUrl,
+                AfterPhotoUrl = req.AfterPhotoUrl,
+                ProgressPercentage = req.ProgressPercentage ?? 0
+            };
+            return Ok(new { success = await _repo.UpdateProjectAsync(project) });
+        }
+        catch (Exception ex) { _logger.LogError(ex, "UpdateProject"); return StatusCode(500, new { success = false, error = ex.Message }); }
+    }
+
+    [HttpDelete("projects/{id}")]
+    [WebApplication1.Filters.UserTypeAuthorize(2, 3)]
+    public async Task<IActionResult> DeleteProject(int id)
+    {
+        try { return Ok(new { success = await _repo.DeleteProjectAsync(id) }); }
+        catch (Exception ex) { _logger.LogError(ex, "DeleteProject"); return StatusCode(500, new { success = false, error = ex.Message }); }
+    }
 }
+
+// ===== DTO REQUEST CLASSES - Shared DTOs for API Controllers =====
+public class AnnouncementRequest { public string? Title{get;set;} public string? Body{get;set;} public string? Category{get;set;} public string? PostedBy{get;set;} public string? Status{get;set;} public DateTime? ScheduledAt{get;set;} }
+public class EventRequest { public string? Title{get;set;} public string? Description{get;set;} public string? Date{get;set;} public string? Time{get;set;} public string? Location{get;set;} public string? Category{get;set;} public string? CreatedBy{get;set;} }
+public class BodMemberRequest { public string? Name{get;set;} public string? Position{get;set;} public string? Term{get;set;} public string? Phone{get;set;} public string? Email{get;set;} }
+public class MeetingRecordRequest { public string? Title{get;set;} public string? Date{get;set;} public string? Type{get;set;} public string? UploadedBy{get;set;} }
+public class DocumentRequest { public string? Name{get;set;} public string? Category{get;set;} public string? UploadedBy{get;set;} }
+public class ContactRequest { public string? Name{get;set;} public string? Role{get;set;} public string? Phone{get;set;} public string? Email{get;set;} }
+public class TaskRequest { public string? Title{get;set;} public string? Description{get;set;} public string? Category{get;set;} public string? Priority{get;set;} public string? Status{get;set;} public DateTime? DueDate{get;set;} public string? AssignedTo{get;set;} public int? AutoDeleteAfterDays{get;set;} public string? Notes{get;set;} }
+public class UpdateTaskStatusRequest { public string? Status{get;set;} }
+public class LandmarkRequest { public string? Name{get;set;} public string? Description{get;set;} public string? Category{get;set;} public string? Icon{get;set;} public decimal? Latitude{get;set;} public decimal? Longitude{get;set;} public string? LocationNotes{get;set;} public bool? IsActive{get;set;} }
+public class ProjectRequest { public string? Title{get;set;} public string? Description{get;set;} public string? Status{get;set;} public string? Category{get;set;} public string? Location{get;set;} public decimal? Latitude{get;set;} public decimal? Longitude{get;set;} public DateTime? StartDate{get;set;} public DateTime? EndDate{get;set;} public decimal? Budget{get;set;} public string? ContactPerson{get;set;} public string? ContactPhone{get;set;} public string? BeforePhotoUrl{get;set;} public string? AfterPhotoUrl{get;set;} public int? ProgressPercentage{get;set;} }

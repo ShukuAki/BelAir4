@@ -57,6 +57,89 @@ let taskTimers = {};
 const taskOriginal = {};
 
 /* ============================================================
+   BADGE & NOTIFICATION UPDATES
+============================================================ */
+function _updateNotifBadge() {
+  // Update incident badge
+  const openIncidents = INCIDENTS.filter(i => (i.status || 'open') !== 'resolved').length;
+  const incBadge = document.getElementById('badge-incidents');
+  if (incBadge) {
+    incBadge.textContent = openIncidents;
+    incBadge.style.display = openIncidents > 0 ? '' : 'none';
+  }
+
+  // Update reservations badge
+  const pendingReservations = RESERVATIONS.filter(r => r.status === 'pending').length;
+  const resvBadge = document.getElementById('badge-reservations');
+  if (resvBadge) {
+    resvBadge.textContent = pendingReservations;
+    resvBadge.style.display = pendingReservations > 0 ? '' : 'none';
+  }
+
+  // Update exchange badge
+  const pendingExchange = ADVERTISEMENTS?.filter(a => a.status === 'pending').length || 0;
+  const exBadge = document.getElementById('badge-exchange');
+  if (exBadge) {
+    exBadge.textContent = pendingExchange;
+    exBadge.style.display = pendingExchange > 0 ? '' : 'none';
+  }
+
+  // Update verification badge
+  const pendingVerif = REGISTRATIONS?.filter(r => r.status === 'pending').length || 0;
+  const verBadge = document.getElementById('badge-verif');
+  if (verBadge) {
+    verBadge.textContent = pendingVerif;
+    verBadge.style.display = pendingVerif > 0 ? '' : 'none';
+  }
+
+  // Update forums badge
+  const unmoderated = FORUM_POSTS?.filter(p => p.status !== 'resolved').length || 0;
+  const forumBadge = document.getElementById('badge-forums');
+  if (forumBadge) {
+    forumBadge.textContent = unmoderated;
+    forumBadge.style.display = unmoderated > 0 ? '' : 'none';
+  }
+
+  // Update tasks badge
+  const incompleteTasks = TASKS?.filter(t => t.status !== 'done').length || 0;
+  const taskBadge = document.getElementById('badge-tasks');
+  if (taskBadge) {
+    taskBadge.textContent = incompleteTasks;
+    taskBadge.style.display = incompleteTasks > 0 ? '' : 'none';
+  }
+
+  // Update notifications badge
+  const totalNotifs = openIncidents + pendingReservations + pendingExchange + pendingVerif;
+  const notifBadge = document.getElementById('badge-notifications');
+  if (notifBadge) {
+    notifBadge.textContent = totalNotifs;
+    notifBadge.style.display = totalNotifs > 0 ? 'flex' : 'none';
+  }
+}
+
+function updateStatistics() {
+  // Update overview stats
+  const openIncidents = INCIDENTS.filter(i => (i.status || 'open') !== 'resolved').length;
+  const statOpenInc = document.getElementById('stat-open-incidents');
+  if (statOpenInc) statOpenInc.textContent = openIncidents;
+
+  const pendingVerif = REGISTRATIONS?.filter(r => r.status === 'pending').length || 3;
+  const statVerif = document.getElementById('stat-pending-verif');
+  if (statVerif) statVerif.textContent = pendingVerif;
+
+  const pendingExch = ADVERTISEMENTS?.filter(a => a.status === 'pending').length || 5;
+  const statExch = document.getElementById('overview-pending-exchange');
+  if (statExch) statExch.textContent = pendingExch;
+
+  const verifiedRes = REGISTRATIONS?.filter(r => r.status === 'approved').length || 0;
+  const statVeriRes = document.getElementById('stat-verified-residents');
+  if (statVeriRes) statVeriRes.textContent = verifiedRes > 0 ? verifiedRes : '—';
+
+  // Update incident distribution
+  updateIncidentStats();
+}
+
+/* ============================================================
    UTILITIES
 ============================================================ */
 function escHtml(s) {
@@ -85,6 +168,152 @@ function showToast(msg, type) {
     setTimeout(() => t.remove(), 320);
   }, 3000);
 }
+
+/* ============================================================
+   STAFF API SERVICE — Centralized fetch wrapper for all staff endpoints
+============================================================ */
+const StaffAPI = {
+    baseUrl: '/api',
+
+    async request(method, endpoint, data = null) {
+        const options = {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            credentials: 'same-origin'
+        };
+
+        if (data && (method === 'POST' || method === 'PUT')) {
+            options.body = JSON.stringify(data);
+        }
+
+        try {
+            const response = await fetch(`${this.baseUrl}${endpoint}`, options);
+            if (!response.ok) {
+                throw new Error(`API Error: ${response.status}`);
+            }
+            return await response.json();
+        } catch (error) {
+            console.error('StaffAPI Request Failed:', error);
+            throw error;
+        }
+    },
+
+    // Tasks
+    tasks: {
+        getAll: () => StaffAPI.request('GET', '/tasks'),
+        getById: (id) => StaffAPI.request('GET', `/tasks/${id}`),
+        create: (data) => StaffAPI.request('POST', '/tasks', data),
+        update: (id, data) => StaffAPI.request('PUT', `/tasks/${id}`, data),
+        delete: (id) => StaffAPI.request('DELETE', `/tasks/${id}`),
+        getByStatus: (status) => StaffAPI.request('GET', `/tasks/status/${status}`),
+        updateStatus: (id, status) => StaffAPI.request('PUT', `/tasks/${id}/status`, { status }),
+    },
+
+    // Announcements
+    announcements: {
+        getAll: () => StaffAPI.request('GET', '/announcements'),
+        create: (data) => StaffAPI.request('POST', '/announcements', data),
+        update: (id, data) => StaffAPI.request('PUT', `/announcements/${id}`, data),
+        delete: (id) => StaffAPI.request('DELETE', `/announcements/${id}`),
+    },
+
+    // Events
+    events: {
+        getAll: () => StaffAPI.request('GET', '/hoa-events'),
+        create: (data) => StaffAPI.request('POST', '/hoa-events', data),
+        update: (id, data) => StaffAPI.request('PUT', `/hoa-events/${id}`, data),
+        delete: (id) => StaffAPI.request('DELETE', `/hoa-events/${id}`),
+    },
+
+    // BOD Members
+    bodMembers: {
+        getAll: () => StaffAPI.request('GET', '/bod-members'),
+        create: (data) => StaffAPI.request('POST', '/bod-members', data),
+        update: (id, data) => StaffAPI.request('PUT', `/bod-members/${id}`, data),
+        delete: (id) => StaffAPI.request('DELETE', `/bod-members/${id}`),
+    },
+
+    // Meeting Records
+    meetings: {
+        getAll: () => StaffAPI.request('GET', '/meeting-records'),
+        create: (data) => StaffAPI.request('POST', '/meeting-records', data),
+        update: (id, data) => StaffAPI.request('PUT', `/meeting-records/${id}`, data),
+        delete: (id) => StaffAPI.request('DELETE', `/meeting-records/${id}`),
+    },
+
+    // Documents
+    documents: {
+        getAll: () => StaffAPI.request('GET', '/hoa-documents'),
+        create: (data) => StaffAPI.request('POST', '/hoa-documents', data),
+        delete: (id) => StaffAPI.request('DELETE', `/hoa-documents/${id}`),
+    },
+
+    // Contacts
+    contacts: {
+        getAll: () => StaffAPI.request('GET', '/contacts'),
+        create: (data) => StaffAPI.request('POST', '/contacts', data),
+        update: (id, data) => StaffAPI.request('PUT', `/contacts/${id}`, data),
+        delete: (id) => StaffAPI.request('DELETE', `/contacts/${id}`),
+    },
+
+    // Reservations
+    reservations: {
+        getAll: () => StaffAPI.request('GET', '/reservations'),
+        getByStatus: (status) => StaffAPI.request('GET', `/reservations/status/${status}`),
+        create: (data) => StaffAPI.request('POST', '/reservations', data),
+        approve: (id) => StaffAPI.request('POST', `/reservations/${id}/approve`, {}),
+        reject: (id, reason) => StaffAPI.request('POST', `/reservations/${id}/reject`, reason ? { reason } : {}),
+    },
+
+    // Incidents (Concern Reports)
+    incidents: {
+        getAll: () => StaffAPI.request('GET', '/incidents'),
+        getById: (id) => StaffAPI.request('GET', `/incidents/${id}`),
+        create: (data) => StaffAPI.request('POST', '/concerns/report', data),
+        getByPriority: (priority) => StaffAPI.request('GET', `/incidents/priority/${priority}`),
+        comment: (id, comment) => StaffAPI.request('POST', `/incidents/${id}/comment`, { comment }),
+        resolve: (id, comment) => StaffAPI.request('POST', `/incidents/${id}/resolve`, { comment }),
+    },
+
+    // Word Bank & Keywords
+    keywords: {
+        getAll: () => StaffAPI.request('GET', '/keywords'),
+        getActive: () => StaffAPI.request('GET', '/keywords/active'),
+        create: (data) => StaffAPI.request('POST', '/keywords', data),
+        update: (id, data) => StaffAPI.request('PUT', `/keywords/${id}`, data),
+        delete: (id) => StaffAPI.request('DELETE', `/keywords/${id}`),
+        getWordBank: () => StaffAPI.request('GET', '/wordbank'),
+        analyzeAll: () => StaffAPI.request('POST', '/ai/analyze-all', {}),
+        analyzePriority: (description) => StaffAPI.request('POST', '/analyze-priority', { description }),
+    },
+
+    // Forums
+    forums: {
+        getPosts: () => StaffAPI.request('GET', '/forums/posts'),
+        deletePost: (id) => StaffAPI.request('DELETE', `/forums/posts/${id}`),
+        deleteReply: (id) => StaffAPI.request('DELETE', `/forums/replies/${id}`),
+        banUser: (username, durationHours, reason) => StaffAPI.request('POST', `/forums/users/${encodeURIComponent(username)}/ban`, { durationHours, reason }),
+        unbanUser: (username) => StaffAPI.request('POST', `/forums/users/${encodeURIComponent(username)}/unban`, {}),
+    },
+
+    // Advertisements
+    advertisements: {
+        getPending: () => StaffAPI.request('GET', '/advertisements/pending'),
+        getAll: () => StaffAPI.request('GET', '/advertisements'),
+        approve: (id, reviewedBy) => StaffAPI.request('POST', `/advertisements/${id}/approve`, { reviewedBy }),
+        reject: (id, reviewedBy) => StaffAPI.request('POST', `/advertisements/${id}/reject`, { reviewedBy }),
+    },
+
+    // Registrations
+    registrations: {
+        getPending: () => StaffAPI.request('GET', '/registrations/pending'),
+        getApproved: () => StaffAPI.request('GET', '/registrations/approved'),
+        approve: (id) => StaffAPI.request('POST', `/registrations/${id}/approve`, {}),
+        reject: (id, reason) => StaffAPI.request('POST', `/registrations/${id}/reject`, reason || ''),
+    },
+};
 
 /* ============================================================
    PAGE NAVIGATION

@@ -39,14 +39,14 @@
     <div class="nav-group-label">Main</div>
     <div class="nav-link active" onclick="showPage('overview',this)"><i class="fas fa-th-large"></i> Overview</div>
     <div class="nav-link active" onclick="showPage('incidents',this)"><i class="fas fa-exclamation-circle"></i> Incident Reports<span class="nav-badge" id="badge-incidents">0</span></div>
-    <!-- <div class="nav-link" onclick="showPage('taskboard',this)"><i class="fas fa-columns"></i> Task Board<span class="nav-badge yellow" id="badge-tasks">7</span></div> -->
+    <div class="nav-link" onclick="showPage('taskboard',this)"><i class="fas fa-columns"></i> Task Board<span class="nav-badge yellow" id="badge-tasks">7</span></div>
     <div class="nav-link" onclick="showPage('exchange',this)"><i class="fas fa-store"></i> Community Exchange<span class="nav-badge yellow" id="badge-exchange">5</span></div>
     <div class="nav-group-label">Approvals</div>
     <div class="nav-link" onclick="showPage('residents',this)"><i class="fas fa-home"></i> Residents &amp; Verification<span class="nav-badge" id="badge-verif">0</span></div>
 
     <div class="nav-link" onclick="showPage('forums',this)"><i class="fas fa-comments"></i> Usap Tayo sa HOA<span class="nav-badge yellow" id="badge-forums">0</span></div>
     <div class="nav-link" onclick="showPage('reservations',this)"><i class="fas fa-calendar-check"></i> Reservations<span class="nav-badge yellow" id="badge-reservations">0</span></div>
-    @* <div class="nav-group-label">Content Management</div>
+    <div class="nav-group-label">Content Management</div>
     <div class="nav-link" onclick="showPage('announcements',this)"><i class="fas fa-bullhorn"></i> Announcements</div>
     <div class="nav-link" onclick="showPage('events',this)"><i class="fas fa-calendar-alt"></i> Events / Calendar</div>
     <div class="nav-link" onclick="showPage('bods',this)"><i class="fas fa-users"></i> Committees &amp; BODs</div>
@@ -54,10 +54,10 @@
     <div class="nav-link" onclick="showPage('documents',this)"><i class="fas fa-file-alt"></i> Forms &amp; Documents</div>
     <div class="nav-link" onclick="showPage('contacts',this)"><i class="fas fa-phone-alt"></i> Contacts</div>
     <div class="nav-group-label">Tools</div>
-    <div class="nav-link" onclick="showPage('communitymap',this)"><i class="fas fa-map-marked-alt"></i> Community Map</div> *@
+    <div class="nav-link" onclick="showPage('communitymap',this)"><i class="fas fa-map-marked-alt"></i> Community Map</div> 
     <div class="nav-link" onclick="showPage('wordbank',this)"><i class="fas fa-brain"></i> Word Bank</div>
-    @* <div class="nav-link" onclick="showPage('reports',this)"><i class="fas fa-chart-bar"></i> Reports</div>
-    <div class="nav-link" onclick="showPage('subscribers',this)"><i class="fas fa-bell"></i> Subscribers</div> *@
+     <div class="nav-link" onclick="showPage('reports',this)"><i class="fas fa-chart-bar"></i> Reports</div>
+    <div class="nav-link" onclick="showPage('subscribers',this)"><i class="fas fa-bell"></i> Subscribers</div>
   </nav>
   <form id="staff-logout-form" action="/Home/Logout" method="post" style="display:none">@Html.AntiForgeryToken()</form>
   <div class="sb-footer" onclick="document.getElementById('staff-logout-form').submit()"><i class="fas fa-sign-out-alt"></i> Sign Out</div>

@@ -55,20 +55,20 @@
                         <a href="#" class="dropdown-toggle">About <i class="fas fa-chevron-down"></i></a>
                         <div class="dropdown-menu">
                             <a asp-controller="Home" asp-action="aboutlagunabelair">Laguna BelAir 4</a>
-                            @* <a asp-controller="Home" asp-action="committeesBods">Committees/BODs</a> *@
-                            <a asp-controller="Home" asp-action="landMarks">Landmarks</a>
+                            <a asp-controller="Home" asp-action="committeesbods">Committees/BODs</a>
+                            <a asp-controller="Home" asp-action="landmarks">Landmarks</a>
                             <a asp-controller="Home" asp-action="contacts">Contacts</a>
                         </div>
                     </div>
                     <div class="dropdown">
                         <a href="#" class="dropdown-toggle">Community <i class="fas fa-chevron-down"></i></a>
                         <div class="dropdown-menu">
-                             @* <a asp-controller="Home" asp-action="announcement">Announcements</a> *@
+                            <a asp-controller="Home" asp-action="announcement">Announcements</a>
                             <a asp-controller="Home" asp-action="forums">Forums/Discussions</a>
                             <a asp-controller="Home" asp-action="advertisements">Advertisements</a>
-                              @* <a asp-controller="Home" asp-action="calendars">Calendars</a>
-                                    <a asp-controller="Home" asp-action="meetingAgendas">Meeting Record/Governance</a>
-                                    <a asp-controller="Home" asp-action="communityMap">Community Map</a> *@
+                            <a asp-controller="Home" asp-action="calendars">Calendars</a>
+                            <a asp-controller="Home" asp-action="meetingagendas">Meeting Record/Governance</a>
+                            <a asp-controller="Home" asp-action="communitymap">Community Map</a>
                         </div>
                     </div>
                     <div class="dropdown">
@@ -99,29 +99,13 @@
 </section>
 
 <!-- ═══════════════════════════════════════
-  MAIN CONTENT - ANNOUNCEMENT CARDS
+  MAIN CONTENT - ANNOUNCEMENT CARDS (Live Data)
 ═══════════════════════════════════════ -->
-<main class="announcements">
-  <!-- First announcement card -->
-  <div class="announcement-card">
-    <img src="~/assets/LBAlogo.png" alt="Laguna BelAir Logo">
-    <h2>Laguna BelAir 4</h2>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer non lacinia nibh, ut vulputate libero. Suspendisse augue augue, maximus eget risus quis, venenatis placerat nunc.</p>
-    <a href="#" class="read-more">Read More</a>
-  </div>
-  <!-- Second announcement card -->
-  <div class="announcement-card">
-    <img src="~/assets/LBAlogo.png" alt="Laguna BelAir Logo">
-    <h2>Laguna BelAir 4</h2>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer non lacinia nibh, ut vulputate libero. Suspendisse augue augue, maximus eget risus quis, venenatis placerat nunc.</p>
-    <a href="#" class="read-more">Read More</a>
-  </div>
-  <!-- Third announcement card -->
-  <div class="announcement-card">
-    <img src="~/assets/LBAlogo.png" alt="Laguna BelAir Logo">
-    <h2>Laguna BelAir 4</h2>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer non lacinia nibh, ut vulputate libero. Suspendisse augue augue, maximus eget risus quis, venenatis placerat nunc.</p>
-    <a href="#" class="read-more">Read More</a>
+<main class="announcements" id="announcements-list">
+  <!-- Announcements will be loaded here dynamically -->
+  <div style="text-align: center; padding: 40px; color: #666;">
+    <i class="fas fa-spinner fa-spin fa-3x"></i>
+    <p>Loading announcements...</p>
   </div>
 </main>
 
@@ -166,10 +150,42 @@
                 <p>&copy; <span id="current-year"></span> Laguna BelAir 4. All rights reserved.</p>
             </div>
         </footer>
-<script src="announcement.js"></script>
+<script src="~/js/page-coordinator.js"></script>
+<script src="~/js/announcement.js"></script>
 <script>
+  // Load announcements on page load
+  document.addEventListener('DOMContentLoaded', async function() {
+    try {
+      const response = await PageCoordinator.api.get('/api/announcements');
+      const container = document.getElementById('announcements-list');
+
+      if (!response.data || response.data.length === 0) {
+        container.innerHTML = '<div style="padding: 40px; text-align: center; color: #999;"><p>No announcements at this time.</p></div>';
+        return;
+      }
+
+      const html = response.data.map(ann => `
+        <div class="announcement-card">
+          <img src="~/assets/LBAlogo.png" alt="Laguna BelAir Logo">
+          <h2>${escapeHtml(ann.title)}</h2>
+          <p>${escapeHtml(ann.body)}</p>
+          <div style="font-size: 12px; color: #999; margin-top: 10px;">
+            Posted on ${new Date(ann.postedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+          </div>
+        </div>
+      `).join('');
+
+      container.innerHTML = html;
+    } catch (err) {
+      console.error('Error loading announcements:', err);
+      document.getElementById('announcements-list').innerHTML = 
+        '<div style="padding: 40px; color: red;"><p>Failed to load announcements. Please try again later.</p></div>';
+    }
+  });
+
   // Set current year in footer
   document.getElementById('current-year').textContent = new Date().getFullYear();
+
   // Mobile dropdown toggle support
   document.querySelectorAll('.dropdown').forEach(dropdown => {
     const toggle = dropdown.querySelector('.dropdown-toggle');

@@ -137,42 +137,48 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   /* ── Data readers ── */
-  function readMapItems() {
-    if (window.LBA4Storage) return LBA4Storage.mapItems.getAll();
+  async function readMapItems() {
     try {
-      const stored = JSON.parse(localStorage.getItem('lba4_map_items') || 'null');
-      if (!stored) {
-        const defaults = [
-          { id:'mi-d1', category:'Landmark', name:'HOA Office',       description:'Main homeowners association office', status:'', icon:'fa-building',       lat:14.2690, lng:121.0683, active:true },
-          { id:'mi-d2', category:'Landmark', name:'Clubhouse',        description:'Community clubhouse for events',     status:'', icon:'fa-home',           lat:14.2688, lng:121.0680, active:true },
-          { id:'mi-d3', category:'Landmark', name:'Gate 1 (Main)',    description:'Main entrance / exit gate',          status:'', icon:'fa-door-open',      lat:14.2685, lng:121.0690, active:true },
-          { id:'mi-d4', category:'Landmark', name:'Basketball Court', description:'Outdoor basketball / covered court', status:'', icon:'fa-basketball-ball',lat:14.2692, lng:121.0675, active:true }
-        ];
-        localStorage.setItem('lba4_map_items', JSON.stringify(defaults));
-        return defaults;
-      }
-      return stored;
-    } catch { return []; }
+      const response = await PageCoordinator.api.get('/api/landmarks');
+      return (response.data || []).map(l => ({
+        id: l.id,
+        category: 'Landmark',
+        name: l.name,
+        description: l.description || '',
+        status: '',
+        icon: l.icon || 'fa-map-marker-alt',
+        lat: l.latitude,
+        lng: l.longitude,
+        active: true
+      }));
+    } catch (err) {
+      console.error('Error loading landmarks:', err);
+      return [];
+    }
   }
-  function readResidentReports() {
+  async function readResidentReports() {
     try {
-      return JSON.parse(localStorage.getItem('lba4_incidents') || '[]')
-        .filter(r => r.mapApproved && r.coordinates)
+      const response = await PageCoordinator.api.get('/api/incidents');
+      return (response.data || [])
+        .filter(r => r.latitude && r.longitude)
         .map(r => ({
-          _isReport:   true,
-          id:          'rpt-' + r.refNumber,
-          category:    'Incident',
-          name:        (r.description || '').substring(0, 60),
+          _isReport: true,
+          id: 'rpt-' + r.id,
+          category: 'Incident',
+          name: (r.description || '').substring(0, 60),
           description: r.description || '',
-          status:      r.status === 'progress' ? 'in-progress' : (r.status || 'pending'),
-          icon:        '',
-          beforeImage: r.attachmentData || '',
-          afterImage:  '',
-          lat:         r.coordinates.lat,
-          lng:         r.coordinates.lng,
-          active:      true
+          status: r.status || 'pending',
+          icon: '',
+          beforeImage: r.image || '',
+          afterImage: '',
+          lat: r.latitude,
+          lng: r.longitude,
+          active: true
         }));
-    } catch { return []; }
+    } catch (err) {
+      console.error('Error loading incidents:', err);
+      return [];
+    }
   }
 
   /* ── Detail Modal ── */
@@ -221,10 +227,10 @@ document.addEventListener('DOMContentLoaded', function () {
   document.addEventListener('keydown', e => { if (e.key === 'Escape') closeCmDetail(); });
 
   /* ── Render all markers ── */
-  function renderMap() {
+  async function renderMap() {
     Object.values(layers).forEach(l => l.clearLayers());
-    const items   = readMapItems().filter(r => r.active !== false && r.lat && r.lng);
-    const reports = readResidentReports();
+    const items   = (await readMapItems()).filter(r => r.active !== false && r.lat && r.lng);
+    const reports = await readResidentReports();
     const allData = [...items, ...reports];
     /* Staff-managed items */
     items.forEach(item => {

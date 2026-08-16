@@ -87,10 +87,8 @@ function loadSampleData() {
 // Load from server
 async function loadVehiclesFromServer() {
     try {
-        const res = await fetch('/api/registrations/vehicles', { credentials: 'same-origin' });
-        if (!res.ok) throw new Error('Network');
-        const data = await res.json();
-        registeredVehicles = (data || []).map(adaptVehicle);
+        const response = await PageCoordinator.api.get('/api/registrations/vehicles');
+        registeredVehicles = (response.data || []).map(adaptVehicle);
     } catch (e) {
         console.warn('Could not load vehicles from server.', e);
     }
@@ -98,10 +96,8 @@ async function loadVehiclesFromServer() {
 
 async function loadPetsFromServer() {
     try {
-        const res = await fetch('/api/registrations/pets', { credentials: 'same-origin' });
-        if (!res.ok) throw new Error('Network');
-        const data = await res.json();
-        registeredPets = (data || []).map(adaptPet);
+        const response = await PageCoordinator.api.get('/api/registrations/pets');
+        registeredPets = (response.data || []).map(adaptPet);
     } catch (e) {
         console.warn('Could not load pets from server.', e);
     }
@@ -315,11 +311,8 @@ function setupFormSubmissions() {
             
             registeredVehicles.push(vehicleData);
             // Post to server
-            fetch('/api/registrations/vehicles', {
-                method: 'POST',
-                credentials: 'same-origin',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
+            try {
+                const response = await PageCoordinator.api.post('/api/registrations/vehicles', {
                     type: vehicleData.type,
                     category: vehicleData.category,
                     plateNumber: vehicleData.plateNumber,
@@ -335,18 +328,14 @@ function setupFormSubmissions() {
                     guestDurationType: vehicleData.guestDurationType,
                     ownerName: vehicleData.ownerName,
                     registeredDate: vehicleData.registeredDate
-                })
-            }).then(async res => {
-                if (!res.ok) {
-                    console.error('Vehicle save failed', res.status);
-                    showNotification('Failed to save vehicle to server', 'error');
-                    return;
-                }
-                const created = await res.json();
+                });
                 // replace local temp entry id with server id
                 const idx = registeredVehicles.findIndex(v => v.id === vehicleData.id);
-                if (idx !== -1) registeredVehicles[idx].id = created.id;
-            }).catch(err => console.error('Save vehicle exception', err));
+                if (idx !== -1 && response.id) registeredVehicles[idx].id = response.id;
+            } catch (err) {
+                console.error('Save vehicle exception', err);
+                showNotification('Failed to save vehicle to server', 'error');
+            }
             
             // Show success message
             const vehicleSuccess = document.getElementById('vehicleSuccess');
@@ -396,11 +385,8 @@ function setupFormSubmissions() {
             
             registeredPets.push(petData);
             // Post to server
-            fetch('/api/registrations/pets', {
-                method: 'POST',
-                credentials: 'same-origin',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
+            try {
+                const response = await PageCoordinator.api.post('/api/registrations/pets', {
                     type: petData.type,
                     breed: petData.breed,
                     name: petData.name,
@@ -415,17 +401,13 @@ function setupFormSubmissions() {
                     photo: petData.photo,
                     ownerName: petData.ownerName,
                     registeredDate: petData.registeredDate
-                })
-            }).then(async res => {
-                if (!res.ok) {
-                    console.error('Pet save failed', res.status);
-                    showNotification('Failed to save pet to server', 'error');
-                    return;
-                }
-                const created = await res.json();
+                });
                 const idx = registeredPets.findIndex(p => p.id === petData.id);
-                if (idx !== -1) registeredPets[idx].id = created.id;
-            }).catch(err => console.error('Save pet exception', err));
+                if (idx !== -1 && response.id) registeredPets[idx].id = response.id;
+            } catch (err) {
+                console.error('Save pet exception', err);
+                showNotification('Failed to save pet to server', 'error');
+            }
             
             // Show success message
             const petSuccess = document.getElementById('petSuccess');
