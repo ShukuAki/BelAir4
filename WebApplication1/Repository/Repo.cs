@@ -70,6 +70,36 @@ namespace WebApplication1.Repository
         Task<Reservation> CreateReservationAsync(Reservation reservation);
         Task<bool> ApproveReservationAsync(int id, string reviewedBy);
         Task<bool> RejectReservationAsync(int id, string reviewedBy, string reason);
+        // Announcements
+        Task<List<Announcement>> GetAnnouncementsAsync();
+        Task<Announcement> CreateAnnouncementAsync(Announcement a);
+        Task<bool> UpdateAnnouncementAsync(Announcement a);
+        Task<bool> DeleteAnnouncementAsync(int id);
+        // Events
+        Task<List<HoaEvent>> GetEventsAsync();
+        Task<HoaEvent> CreateEventAsync(HoaEvent e);
+        Task<bool> UpdateEventAsync(HoaEvent e);
+        Task<bool> DeleteEventAsync(int id);
+        // BOD Members
+        Task<List<BodMember>> GetBodMembersAsync();
+        Task<BodMember> CreateBodMemberAsync(BodMember m);
+        Task<bool> UpdateBodMemberAsync(BodMember m);
+        Task<bool> DeleteBodMemberAsync(int id);
+        // Meeting Records
+        Task<List<MeetingRecord>> GetMeetingRecordsAsync();
+        Task<MeetingRecord> CreateMeetingRecordAsync(MeetingRecord r);
+        Task<bool> UpdateMeetingRecordAsync(MeetingRecord r);
+        Task<bool> DeleteMeetingRecordAsync(int id);
+        // Documents
+        Task<List<HoaDocument>> GetDocumentsAsync();
+        Task<HoaDocument> CreateDocumentAsync(HoaDocument d);
+        Task<bool> UpdateDocumentAsync(HoaDocument d);
+        Task<bool> DeleteDocumentAsync(int id);
+        // Contacts
+        Task<List<Contact>> GetContactsAsync();
+        Task<Contact> CreateContactAsync(Contact c);
+        Task<bool> UpdateContactAsync(Contact c);
+        Task<bool> DeleteContactAsync(int id);
     }
 
     public class Repo : IRepo
@@ -170,6 +200,7 @@ namespace WebApplication1.Repository
         public async Task SeedAsync()
         {
             if (!await _db.UserAccounts.AnyAsync())
+            if (!await _db.UserAccounts.AnyAsync())
             {
                 var users = new[]
                 {
@@ -179,10 +210,28 @@ namespace WebApplication1.Repository
                 _db.UserAccounts.AddRange(users);
             }
 
-            // No forum/forum post seeding here. Forum data is persisted only in the database and
-            // should not be initialized from code. Remove any hard-coded forum sample data.
-
             await _db.SaveChangesAsync();
+
+            // Ensure new tables exist (idempotent IF NOT EXISTS)
+            await _db.Database.ExecuteSqlRawAsync(@"
+                IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME='announcements')
+                CREATE TABLE announcements (id INT IDENTITY PRIMARY KEY, title VARCHAR(300) NOT NULL, body NVARCHAR(MAX), category VARCHAR(100), posted_by VARCHAR(100), posted_at DATETIME2 DEFAULT GETUTCDATE(), status VARCHAR(20) DEFAULT 'published', scheduled_at DATETIME2);
+
+                IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME='hoa_events')
+                CREATE TABLE hoa_events (id INT IDENTITY PRIMARY KEY, title VARCHAR(300) NOT NULL, description NVARCHAR(MAX), date VARCHAR(20), time VARCHAR(10), location VARCHAR(200), category VARCHAR(100), created_by VARCHAR(100), created_at DATETIME2 DEFAULT GETUTCDATE());
+
+                IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME='bod_members')
+                CREATE TABLE bod_members (id INT IDENTITY PRIMARY KEY, name VARCHAR(200) NOT NULL, position VARCHAR(100), term VARCHAR(50), phone VARCHAR(50), email VARCHAR(200), created_at DATETIME2 DEFAULT GETUTCDATE());
+
+                IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME='meeting_records')
+                CREATE TABLE meeting_records (id INT IDENTITY PRIMARY KEY, title VARCHAR(300) NOT NULL, date VARCHAR(20), type VARCHAR(50), file_path NVARCHAR(MAX), uploaded_by VARCHAR(100), uploaded_at DATETIME2 DEFAULT GETUTCDATE());
+
+                IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME='hoa_documents')
+                CREATE TABLE hoa_documents (id INT IDENTITY PRIMARY KEY, name VARCHAR(300) NOT NULL, category VARCHAR(100), file_path NVARCHAR(MAX), uploaded_by VARCHAR(100), uploaded_at DATETIME2 DEFAULT GETUTCDATE());
+
+                IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME='contacts')
+                CREATE TABLE contacts (id INT IDENTITY PRIMARY KEY, name VARCHAR(200) NOT NULL, role VARCHAR(100), phone VARCHAR(50), email VARCHAR(200), created_at DATETIME2 DEFAULT GETUTCDATE());
+            ");
         }
 
         // Forum methods
@@ -673,5 +722,83 @@ namespace WebApplication1.Repository
             await _db.SaveChangesAsync();
             return true;
         }
+
+        // ── Announcements ──────────────────────────────────────────
+        public async Task<List<Announcement>> GetAnnouncementsAsync() =>
+            await _db.Announcements.AsNoTracking().OrderByDescending(a => a.PostedAt).ToListAsync();
+
+        public async Task<Announcement> CreateAnnouncementAsync(Announcement a)
+        { a.PostedAt = DateTime.UtcNow; _db.Announcements.Add(a); await _db.SaveChangesAsync(); return a; }
+
+        public async Task<bool> UpdateAnnouncementAsync(Announcement a)
+        { _db.Announcements.Update(a); return await _db.SaveChangesAsync() > 0; }
+
+        public async Task<bool> DeleteAnnouncementAsync(int id)
+        { var e = await _db.Announcements.FindAsync(id); if (e is null) return false; _db.Announcements.Remove(e); return await _db.SaveChangesAsync() > 0; }
+
+        // ── Events ────────────────────────────────────────────────
+        public async Task<List<HoaEvent>> GetEventsAsync() =>
+            await _db.HoaEvents.AsNoTracking().OrderBy(e => e.Date).ToListAsync();
+
+        public async Task<HoaEvent> CreateEventAsync(HoaEvent e)
+        { e.CreatedAt = DateTime.UtcNow; _db.HoaEvents.Add(e); await _db.SaveChangesAsync(); return e; }
+
+        public async Task<bool> UpdateEventAsync(HoaEvent e)
+        { _db.HoaEvents.Update(e); return await _db.SaveChangesAsync() > 0; }
+
+        public async Task<bool> DeleteEventAsync(int id)
+        { var e = await _db.HoaEvents.FindAsync(id); if (e is null) return false; _db.HoaEvents.Remove(e); return await _db.SaveChangesAsync() > 0; }
+
+        // ── BOD Members ───────────────────────────────────────────
+        public async Task<List<BodMember>> GetBodMembersAsync() =>
+            await _db.BodMembers.AsNoTracking().OrderBy(m => m.Name).ToListAsync();
+
+        public async Task<BodMember> CreateBodMemberAsync(BodMember m)
+        { m.CreatedAt = DateTime.UtcNow; _db.BodMembers.Add(m); await _db.SaveChangesAsync(); return m; }
+
+        public async Task<bool> UpdateBodMemberAsync(BodMember m)
+        { _db.BodMembers.Update(m); return await _db.SaveChangesAsync() > 0; }
+
+        public async Task<bool> DeleteBodMemberAsync(int id)
+        { var e = await _db.BodMembers.FindAsync(id); if (e is null) return false; _db.BodMembers.Remove(e); return await _db.SaveChangesAsync() > 0; }
+
+        // ── Meeting Records ───────────────────────────────────────
+        public async Task<List<MeetingRecord>> GetMeetingRecordsAsync() =>
+            await _db.MeetingRecords.AsNoTracking().OrderByDescending(r => r.UploadedAt).ToListAsync();
+
+        public async Task<MeetingRecord> CreateMeetingRecordAsync(MeetingRecord r)
+        { r.UploadedAt = DateTime.UtcNow; _db.MeetingRecords.Add(r); await _db.SaveChangesAsync(); return r; }
+
+        public async Task<bool> UpdateMeetingRecordAsync(MeetingRecord r)
+        { _db.MeetingRecords.Update(r); return await _db.SaveChangesAsync() > 0; }
+
+        public async Task<bool> DeleteMeetingRecordAsync(int id)
+        { var e = await _db.MeetingRecords.FindAsync(id); if (e is null) return false; _db.MeetingRecords.Remove(e); return await _db.SaveChangesAsync() > 0; }
+
+        // ── Documents ─────────────────────────────────────────────
+        public async Task<List<HoaDocument>> GetDocumentsAsync() =>
+            await _db.HoaDocuments.AsNoTracking().OrderBy(d => d.Name).ToListAsync();
+
+        public async Task<HoaDocument> CreateDocumentAsync(HoaDocument d)
+        { d.UploadedAt = DateTime.UtcNow; _db.HoaDocuments.Add(d); await _db.SaveChangesAsync(); return d; }
+
+        public async Task<bool> UpdateDocumentAsync(HoaDocument d)
+        { _db.HoaDocuments.Update(d); return await _db.SaveChangesAsync() > 0; }
+
+        public async Task<bool> DeleteDocumentAsync(int id)
+        { var e = await _db.HoaDocuments.FindAsync(id); if (e is null) return false; _db.HoaDocuments.Remove(e); return await _db.SaveChangesAsync() > 0; }
+
+        // ── Contacts ──────────────────────────────────────────────
+        public async Task<List<Contact>> GetContactsAsync() =>
+            await _db.Contacts.AsNoTracking().OrderBy(c => c.Name).ToListAsync();
+
+        public async Task<Contact> CreateContactAsync(Contact c)
+        { c.CreatedAt = DateTime.UtcNow; _db.Contacts.Add(c); await _db.SaveChangesAsync(); return c; }
+
+        public async Task<bool> UpdateContactAsync(Contact c)
+        { _db.Contacts.Update(c); return await _db.SaveChangesAsync() > 0; }
+
+        public async Task<bool> DeleteContactAsync(int id)
+        { var e = await _db.Contacts.FindAsync(id); if (e is null) return false; _db.Contacts.Remove(e); return await _db.SaveChangesAsync() > 0; }
     }
 }

@@ -436,40 +436,45 @@ function bindFormSubmit() {
       return;
     }
 
-    // Build NLP-ready payload
-    const payload = {
-      description,
-      locationMethod:    searchType,
-      address:           searchType === 'address' ? (dom.addressInput.value.trim() || null) : null,
-      street:            searchType === 'address' ? (dom.streetInput.value.trim() || null)  : null,
-      latitude:          state.lat ? parseFloat(state.lat) : null,
-      longitude:         state.lng ? parseFloat(state.lng) : null,
-      additionalLocation: dom.additionalLoc.value.trim() || null,
-      categoryHint:      dom.categorySelect.value || null,
-      imageFilename:     state.photoFile ? state.photoFile.name : null,
-      anonymous:         dom.anonymousChk.checked,
-      reporterName:      dom.anonymousChk.checked ? null : ($('f-name').value.trim() || null),
-      reporterContact:   dom.anonymousChk.checked ? null : ($('f-contact').value.trim() || null),
-      timestamp:         dom.timestampInput.value,
-    };
+    // Build FormData for multipart (supports photo upload)
+    const fd = new FormData();
+    fd.append('description', description);
+    fd.append('category', dom.categorySelect.value || '');
+    fd.append('anonymous', dom.anonymousChk.checked ? 'true' : 'false');
+
+    if (searchType === 'address') {
+      fd.append('address', dom.addressInput.value.trim() || '');
+      fd.append('street',  dom.streetInput.value.trim()  || '');
+    }
+    if (state.lat) fd.append('latitude',  state.lat.toFixed(7));
+    if (state.lng) fd.append('longitude', state.lng.toFixed(7));
+    if (dom.additionalLoc.value.trim()) fd.append('additionalLocation', dom.additionalLoc.value.trim());
+
+    if (!dom.anonymousChk.checked) {
+      fd.append('reporterName',    $('f-name')?.value.trim()    || '');
+      fd.append('reporterContact', $('f-contact')?.value.trim() || '');
+    }
+    if (state.photoFile) fd.append('photo', state.photoFile);
 
     setSubmitLoading(true);
-    await sleep(800);
 
-    let record;
     try {
-      record = (window.LBA4Storage)
-        ? LBA4Storage.incidents.submit(payload)
-        : { refNumber: 'REF-' + Date.now().toString(36).toUpperCase() };
+      const res  = await fetch('/api/concerns/report', { method: 'POST', body: fd });
+      const data = await res.json();
+
+      if (!res.ok || data.success === false) {
+        showToast(data.error || 'Failed to submit report. Please try again.', 'error');
+        setSubmitLoading(false);
+        return;
+      }
+
+      setSubmitLoading(false);
+      showSuccess(data.reference || data.id || 'REF-???');
     } catch (err) {
-      console.error('[LBA4] Storage error:', err);
-      record = { refNumber: 'REF-' + Date.now().toString(36).toUpperCase() };
+      console.error('[LBA4] Submit error:', err);
+      showToast('Failed to submit report. Please try again.', 'error');
+      setSubmitLoading(false);
     }
-
-    console.info('[LBA4] Report submitted (NLP-ready):', record);
-
-    setSubmitLoading(false);
-    showSuccess(record.refNumber || record.id || 'REF-???');
   });
 }
 

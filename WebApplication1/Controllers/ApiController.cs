@@ -1,7 +1,10 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Http;
 using WebApplication1.Models;
 using WebApplication1.Repository;
 using WebApplication1.Services;
+using WebApplication1.ViewModel;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -668,6 +671,407 @@ namespace WebApplication1.Controllers
             }
         }
 
+        // ═══════════════════════════════════════════════════
+        //  STAFF ENDPOINTS  (UserType = 2 or 3)
+        // ═══════════════════════════════════════════════════
+
+        // GET /api/staff/stats - dashboard summary counts for staff
+        [HttpGet("staff/stats")]
+        [WebApplication1.Filters.UserTypeAuthorize(2, 3)]
+        public async Task<IActionResult> GetStaffStats()
+        {
+            try
+            {
+                var pendingReg   = await _repo.GetPendingRegistrationsAsync();
+                var approvedReg  = await _repo.GetApprovedRegistrationsAsync();
+                var reports      = await _repo.GetReportsAsync();
+                var pendingAds   = await _repo.GetPendingAdvertisementsAsync();
+                var reservations = await _repo.GetReservationsAsync();
+                var posts        = await _repo.GetPostsAsync();
+
+                return Ok(new
+                {
+                    success              = true,
+                    verifiedResidents    = approvedReg.Count,
+                    pendingRegistrations = pendingReg.Count,
+                    openIncidents        = reports.Count(r => (r.Status ?? "open") == "open"),
+                    pendingAds           = pendingAds.Count,
+                    pendingReservations  = reservations.Count(r => (r.Status ?? "pending").ToLower() == "pending"),
+                    forumPosts           = posts.Count
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting staff stats");
+                return StatusCode(500, new { success = false, error = "Failed to get staff stats" });
+            }
+        }
+
+        // ═══════════════════════════════════════════════════
+        //  ADMIN-ONLY ENDPOINTS  (UserType = 3)
+        // ═══════════════════════════════════════════════════
+
+        // GET /api/admin/stats
+        [HttpGet("admin/stats")]
+        [WebApplication1.Filters.UserTypeAuthorize(3)]
+        public async Task<IActionResult> GetAdminStats()
+        {
+            try
+            {
+                var users         = await _repo.GetAllAsync();
+                var reports       = await _repo.GetReportsAsync();
+                var registrations = await _repo.GetRegistrationsAsync();
+                var reservations  = await _repo.GetReservationsAsync();
+
+                return Ok(new
+                {
+                    success              = true,
+                    totalResidents       = users.Count(u => u.Type == 1),
+                    totalStaff           = users.Count(u => u.Type >= 2),
+                    bannedUsers          = users.Count(u => u.IsBanned && u.Type == 1),
+                    pendingRegistrations = registrations.Count(r => r.Status == "pending"),
+                    openIncidents        = reports.Count(r => r.Status == "open" || r.Status == "in-progress"),
+                    resolvedIncidents    = reports.Count(r => r.Status == "resolved"),
+                    pendingReservations  = reservations.Count(r => r.Status == "pending")
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting admin stats");
+                return StatusCode(500, new { success = false, error = "Failed to retrieve stats" });
+            }
+        }
+
+        // GET /api/admin/staff
+        [HttpGet("admin/staff")]
+        [WebApplication1.Filters.UserTypeAuthorize(3)]
+        public async Task<IActionResult> GetStaff()
+        {
+            try
+            {
+                var all   = await _repo.GetAllAsync();
+                var staff = all
+                    .Where(u => u.Type >= 2)
+                    .Select(u => new
+                    {
+                        id     = u.Id,
+                        name   = u.Username,
+                        email  = u.Username,
+                        role   = u.Type == 3 ? "Admin" : "Staff",
+                        status = u.IsBanned ? "Suspended" : "Active"
+                    }).ToList();
+                return Ok(new { success = true, data = staff });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting staff list");
+                return StatusCode(500, new { success = false, error = "Failed to retrieve staff" });
+            }
+        }
+
+        // POST /api/admin/staff
+        [HttpPost("admin/staff")]
+        [WebApplication1.Filters.UserTypeAuthorize(3)]
+        public async Task<IActionResult> CreateStaff([FromBody] CreateStaffRequest req)
+        {
+            if (string.IsNullOrWhiteSpace(req?.Email))
+                return BadRequest(new { success = false, error = "Email is required" });
+
+            try
+            {
+                var all = await _repo.GetAllAsync();
+                if (all.Any(u => u.Username.Equals(req.Email.Trim(), StringComparison.OrdinalIgnoreCase)))
+                    return Conflict(new { success = false, error = "An account with that email already exists" });
+
+                var user = new UserAccount
+                {
+                    Username = req.Email.Trim().ToLower(),
+                    Password = string.IsNullOrWhiteSpace(req.TempPassword) ? "Welcome@123" : req.TempPassword,
+                    Type     = 2
+                };
+                var created = await _repo.CreateAsync(user);
+                _logger.LogInformation("Admin created staff account: {Email}", user.Username);
+                return Ok(new
+                {
+                    success = true,
+                    data    = new { id = created.Id, name = created.Username, email = created.Username, role = "Staff", status = "Active" }
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creating staff account");
+                return StatusCode(500, new { success = false, error = "Failed to create staff account" });
+            }
+        }
+
+        // PUT /api/admin/staff/{id}
+        [HttpPut("admin/staff/{id}")]
+        [WebApplication1.Filters.UserTypeAuthorize(3)]
+        public async Task<IActionResult> UpdateStaff(int id, [FromBody] UpdateStaffRequest req)
+        {
+            try
+            {
+                var user = await _repo.GetByIdAsync(id);
+                if (user is null || user.Type < 2)
+                    return NotFound(new { success = false, error = "Staff account not found" });
+
+                if (!string.IsNullOrWhiteSpace(req?.Email))
+                    user.Username = req.Email.Trim().ToLower();
+                if (!string.IsNullOrWhiteSpace(req?.Status))
+                    user.IsBanned = req.Status.Equals("Suspended", StringComparison.OrdinalIgnoreCase);
+
+                var ok = await _repo.UpdateAsync(user);
+                return ok ? Ok(new { success = true }) : NotFound(new { success = false, error = "Staff not found" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating staff {Id}", id);
+                return StatusCode(500, new { success = false, error = "Failed to update staff account" });
+            }
+        }
+
+        // DELETE /api/admin/staff/{id}
+        [HttpDelete("admin/staff/{id}")]
+        [WebApplication1.Filters.UserTypeAuthorize(3)]
+        public async Task<IActionResult> DeleteStaff(int id)
+        {
+            try
+            {
+                var user = await _repo.GetByIdAsync(id);
+                if (user is null || user.Type < 2)
+                    return NotFound(new { success = false, error = "Staff account not found" });
+
+                var currentId = HttpContext.Session.GetInt32("UserId");
+                if (currentId.HasValue && currentId.Value == id)
+                    return BadRequest(new { success = false, error = "You cannot delete your own account" });
+
+                var ok = await _repo.DeleteAsync(id);
+                return ok ? Ok(new { success = true }) : NotFound(new { success = false, error = "Staff not found" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deleting staff {Id}", id);
+                return StatusCode(500, new { success = false, error = "Failed to delete staff account" });
+            }
+        }
+
+        // GET /api/admin/residents
+        [HttpGet("admin/residents")]
+        [WebApplication1.Filters.UserTypeAuthorize(3)]
+        public async Task<IActionResult> GetAllResidents()
+        {
+            try
+            {
+                var users         = await _repo.GetAllAsync();
+                var registrations = await _repo.GetRegistrationsAsync();
+
+                var residents = users
+                    .Where(u => u.Type == 1)
+                    .Select(u =>
+                    {
+                        var reg    = registrations.FirstOrDefault(r =>
+                            r.Email.Equals(u.Username, StringComparison.OrdinalIgnoreCase));
+                        var status = u.IsBanned ? "Banned" :
+                                     reg?.Status == "approved" ? "Verified" : "Pending";
+                        return new
+                        {
+                            id        = u.Id,
+                            name      = reg?.FullName ?? u.Username,
+                            email     = u.Username,
+                            contact   = reg?.Mobile   ?? "—",
+                            address   = reg?.Address  ?? "—",
+                            status,
+                            banReason = u.BanReason
+                        };
+                    }).ToList();
+
+                return Ok(new { success = true, data = residents });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting residents");
+                return StatusCode(500, new { success = false, error = "Failed to retrieve residents" });
+            }
+        }
+
+        // POST /api/admin/residents/{id}/ban
+        [HttpPost("admin/residents/{id}/ban")]
+        [WebApplication1.Filters.UserTypeAuthorize(3)]
+        public async Task<IActionResult> BanResidentAccount(int id, [FromBody] AdminBanRequest? req)
+        {
+            try
+            {
+                var user = await _repo.GetByIdAsync(id);
+                if (user is null || user.Type != 1)
+                    return NotFound(new { success = false, error = "Resident account not found" });
+
+                var ok = await _repo.SetUserBanAsync(user.Username, true, null, req?.Reason ?? "Admin action");
+                _logger.LogInformation("Admin banned resident {Username}", user.Username);
+                return ok ? Ok(new { success = true }) : NotFound(new { success = false, error = "Account not found" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error banning resident {Id}", id);
+                return StatusCode(500, new { success = false, error = "Failed to ban resident" });
+            }
+        }
+
+        // POST /api/admin/residents/{id}/unban
+        [HttpPost("admin/residents/{id}/unban")]
+        [WebApplication1.Filters.UserTypeAuthorize(3)]
+        public async Task<IActionResult> UnbanResidentAccount(int id)
+        {
+            try
+            {
+                var user = await _repo.GetByIdAsync(id);
+                if (user is null || user.Type != 1)
+                    return NotFound(new { success = false, error = "Resident account not found" });
+
+                var ok = await _repo.SetUserBanAsync(user.Username, false, null, null);
+                _logger.LogInformation("Admin unbanned resident {Username}", user.Username);
+                return ok ? Ok(new { success = true }) : NotFound(new { success = false, error = "Account not found" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error unbanning resident {Id}", id);
+                return StatusCode(500, new { success = false, error = "Failed to unban resident" });
+            }
+        }
+
+        // DELETE /api/admin/residents/{id}
+        [HttpDelete("admin/residents/{id}")]
+        [WebApplication1.Filters.UserTypeAuthorize(3)]
+        public async Task<IActionResult> DeleteResidentAccount(int id)
+        {
+            try
+            {
+                var user = await _repo.GetByIdAsync(id);
+                if (user is null || user.Type != 1)
+                    return NotFound(new { success = false, error = "Resident account not found" });
+
+                var ok = await _repo.DeleteAsync(id);
+                return ok ? Ok(new { success = true }) : NotFound(new { success = false, error = "Account not found" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deleting resident {Id}", id);
+                return StatusCode(500, new { success = false, error = "Failed to delete resident" });
+            }
+        }
+
+        // GET /api/admin/export/{dataset}  —  returns a CSV file download
+        [HttpGet("admin/export/{dataset}")]
+        [WebApplication1.Filters.UserTypeAuthorize(3)]
+        public async Task<IActionResult> ExportDataset(string dataset)
+        {
+            try
+            {
+                var sb   = new System.Text.StringBuilder();
+                var slug = DateTime.Now.ToString("yyyyMMdd");
+                string filename;
+
+                switch (dataset.ToLowerInvariant().Replace("-", "_").Replace(" ", "_"))
+                {
+                    case "residents":
+                    case "resident_directory":
+                    {
+                        var users = await _repo.GetAllAsync();
+                        var regs  = await _repo.GetRegistrationsAsync();
+                        sb.AppendLine("ID,Email,FullName,Contact,Address,Status");
+                        foreach (var u in users.Where(u => u.Type == 1))
+                        {
+                            var reg    = regs.FirstOrDefault(r => r.Email.Equals(u.Username, StringComparison.OrdinalIgnoreCase));
+                            var status = u.IsBanned ? "Banned" : reg?.Status == "approved" ? "Verified" : "Pending";
+                            sb.AppendLine(ToCsvRow(u.Id.ToString(), u.Username, reg?.FullName ?? "", reg?.Mobile ?? "", reg?.Address ?? "", status));
+                        }
+                        filename = $"residents_{slug}.csv";
+                        break;
+                    }
+                    case "incidents":
+                    case "incident_reports":
+                    {
+                        var reports = await _repo.GetReportsAsync();
+                        sb.AppendLine("ID,Reference,Category,Priority,Status,Reporter,Location,Date,ResolvedBy");
+                        foreach (var r in reports)
+                            sb.AppendLine(ToCsvRow(r.Id.ToString(), r.Reference ?? "", r.Category ?? "", r.Priority ?? "medium", r.Status ?? "open", r.Anonymous ? "Anonymous" : r.ReporterName ?? "Anonymous", r.Address ?? "", r.Timestamp.ToString("yyyy-MM-dd"), r.ResolvedBy ?? ""));
+                        filename = $"incidents_{slug}.csv";
+                        break;
+                    }
+                    case "audit":
+                    case "audit_log":
+                    {
+                        var acts = await BuildAuditListAsync();
+                        sb.AppendLine("Timestamp,Type,Description,Meta");
+                        foreach (var a in acts)
+                            sb.AppendLine(ToCsvRow(a.Time.ToString("yyyy-MM-dd HH:mm:ss"), a.Type, a.Text, a.Meta));
+                        filename = $"audit_log_{slug}.csv";
+                        break;
+                    }
+                    case "staff":
+                    case "staff_activity":
+                    {
+                        var all = await _repo.GetAllAsync();
+                        sb.AppendLine("ID,Email,Role,Status");
+                        foreach (var u in all.Where(u => u.Type >= 2))
+                            sb.AppendLine(ToCsvRow(u.Id.ToString(), u.Username, u.Type == 3 ? "Admin" : "Staff", u.IsBanned ? "Suspended" : "Active"));
+                        filename = $"staff_activity_{slug}.csv";
+                        break;
+                    }
+                    default:
+                        return BadRequest(new { success = false, error = "Unknown dataset: " + dataset });
+                }
+
+                var bytes = System.Text.Encoding.UTF8.GetBytes(sb.ToString());
+                return File(bytes, "text/csv; charset=utf-8", filename);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error exporting {Dataset}", dataset);
+                return StatusCode(500, new { success = false, error = "Export failed" });
+            }
+        }
+
+        private static string ToCsvRow(params string[] fields) =>
+            string.Join(",", fields.Select(f =>
+            {
+                if (string.IsNullOrEmpty(f)) return "";
+                f = System.Text.RegularExpressions.Regex.Replace(f, "<[^>]+>", "");
+                return f.IndexOfAny(new[] { ',', '"', '\n', '\r' }) >= 0
+                    ? $"\"{f.Replace("\"", "\"\"")}\""
+                    : f;
+            }));
+
+        private async Task<List<ActivityItem>> BuildAuditListAsync()
+        {
+            var list = new List<ActivityItem>();
+            try
+            {
+                var reports = await _repo.GetReportsAsync();
+                list.AddRange(reports.Select(r => new ActivityItem
+                {
+                    Type = "incident", Icon = "fa-exclamation-circle", Color = "var(--red)",
+                    Text = $"Report {r.Reference} filed by {(r.Anonymous ? "Anonymous" : r.ReporterName ?? "resident")}",
+                    Meta = r.Priority ?? "medium", Time = r.Timestamp
+                }));
+                var posts = await _repo.GetPostsAsync();
+                list.AddRange(posts.Select(p => new ActivityItem
+                {
+                    Type = "forum", Icon = "fa-comments", Color = "var(--gold)",
+                    Text = $"Forum post: {p.Title} by {p.Author}",
+                    Meta = p.Category ?? "-", Time = p.CreatedAt
+                }));
+                var regs = await _repo.GetRegistrationsAsync();
+                list.AddRange(regs.Select(r => new ActivityItem
+                {
+                    Type = "registration", Icon = "fa-user-plus", Color = "var(--navy)",
+                    Text = $"Registration: {r.FullName} ({r.Email})",
+                    Meta = r.Status ?? "pending", Time = r.SubmittedAt
+                }));
+            }
+            catch { }
+            return list.OrderByDescending(a => a.Time).ToList();
+        }
+
         private async Task<int> UpsertKeywordAsync(List<KeywordDictionary> existingKeywords, string kw, string sev)
         {
             var existing = existingKeywords.FirstOrDefault(k =>
@@ -723,5 +1127,258 @@ namespace WebApplication1.Controllers
     {
         public string? Comment { get; set; }
         public string? Status { get; set; } // "open", "in-progress", "resolved"
+    }
+
+    public class CreateStaffRequest
+    {
+        public string? Name { get; set; }
+        public string? Email { get; set; }
+        public string? TempPassword { get; set; }
+    }
+
+    public class UpdateStaffRequest
+    {
+        public string? Email { get; set; }
+        public string? Status { get; set; } // "Active" or "Suspended"
+    }
+
+    public class AdminBanRequest
+    {
+        public string? Reason { get; set; }
+    }
+
+    // DTO helpers used by content-management endpoints
+    public class AnnouncementRequest { public string? Title{get;set;} public string? Body{get;set;} public string? Category{get;set;} public string? PostedBy{get;set;} public string? Status{get;set;} public DateTime? ScheduledAt{get;set;} }
+    public class EventRequest { public string? Title{get;set;} public string? Description{get;set;} public string? Date{get;set;} public string? Time{get;set;} public string? Location{get;set;} public string? Category{get;set;} public string? CreatedBy{get;set;} }
+    public class BodMemberRequest { public string? Name{get;set;} public string? Position{get;set;} public string? Term{get;set;} public string? Phone{get;set;} public string? Email{get;set;} }
+    public class MeetingRecordRequest { public string? Title{get;set;} public string? Date{get;set;} public string? Type{get;set;} public string? UploadedBy{get;set;} }
+    public class DocumentRequest { public string? Name{get;set;} public string? Category{get;set;} public string? UploadedBy{get;set;} }
+    public class ContactRequest { public string? Name{get;set;} public string? Role{get;set;} public string? Phone{get;set;} public string? Email{get;set;} }
+}
+
+// ═══════════════════════════════════════════════════════════
+//  CONTENT-MANAGEMENT API  — Announcements, Events, BODs,
+//  Meeting Records, Documents, Contacts  (UserType = 2 or 3)
+// ═══════════════════════════════════════════════════════════
+[ApiController]
+[Route("api")]
+public class ContentApiController : ControllerBase
+{
+    private readonly WebApplication1.Repository.IRepo _repo;
+    private readonly Microsoft.Extensions.Logging.ILogger<ContentApiController> _logger;
+
+    public ContentApiController(WebApplication1.Repository.IRepo repo, Microsoft.Extensions.Logging.ILogger<ContentApiController> logger)
+    { _repo = repo; _logger = logger; }
+
+    // ── Announcements ─────────────────────────────────────────
+    [HttpGet("announcements")]
+    [WebApplication1.Filters.UserTypeAuthorize(2, 3)]
+    public async Task<IActionResult> GetAnnouncements()
+    {
+        try { return Ok(new { success = true, data = await _repo.GetAnnouncementsAsync() }); }
+        catch (Exception ex) { _logger.LogError(ex, "GetAnnouncements"); return StatusCode(500, new { success = false, error = ex.Message }); }
+    }
+
+    [HttpPost("announcements")]
+    [WebApplication1.Filters.UserTypeAuthorize(2, 3)]
+    public async Task<IActionResult> CreateAnnouncement([FromBody] AnnouncementRequest req)
+    {
+        try {
+            var a = new WebApplication1.Models.Announcement { Title = req.Title ?? "", Body = req.Body, Category = req.Category, PostedBy = req.PostedBy, Status = req.Status ?? "published", ScheduledAt = req.ScheduledAt };
+            return Ok(new { success = true, data = await _repo.CreateAnnouncementAsync(a) });
+        } catch (Exception ex) { _logger.LogError(ex, "CreateAnnouncement"); return StatusCode(500, new { success = false, error = ex.Message }); }
+    }
+
+    [HttpPut("announcements/{id}")]
+    [WebApplication1.Filters.UserTypeAuthorize(2, 3)]
+    public async Task<IActionResult> UpdateAnnouncement(int id, [FromBody] AnnouncementRequest req)
+    {
+        try {
+            var a = new WebApplication1.Models.Announcement { Id = id, Title = req.Title ?? "", Body = req.Body, Category = req.Category, PostedBy = req.PostedBy, Status = req.Status ?? "published", ScheduledAt = req.ScheduledAt };
+            return Ok(new { success = await _repo.UpdateAnnouncementAsync(a) });
+        } catch (Exception ex) { _logger.LogError(ex, "UpdateAnnouncement"); return StatusCode(500, new { success = false, error = ex.Message }); }
+    }
+
+    [HttpDelete("announcements/{id}")]
+    [WebApplication1.Filters.UserTypeAuthorize(2, 3)]
+    public async Task<IActionResult> DeleteAnnouncement(int id)
+    {
+        try { return Ok(new { success = await _repo.DeleteAnnouncementAsync(id) }); }
+        catch (Exception ex) { _logger.LogError(ex, "DeleteAnnouncement"); return StatusCode(500, new { success = false, error = ex.Message }); }
+    }
+
+    // ── Events ────────────────────────────────────────────────
+    [HttpGet("hoa-events")]
+    [WebApplication1.Filters.UserTypeAuthorize(2, 3)]
+    public async Task<IActionResult> GetEvents()
+    {
+        try { return Ok(new { success = true, data = await _repo.GetEventsAsync() }); }
+        catch (Exception ex) { _logger.LogError(ex, "GetEvents"); return StatusCode(500, new { success = false, error = ex.Message }); }
+    }
+
+    [HttpPost("hoa-events")]
+    [WebApplication1.Filters.UserTypeAuthorize(2, 3)]
+    public async Task<IActionResult> CreateEvent([FromBody] EventRequest req)
+    {
+        try {
+            var e = new WebApplication1.Models.HoaEvent { Title = req.Title ?? "", Description = req.Description, Date = req.Date ?? "", Time = req.Time, Location = req.Location, Category = req.Category, CreatedBy = req.CreatedBy };
+            return Ok(new { success = true, data = await _repo.CreateEventAsync(e) });
+        } catch (Exception ex) { _logger.LogError(ex, "CreateEvent"); return StatusCode(500, new { success = false, error = ex.Message }); }
+    }
+
+    [HttpPut("hoa-events/{id}")]
+    [WebApplication1.Filters.UserTypeAuthorize(2, 3)]
+    public async Task<IActionResult> UpdateEvent(int id, [FromBody] EventRequest req)
+    {
+        try {
+            var e = new WebApplication1.Models.HoaEvent { Id = id, Title = req.Title ?? "", Description = req.Description, Date = req.Date ?? "", Time = req.Time, Location = req.Location, Category = req.Category, CreatedBy = req.CreatedBy };
+            return Ok(new { success = await _repo.UpdateEventAsync(e) });
+        } catch (Exception ex) { _logger.LogError(ex, "UpdateEvent"); return StatusCode(500, new { success = false, error = ex.Message }); }
+    }
+
+    [HttpDelete("hoa-events/{id}")]
+    [WebApplication1.Filters.UserTypeAuthorize(2, 3)]
+    public async Task<IActionResult> DeleteEvent(int id)
+    {
+        try { return Ok(new { success = await _repo.DeleteEventAsync(id) }); }
+        catch (Exception ex) { _logger.LogError(ex, "DeleteEvent"); return StatusCode(500, new { success = false, error = ex.Message }); }
+    }
+
+    // ── BOD Members ───────────────────────────────────────────
+    [HttpGet("bod-members")]
+    [WebApplication1.Filters.UserTypeAuthorize(2, 3)]
+    public async Task<IActionResult> GetBodMembers()
+    {
+        try { return Ok(new { success = true, data = await _repo.GetBodMembersAsync() }); }
+        catch (Exception ex) { _logger.LogError(ex, "GetBodMembers"); return StatusCode(500, new { success = false, error = ex.Message }); }
+    }
+
+    [HttpPost("bod-members")]
+    [WebApplication1.Filters.UserTypeAuthorize(2, 3)]
+    public async Task<IActionResult> CreateBodMember([FromBody] BodMemberRequest req)
+    {
+        try {
+            var m = new WebApplication1.Models.BodMember { Name = req.Name ?? "", Position = req.Position, Term = req.Term, Phone = req.Phone, Email = req.Email };
+            return Ok(new { success = true, data = await _repo.CreateBodMemberAsync(m) });
+        } catch (Exception ex) { _logger.LogError(ex, "CreateBodMember"); return StatusCode(500, new { success = false, error = ex.Message }); }
+    }
+
+    [HttpPut("bod-members/{id}")]
+    [WebApplication1.Filters.UserTypeAuthorize(2, 3)]
+    public async Task<IActionResult> UpdateBodMember(int id, [FromBody] BodMemberRequest req)
+    {
+        try {
+            var m = new WebApplication1.Models.BodMember { Id = id, Name = req.Name ?? "", Position = req.Position, Term = req.Term, Phone = req.Phone, Email = req.Email };
+            return Ok(new { success = await _repo.UpdateBodMemberAsync(m) });
+        } catch (Exception ex) { _logger.LogError(ex, "UpdateBodMember"); return StatusCode(500, new { success = false, error = ex.Message }); }
+    }
+
+    [HttpDelete("bod-members/{id}")]
+    [WebApplication1.Filters.UserTypeAuthorize(2, 3)]
+    public async Task<IActionResult> DeleteBodMember(int id)
+    {
+        try { return Ok(new { success = await _repo.DeleteBodMemberAsync(id) }); }
+        catch (Exception ex) { _logger.LogError(ex, "DeleteBodMember"); return StatusCode(500, new { success = false, error = ex.Message }); }
+    }
+
+    // ── Meeting Records ───────────────────────────────────────
+    [HttpGet("meeting-records")]
+    [WebApplication1.Filters.UserTypeAuthorize(2, 3)]
+    public async Task<IActionResult> GetMeetingRecords()
+    {
+        try { return Ok(new { success = true, data = await _repo.GetMeetingRecordsAsync() }); }
+        catch (Exception ex) { _logger.LogError(ex, "GetMeetingRecords"); return StatusCode(500, new { success = false, error = ex.Message }); }
+    }
+
+    [HttpPost("meeting-records")]
+    [WebApplication1.Filters.UserTypeAuthorize(2, 3)]
+    public async Task<IActionResult> CreateMeetingRecord([FromBody] MeetingRecordRequest req)
+    {
+        try {
+            var r = new WebApplication1.Models.MeetingRecord { Title = req.Title ?? "", Date = req.Date, Type = req.Type, UploadedBy = req.UploadedBy };
+            return Ok(new { success = true, data = await _repo.CreateMeetingRecordAsync(r) });
+        } catch (Exception ex) { _logger.LogError(ex, "CreateMeetingRecord"); return StatusCode(500, new { success = false, error = ex.Message }); }
+    }
+
+    [HttpPut("meeting-records/{id}")]
+    [WebApplication1.Filters.UserTypeAuthorize(2, 3)]
+    public async Task<IActionResult> UpdateMeetingRecord(int id, [FromBody] MeetingRecordRequest req)
+    {
+        try {
+            var r = new WebApplication1.Models.MeetingRecord { Id = id, Title = req.Title ?? "", Date = req.Date, Type = req.Type, UploadedBy = req.UploadedBy };
+            return Ok(new { success = await _repo.UpdateMeetingRecordAsync(r) });
+        } catch (Exception ex) { _logger.LogError(ex, "UpdateMeetingRecord"); return StatusCode(500, new { success = false, error = ex.Message }); }
+    }
+
+    [HttpDelete("meeting-records/{id}")]
+    [WebApplication1.Filters.UserTypeAuthorize(2, 3)]
+    public async Task<IActionResult> DeleteMeetingRecord(int id)
+    {
+        try { return Ok(new { success = await _repo.DeleteMeetingRecordAsync(id) }); }
+        catch (Exception ex) { _logger.LogError(ex, "DeleteMeetingRecord"); return StatusCode(500, new { success = false, error = ex.Message }); }
+    }
+
+    // ── Documents ─────────────────────────────────────────────
+    [HttpGet("hoa-documents")]
+    [WebApplication1.Filters.UserTypeAuthorize(2, 3)]
+    public async Task<IActionResult> GetDocuments()
+    {
+        try { return Ok(new { success = true, data = await _repo.GetDocumentsAsync() }); }
+        catch (Exception ex) { _logger.LogError(ex, "GetDocuments"); return StatusCode(500, new { success = false, error = ex.Message }); }
+    }
+
+    [HttpPost("hoa-documents")]
+    [WebApplication1.Filters.UserTypeAuthorize(2, 3)]
+    public async Task<IActionResult> CreateDocument([FromBody] DocumentRequest req)
+    {
+        try {
+            var d = new WebApplication1.Models.HoaDocument { Name = req.Name ?? "", Category = req.Category, UploadedBy = req.UploadedBy };
+            return Ok(new { success = true, data = await _repo.CreateDocumentAsync(d) });
+        } catch (Exception ex) { _logger.LogError(ex, "CreateDocument"); return StatusCode(500, new { success = false, error = ex.Message }); }
+    }
+
+    [HttpDelete("hoa-documents/{id}")]
+    [WebApplication1.Filters.UserTypeAuthorize(2, 3)]
+    public async Task<IActionResult> DeleteDocument(int id)
+    {
+        try { return Ok(new { success = await _repo.DeleteDocumentAsync(id) }); }
+        catch (Exception ex) { _logger.LogError(ex, "DeleteDocument"); return StatusCode(500, new { success = false, error = ex.Message }); }
+    }
+
+    // ── Contacts ──────────────────────────────────────────────
+    [HttpGet("contacts")]
+    [WebApplication1.Filters.UserTypeAuthorize(2, 3)]
+    public async Task<IActionResult> GetContacts()
+    {
+        try { return Ok(new { success = true, data = await _repo.GetContactsAsync() }); }
+        catch (Exception ex) { _logger.LogError(ex, "GetContacts"); return StatusCode(500, new { success = false, error = ex.Message }); }
+    }
+
+    [HttpPost("contacts")]
+    [WebApplication1.Filters.UserTypeAuthorize(2, 3)]
+    public async Task<IActionResult> CreateContact([FromBody] ContactRequest req)
+    {
+        try {
+            var c = new WebApplication1.Models.Contact { Name = req.Name ?? "", Role = req.Role, Phone = req.Phone, Email = req.Email };
+            return Ok(new { success = true, data = await _repo.CreateContactAsync(c) });
+        } catch (Exception ex) { _logger.LogError(ex, "CreateContact"); return StatusCode(500, new { success = false, error = ex.Message }); }
+    }
+
+    [HttpPut("contacts/{id}")]
+    [WebApplication1.Filters.UserTypeAuthorize(2, 3)]
+    public async Task<IActionResult> UpdateContact(int id, [FromBody] ContactRequest req)
+    {
+        try {
+            var c = new WebApplication1.Models.Contact { Id = id, Name = req.Name ?? "", Role = req.Role, Phone = req.Phone, Email = req.Email };
+            return Ok(new { success = await _repo.UpdateContactAsync(c) });
+        } catch (Exception ex) { _logger.LogError(ex, "UpdateContact"); return StatusCode(500, new { success = false, error = ex.Message }); }
+    }
+
+    [HttpDelete("contacts/{id}")]
+    [WebApplication1.Filters.UserTypeAuthorize(2, 3)]
+    public async Task<IActionResult> DeleteContact(int id)
+    {
+        try { return Ok(new { success = await _repo.DeleteContactAsync(id) }); }
+        catch (Exception ex) { _logger.LogError(ex, "DeleteContact"); return StatusCode(500, new { success = false, error = ex.Message }); }
     }
 }

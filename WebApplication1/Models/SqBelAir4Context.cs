@@ -25,6 +25,12 @@ public partial class SqBelAir4Context : DbContext
     public virtual DbSet<Advertisement> Advertisements { get; set; }
     public virtual DbSet<Registration> Registrations { get; set; }
     public virtual DbSet<Reservation> Reservations { get; set; }
+    public virtual DbSet<Announcement> Announcements { get; set; }
+    public virtual DbSet<HoaEvent> HoaEvents { get; set; }
+    public virtual DbSet<BodMember> BodMembers { get; set; }
+    public virtual DbSet<MeetingRecord> MeetingRecords { get; set; }
+    public virtual DbSet<HoaDocument> HoaDocuments { get; set; }
+    public virtual DbSet<Contact> Contacts { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
@@ -240,6 +246,85 @@ public partial class SqBelAir4Context : DbContext
             entity.Property(e => e.ReviewedAt).HasColumnName("reviewed_at");
             entity.Property(e => e.ReviewedBy).HasMaxLength(100).IsUnicode(false).HasColumnName("reviewed_by");
             entity.Property(e => e.RejectionReason).HasColumnName("rejection_reason");
+        });
+
+        modelBuilder.Entity<Announcement>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK_Announcements");
+            entity.ToTable("announcements");
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.Title).HasMaxLength(300).IsUnicode(false).HasColumnName("title");
+            entity.Property(e => e.Body).HasColumnName("body");
+            entity.Property(e => e.Category).HasMaxLength(100).IsUnicode(false).HasColumnName("category");
+            entity.Property(e => e.PostedBy).HasMaxLength(100).IsUnicode(false).HasColumnName("posted_by");
+            entity.Property(e => e.PostedAt).HasColumnName("posted_at").HasDefaultValueSql("GETUTCDATE()");
+            entity.Property(e => e.Status).HasMaxLength(20).IsUnicode(false).HasColumnName("status").HasDefaultValue("published");
+            entity.Property(e => e.ScheduledAt).HasColumnName("scheduled_at");
+        });
+
+        modelBuilder.Entity<HoaEvent>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK_HoaEvents");
+            entity.ToTable("hoa_events");
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.Title).HasMaxLength(300).IsUnicode(false).HasColumnName("title");
+            entity.Property(e => e.Description).HasColumnName("description");
+            entity.Property(e => e.Date).HasMaxLength(20).IsUnicode(false).HasColumnName("date");
+            entity.Property(e => e.Time).HasMaxLength(10).IsUnicode(false).HasColumnName("time");
+            entity.Property(e => e.Location).HasMaxLength(200).IsUnicode(false).HasColumnName("location");
+            entity.Property(e => e.Category).HasMaxLength(100).IsUnicode(false).HasColumnName("category");
+            entity.Property(e => e.CreatedBy).HasMaxLength(100).IsUnicode(false).HasColumnName("created_by");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("GETUTCDATE()");
+        });
+
+        modelBuilder.Entity<BodMember>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK_BodMembers");
+            entity.ToTable("bod_members");
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.Name).HasMaxLength(200).IsUnicode(false).HasColumnName("name");
+            entity.Property(e => e.Position).HasMaxLength(100).IsUnicode(false).HasColumnName("position");
+            entity.Property(e => e.Term).HasMaxLength(50).IsUnicode(false).HasColumnName("term");
+            entity.Property(e => e.Phone).HasMaxLength(50).IsUnicode(false).HasColumnName("phone");
+            entity.Property(e => e.Email).HasMaxLength(200).IsUnicode(false).HasColumnName("email");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("GETUTCDATE()");
+        });
+
+        modelBuilder.Entity<MeetingRecord>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK_MeetingRecords");
+            entity.ToTable("meeting_records");
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.Title).HasMaxLength(300).IsUnicode(false).HasColumnName("title");
+            entity.Property(e => e.Date).HasMaxLength(20).IsUnicode(false).HasColumnName("date");
+            entity.Property(e => e.Type).HasMaxLength(50).IsUnicode(false).HasColumnName("type");
+            entity.Property(e => e.FilePath).HasColumnName("file_path");
+            entity.Property(e => e.UploadedBy).HasMaxLength(100).IsUnicode(false).HasColumnName("uploaded_by");
+            entity.Property(e => e.UploadedAt).HasColumnName("uploaded_at").HasDefaultValueSql("GETUTCDATE()");
+        });
+
+        modelBuilder.Entity<HoaDocument>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK_HoaDocuments");
+            entity.ToTable("hoa_documents");
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.Name).HasMaxLength(300).IsUnicode(false).HasColumnName("name");
+            entity.Property(e => e.Category).HasMaxLength(100).IsUnicode(false).HasColumnName("category");
+            entity.Property(e => e.FilePath).HasColumnName("file_path");
+            entity.Property(e => e.UploadedBy).HasMaxLength(100).IsUnicode(false).HasColumnName("uploaded_by");
+            entity.Property(e => e.UploadedAt).HasColumnName("uploaded_at").HasDefaultValueSql("GETUTCDATE()");
+        });
+
+        modelBuilder.Entity<Contact>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK_Contacts");
+            entity.ToTable("contacts");
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.Name).HasMaxLength(200).IsUnicode(false).HasColumnName("name");
+            entity.Property(e => e.Role).HasMaxLength(100).IsUnicode(false).HasColumnName("role");
+            entity.Property(e => e.Phone).HasMaxLength(50).IsUnicode(false).HasColumnName("phone");
+            entity.Property(e => e.Email).HasMaxLength(200).IsUnicode(false).HasColumnName("email");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("GETUTCDATE()");
         });
 
         OnModelCreatingPartial(modelBuilder);

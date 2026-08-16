@@ -1,3 +1,10 @@
+@{
+    var _sessionUser = Context.Session.GetString("Username") ?? "Staff";
+    var _sessionType = Context.Session.GetInt32("UserType") ?? 2;
+    var _roleLabel   = _sessionType >= 3 ? "Admin Officer" : "Staff Officer";
+    var _initials    = string.Join("", _sessionUser.Split(' ').Take(2).Select(w => w.Length > 0 ? w[0].ToString().ToUpper() : ""));
+    if (_initials.Length == 0) _initials = _sessionUser.Length > 0 ? _sessionUser[0].ToString().ToUpper() : "S";
+}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -21,10 +28,10 @@
     </div>
   </div>
   <div class="sb-user">
-    <div class="sb-avatar" id="sb-avatar">MS</div>
+    <div class="sb-avatar" id="sb-avatar">@_initials</div>
     <div class="sb-user-info">
-      <div class="u-name" id="sb-uname">Maria Santos</div>
-      <div class="u-role" id="sb-urole">Admin Officer</div>
+      <div class="u-name" id="sb-uname">@_sessionUser</div>
+      <div class="u-role" id="sb-urole">@_roleLabel</div>
     </div>
     <div class="online-dot"></div>
   </div>
@@ -37,8 +44,8 @@
     <div class="nav-group-label">Approvals</div>
     <div class="nav-link" onclick="showPage('residents',this)"><i class="fas fa-home"></i> Residents &amp; Verification<span class="nav-badge" id="badge-verif">0</span></div>
 
-    <div class="nav-link" onclick="showPage('forums',this)"><i class="fas fa-comments"></i> Usap Tayo sa HOA<span class="nav-badge yellow">2</span></div>
-    <div class="nav-link" onclick="showPage('reservations',this)"><i class="fas fa-calendar-check"></i> Reservations<span class="nav-badge yellow">3</span></div>
+    <div class="nav-link" onclick="showPage('forums',this)"><i class="fas fa-comments"></i> Usap Tayo sa HOA<span class="nav-badge yellow" id="badge-forums">0</span></div>
+    <div class="nav-link" onclick="showPage('reservations',this)"><i class="fas fa-calendar-check"></i> Reservations<span class="nav-badge yellow" id="badge-reservations">0</span></div>
     @* <div class="nav-group-label">Content Management</div>
     <div class="nav-link" onclick="showPage('announcements',this)"><i class="fas fa-bullhorn"></i> Announcements</div>
     <div class="nav-link" onclick="showPage('events',this)"><i class="fas fa-calendar-alt"></i> Events / Calendar</div>
@@ -52,7 +59,8 @@
     @* <div class="nav-link" onclick="showPage('reports',this)"><i class="fas fa-chart-bar"></i> Reports</div>
     <div class="nav-link" onclick="showPage('subscribers',this)"><i class="fas fa-bell"></i> Subscribers</div> *@
   </nav>
-  <div class="sb-footer" onclick="window.location.href='index.html'"><i class="fas fa-sign-out-alt"></i> Sign Out</div>
+  <form id="staff-logout-form" action="/Home/Logout" method="post" style="display:none">@Html.AntiForgeryToken()</form>
+  <div class="sb-footer" onclick="document.getElementById('staff-logout-form').submit()"><i class="fas fa-sign-out-alt"></i> Sign Out</div>
 </aside>
 
 <!-- TOPBAR -->
@@ -79,7 +87,7 @@
     <div class="stat-card"><div class="stat-icon si-red"><i class="fas fa-exclamation-circle"></i></div><div class="stat-info"><div class="stat-val" id="stat-open-incidents">0</div><div class="stat-label">Open Incidents</div><div class="stat-sub sub-down"><i class="fas fa-clock"></i> Awaiting action</div></div></div>
     <div class="stat-card"><div class="stat-icon si-yellow"><i class="fas fa-user-clock"></i></div><div class="stat-info"><div class="stat-val" id="stat-pending-verif">3</div><div class="stat-label">Pending Verification</div><div class="stat-sub sub-warn"><i class="fas fa-clock"></i> Awaiting review</div></div></div>
     <div class="stat-card"><div class="stat-icon si-orange"><i class="fas fa-store"></i></div><div class="stat-info"><div class="stat-val" id="overview-pending-exchange">5</div><div class="stat-label">Exchange Approvals</div><div class="stat-sub sub-warn"><i class="fas fa-clock"></i> Pending review</div></div></div>
-    <div class="stat-card"><div class="stat-icon si-green"><i class="fas fa-home"></i></div><div class="stat-info"><div class="stat-val">342</div><div class="stat-label">Verified Residents</div><div class="stat-sub sub-up"><i class="fas fa-arrow-up"></i> +4 this month</div></div></div>
+    <div class="stat-card"><div class="stat-icon si-green"><i class="fas fa-home"></i></div><div class="stat-info"><div class="stat-val" id="stat-verified-residents">—</div><div class="stat-label">Verified Residents</div><div class="stat-sub sub-up"><i class="fas fa-check-circle"></i> Approved members</div></div></div>
   </div>
   <div class="grid-60-40">
     <div class="card">
@@ -90,9 +98,7 @@
       <div class="card">
         <div class="card-header"><h3><i class="fas fa-history"></i> Recent Activity</h3></div>
         <div class="scroll-y" style="max-height:190px" id="activity-feed">
-          <div class="activity-item"><div class="act-dot" style="background:var(--blue)"></div><div class="act-body"><p><strong>Jess T.</strong> approved post from <em>Pedro Cruz</em></p><div class="act-time">1 hr ago</div></div></div>
-          <div class="activity-item"><div class="act-dot" style="background:var(--accent-dark)"></div><div class="act-body"><p><strong>Rodel L.</strong> verified resident <em>Sofia Mendez</em></p><div class="act-time">2 hr ago</div></div></div>
-          <div class="activity-item"><div class="act-dot" style="background:var(--orange)"></div><div class="act-body"><p><strong>Carlo P.</strong> flagged post in <em>Usap Tayo</em></p><div class="act-time">3 hr ago</div></div></div>
+          <div class="activity-item"><div class="act-dot" style="background:var(--gray-400)"></div><div class="act-body"><p style="color:var(--gray-400)">Loading activity...</p></div></div>
         </div>
       </div>
       <div class="card">
@@ -107,9 +113,7 @@
   <div class="grid-3">
     <div class="card">
       <div class="card-header"><h3><i class="fas fa-user-check"></i> Verification Queue</h3><button class="see-all" onclick="showPage('residents',null)">View All</button></div>
-      <div class="verif-item"><div class="verif-av">SM</div><div class="verif-info"><div class="verif-name">Sofia Mendez</div><div class="verif-sub">Block A, H12 · Today</div></div><div class="verif-actions"><button class="approve-btn yes" onclick="quickApprove(this,'Sofia Mendez')"><i class="fas fa-check"></i></button><button class="approve-btn no" onclick="quickReject(this,'Sofia Mendez')"><i class="fas fa-times"></i></button><button class="approve-btn view-btn" onclick="openResidentDetail({name:'Sofia Mendez',unit:'Block A, H12',date:'Today',docs:[{name:'Government ID'},{name:'Proof of Residency'}]})"><i class="fas fa-eye"></i></button></div></div>
-      <div class="verif-item"><div class="verif-av" style="background:linear-gradient(135deg,#1a5fa8,#4a90e2)">JR</div><div class="verif-info"><div class="verif-name">Joel Ramos</div><div class="verif-sub">Block C, H8 · Feb 17</div></div><div class="verif-actions"><button class="approve-btn yes" onclick="quickApprove(this,'Joel Ramos')"><i class="fas fa-check"></i></button><button class="approve-btn no" onclick="quickReject(this,'Joel Ramos')"><i class="fas fa-times"></i></button><button class="approve-btn view-btn" onclick="openResidentDetail({name:'Joel Ramos',unit:'Block C, H8',date:'Feb 17',docs:[{name:'Government ID'}]})"><i class="fas fa-eye"></i></button></div></div>
-      <div class="verif-item"><div class="verif-av" style="background:linear-gradient(135deg,#c06418,#e8903a)">LP</div><div class="verif-info"><div class="verif-name">Liza Pascual</div><div class="verif-sub">Block B, H3 · Feb 16 ⚠️</div></div><div class="verif-actions"><button class="approve-btn yes" onclick="quickApprove(this,'Liza Pascual')"><i class="fas fa-check"></i></button><button class="approve-btn no" onclick="quickReject(this,'Liza Pascual')"><i class="fas fa-times"></i></button><button class="approve-btn view-btn" onclick="openResidentDetail({name:'Liza Pascual',unit:'Block B, H3',date:'Feb 16',docs:[{name:'Government ID'}],missing:'Proof of Residency'})"><i class="fas fa-eye"></i></button></div></div>
+      <div id="overview-verif-queue"><div class="empty-state-inline" style="padding:20px"><i class="fas fa-spinner fa-spin"></i><span>Loading...</span></div></div>
     </div>
     <div class="card">
       <div class="card-header"><h3><i class="fas fa-store"></i> Pending Exchange Posts</h3><button class="see-all" onclick="showPage('exchange',null)">View All</button></div>

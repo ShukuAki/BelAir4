@@ -641,9 +641,9 @@ namespace WebApplication1.Controllers
             }
         }
 
-        // GET /api/admin/recent-activities - aggregated live activity feed for the admin dashboard
+        // GET /api/admin/recent-activities - aggregated live activity feed for the admin/staff dashboard
         [HttpGet("/api/admin/recent-activities")]
-        [WebApplication1.Filters.UserTypeAuthorize(3)]
+        [WebApplication1.Filters.UserTypeAuthorize(2, 3)]
         public async Task<IActionResult> GetRecentActivities()
         {
             var activities = new List<ActivityItem>();

@@ -202,44 +202,49 @@ function updateAutoPriority() {
   else { box.style.background = 'var(--green-light)'; box.innerHTML = '<i class="fas fa-brain"></i> <strong>Auto-priority</strong> will be assigned based on keywords.'; }
 }
 
-function saveIncident() {
-  const reporter = (document.getElementById('inc-reporter').value || '').trim() || 'Anonymous';
+async function saveIncident() {
+  const reporter = (document.getElementById('inc-reporter').value || '').trim();
   const desc     = (document.getElementById('inc-description').value || '').trim();
   const cat      = document.getElementById('inc-category').value;
-  const type     = document.getElementById('inc-type').value || 'Incident';
-  const priOvrd  = document.getElementById('inc-priority-override').value;
   const locType  = document.querySelector('[name="inc-loc-type"]:checked')?.value || 'text';
   const visVal   = document.getElementById('inc-visibility')?.value || 'public';
-  const isPublic = visVal === 'public';
 
-  let location = '', lat = null, lng = null;
+  let street = '', lat = null, lng = null;
   if (locType === 'text') {
-    location = (document.getElementById('inc-location').value || '').trim();
+    street = (document.getElementById('inc-location').value || '').trim();
   } else {
-    lat = parseFloat(document.getElementById('inc-log-lat').value) || null;
-    lng = parseFloat(document.getElementById('inc-log-lng').value) || null;
-    const street = (document.getElementById('inc-log-street')?.value || '').trim();
-    if (lat && lng) location = street ? `${street} (${lat.toFixed(5)}, ${lng.toFixed(5)})` : `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+    lat    = parseFloat(document.getElementById('inc-log-lat').value) || null;
+    lng    = parseFloat(document.getElementById('inc-log-lng').value) || null;
+    street = (document.getElementById('inc-log-street')?.value || '').trim();
   }
 
-  if (!desc)     { showToast('Description is required.', 'error'); return; }
-  if (!location) { showToast('Location is required.', 'error');    return; }
+  if (!desc)                   { showToast('Description is required.', 'error'); return; }
+  if (!street && !lat && !lng) { showToast('Location is required.', 'error');    return; }
 
-  const priority = priOvrd !== 'auto' ? priOvrd : detectPriority(desc);
-  const dateStr  = new Date().toLocaleDateString('en-PH', {month:'short', day:'numeric', year:'numeric'});
-  const id = (type === 'Concern' ? 'CON-' : 'INC-') + String(INCIDENTS.length + 1).padStart(3, '0');
+  const fd = new FormData();
+  fd.append('description',  desc);
+  fd.append('category',     cat);
+  fd.append('street',       street);
+  fd.append('address',      street);
+  fd.append('reporterName', reporter || 'Anonymous');
+  fd.append('anonymous',    reporter ? 'false' : 'true');
+  if (lat != null) fd.append('latitude',  String(lat));
+  if (lng != null) fd.append('longitude', String(lng));
+  const photoFile = document.getElementById('inc-file')?.files[0];
+  if (photoFile) fd.append('photo', photoFile);
 
-  INCIDENTS.push({ id, reporter, description: desc, location, category: cat, type, priority, status: 'open', date: dateStr, lat, lng, isPublic, notes: '' });
-  persistIncidents();
-
-  if (isPublic && lat && lng) {
-    MAP_ITEMS.push({ id:'mi-inc-'+id, title:`${type}: ${desc.substring(0,40)}`, description: desc, category: type, status: 'Open', lat, lng, fromIncident: true, incidentId: id });
-    if (cmMap) renderCmItems();
+  try {
+    const res  = await fetch('/api/concerns/report', { method: 'POST', body: fd });
+    const data = await res.json();
+    if (!res.ok || data.success === false) { showToast(data?.error || 'Failed to save report', 'error'); return; }
+    showToast(`Incident ${data.reference || data.id || ''} logged`);
+    closeModal('addIncident'); resetIncidentForm();
+    await loadIncidentReportsWithAnalysis();
+    _updateNotifBadge();
+  } catch (err) {
+    console.error('Save incident failed:', err);
+    showToast('Failed to save report', 'error');
   }
-
-  renderIncidentsTable('all'); renderOverviewIncidents(); updateIncidentStats(); updateDistribution(); updateCommonKeywords(); refreshPreviewMap();
-  closeModal('addIncident'); resetIncidentForm();
-  showToast(`${type} ${id} logged`); _updateNotifBadge();
 }
 
 function resetIncidentForm() {
@@ -375,23 +380,34 @@ function renderOverviewIncidents() {
   if (!INCIDENTS.length) { el.innerHTML = '<div class="empty-state-inline"><i class="fas fa-inbox"></i><span>No incident reports yet</span></div>'; return; }
   const pc = {high:'var(--red)', medium:'var(--orange)', low:'var(--yellow)'};
   const pb = {high:'var(--red-light)', medium:'var(--orange-light)', low:'var(--yellow-light)'};
-  el.innerHTML = INCIDENTS.slice(0,6).map(inc => `
-    <div onclick="showPage('incidents',null);setTimeout(()=>viewIncident('${inc.id}'),200)"
+  el.innerHTML = INCIDENTS.slice(0,6).map(inc => {
+    const priority = inc.priority || 'medium';
+    const status   = inc.status   || 'open';
+    const reporter = inc.reporterName || (inc.anonymous ? 'Anonymous' : '—');
+    const location = inc.street || inc.address || '—';
+    const date     = inc.timestamp ? new Date(inc.timestamp).toLocaleDateString('en-PH',{month:'short',day:'numeric',year:'numeric'}) : (inc.date || '—');
+    const ref      = inc.reference || ('INC-' + inc.id);
+    const cat      = inc.category || 'Incident';
+    const spClass  = status === 'in-progress' ? 'sp-progress' : status === 'resolved' ? 'sp-resolved' : 'sp-open';
+    const spLabel  = status === 'in-progress' ? 'In Progress' : status === 'resolved' ? 'Resolved' : 'Open';
+    return `
+    <div onclick="showPage('incidents',null);setTimeout(()=>viewIncidentDetail(${inc.id}),200)"
       style="display:flex;gap:12px;padding:12px 16px;border-bottom:1px solid var(--gray-100);cursor:pointer;align-items:flex-start;transition:background .12s"
       onmouseover="this.style.background='var(--gray-50)'" onmouseout="this.style.background=''">
-      <div style="width:36px;height:36px;border-radius:var(--radius);background:${pb[inc.priority]};display:flex;align-items:center;justify-content:center;flex-shrink:0">
-        <i class="fas fa-exclamation-circle" style="color:${pc[inc.priority]}"></i></div>
+      <div style="width:36px;height:36px;border-radius:var(--radius);background:${pb[priority]};display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <i class="fas fa-exclamation-circle" style="color:${pc[priority]}"></i></div>
       <div style="flex:1">
-        <div style="font-size:13px;font-weight:700;color:var(--green)">${escHtml(inc.description.substring(0,55))}${inc.description.length>55?'…':''}</div>
-        <div style="font-size:11px;color:var(--gray-400);margin-top:2px">${escHtml(inc.location)} · ${escHtml(inc.reporter)} · ${escHtml(inc.date)}</div>
+        <div style="font-size:13px;font-weight:700;color:var(--green)">${escHtml((inc.description||'').substring(0,55))}${(inc.description||'').length>55?'…':''}</div>
+        <div style="font-size:11px;color:var(--gray-400);margin-top:2px">${escHtml(location)} · ${escHtml(reporter)} · ${escHtml(date)}</div>
         <div style="display:flex;gap:6px;margin-top:5px;flex-wrap:wrap">
-          <span class="tag ${inc.type==='Concern'?'tag-yellow':'tag-red'}">${escHtml(inc.type||'Incident')}</span>
-          <span class="priority p-${inc.priority}">${inc.priority}</span>
-          <span class="status-pill sp-${inc.status}">${inc.status==='open'?'Open':inc.status==='progress'?'In Progress':'Resolved'}</span>
+          <span class="tag tag-gray">${escHtml(cat)}</span>
+          <span class="priority p-${priority}">${priority}</span>
+          <span class="status-pill ${spClass}">${spLabel}</span>
         </div>
       </div>
-      <div style="font-size:10px;color:var(--gray-400);flex-shrink:0">${escHtml(inc.id)}</div>
-    </div>`).join('');
+      <div style="font-size:10px;color:var(--gray-400);flex-shrink:0">${escHtml(ref)}</div>
+    </div>`;
+  }).join('');
 }
 
 function updateIncidentStats() {
@@ -779,6 +795,30 @@ async function loadPendingRegistrations() {
       if (badge) badge.textContent = registrations.length;
       if (badgeTab) badgeTab.textContent = registrations.length;
       if (statPending) statPending.textContent = registrations.length;
+
+      // Also update overview verification queue (compact version, first 3)
+      const overviewQueue = document.getElementById('overview-verif-queue');
+      if (overviewQueue) {
+        if (!registrations.length) {
+          overviewQueue.innerHTML = '<div class="empty-state-inline" style="padding:20px"><i class="fas fa-check-circle" style="color:var(--green)"></i><span>No pending verification</span></div>';
+        } else {
+          overviewQueue.innerHTML = registrations.slice(0, 3).map(reg => {
+            const ini = reg.fullName.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
+            const dt  = new Date(reg.submittedAt).toLocaleDateString('en-PH', { month: 'short', day: 'numeric' });
+            return `<div class="verif-item">
+              <div class="verif-av">${ini}</div>
+              <div class="verif-info"><div class="verif-name">${escHtml(reg.fullName)}</div><div class="verif-sub">${escHtml(reg.address)} · ${dt}</div></div>
+              <div class="verif-actions">
+                <button class="approve-btn yes" onclick="approveResident('verif-${reg.id}','${escHtml(reg.fullName)}')"><i class="fas fa-check"></i></button>
+                <button class="approve-btn no"  onclick="rejectResident('verif-${reg.id}','${escHtml(reg.fullName)}')"><i class="fas fa-times"></i></button>
+              </div>
+            </div>`;
+          }).join('');
+          if (registrations.length > 3) {
+            overviewQueue.innerHTML += `<div style="padding:8px 16px;font-size:12px;color:var(--gray-400);text-align:center">+${registrations.length - 3} more — <a href="#" onclick="showPage('residents',null);return false" style="color:var(--accent-dark)">View all</a></div>`;
+          }
+        }
+      }
     } else {
       console.error('Failed to load registrations:', response.status, response.statusText);
       const container = document.getElementById('verif-pending-list');
@@ -1192,6 +1232,8 @@ async function loadForumPosts() {
     renderForumPosts();
     renderForumStats();
     renderForumCategories();
+    const bforum = document.getElementById('badge-forums');
+    if (bforum) { bforum.textContent = FORUM_POSTS.length; bforum.style.display = FORUM_POSTS.length > 0 ? '' : 'none'; }
   } catch (err) {
     console.error('Failed to load forum posts:', err);
     if (container) {
@@ -1425,6 +1467,8 @@ function renderReservations() {
 
   const pending = RESERVATIONS.filter(r => (r.status || '').toLowerCase() === 'pending');
   if (countLabel) countLabel.textContent = `(${pending.length})`;
+  const bresv = document.getElementById('badge-reservations');
+  if (bresv) { bresv.textContent = pending.length; bresv.style.display = pending.length > 0 ? '' : 'none'; }
 
   if (pendingTbody) {
     pendingTbody.innerHTML = pending.length
@@ -1855,14 +1899,7 @@ function deleteContact(id, name) { if (!confirm(`Delete "${name}"?`)) return; co
    WORD BANK
 ============================================================ */
 function addKeyword() {
-  const word = (document.getElementById('kw-word')?.value || '').trim();
-  const sev  = document.getElementById('kw-sev')?.value  || 'medium';
-  if (!word) { showToast('Keyword is required.', 'error'); return; }
-  const gridId = sev === 'high' ? 'kw-high-grid' : 'kw-med-grid';
-  const grid   = document.getElementById(gridId);
-  if (grid) { const chip = document.createElement('span'); chip.className = `kw-chip kw-${sev}`; chip.textContent = word; chip.onclick = function() { removeKeyword(this); }; grid.appendChild(chip); }
-  closeModal('addKeyword'); const we = document.getElementById('kw-word'); if (we) we.value = '';
-  showToast(`Keyword "${word}" added`);
+  addNewKeyword();
 }
 function removeKeyword(chip) { if (confirm(`Remove keyword "${chip.textContent}"?`)) { chip.remove(); showToast('Keyword removed', 'info'); } }
 
@@ -1933,10 +1970,14 @@ function initPreviewMap() {
 function refreshPreviewMap() {
   if (!previewMap) return;
   previewMap.eachLayer(layer => { if (layer instanceof L.Marker || layer instanceof L.CircleMarker) previewMap.removeLayer(layer); });
-  INCIDENTS.filter(i => i.isPublic && i.lat && i.lng).forEach(inc => {
+  INCIDENTS.filter(i => i.isPublic && (i.latitude || i.lat) && (i.longitude || i.lng)).forEach(inc => {
+    const lat   = inc.latitude  || inc.lat;
+    const lng   = inc.longitude || inc.lng;
     const color = {high:'#c0392b', medium:'#c0621a', low:'#5aaa4f'}[inc.priority] || '#c0392b';
-    L.circleMarker([inc.lat,inc.lng], {color, fillColor:color, radius:7, fillOpacity:.85, weight:2}).addTo(previewMap)
-      .bindPopup(`<div style="font-family:Nunito,sans-serif"><strong style="font-size:12px">${escHtml(inc.description.substring(0,50))}</strong><br><small style="color:#6b6760">${escHtml(inc.id)} · ${inc.priority} priority · ${escHtml(inc.date)}</small></div>`);
+    const ref   = inc.reference || ('INC-' + inc.id);
+    const date  = inc.timestamp ? new Date(inc.timestamp).toLocaleDateString('en-PH',{month:'short',day:'numeric',year:'numeric'}) : (inc.date || '');
+    L.circleMarker([lat, lng], {color, fillColor:color, radius:7, fillOpacity:.85, weight:2}).addTo(previewMap)
+      .bindPopup(`<div style="font-family:Nunito,sans-serif"><strong style="font-size:12px">${escHtml((inc.description||'').substring(0,50))}</strong><br><small style="color:#6b6760">${escHtml(ref)} · ${inc.priority} priority · ${escHtml(date)}</small></div>`);
   });
 }
 
@@ -2096,10 +2137,12 @@ function _updateNotifBadge() {
 function buildNotifications() {
   const items = [];
   INCIDENTS.filter(i => i.status === 'open').slice(0,5).forEach(inc => {
-    const ini = inc.reporter.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase() || '??';
-    items.push({ ini, color:{high:'#c0392b',medium:'#c0621a',low:'#5aaa4f'}[inc.priority]||'#c0621a', name:inc.reporter, action:`Logged a ${inc.priority} priority ${inc.type||'incident'}`, detail:inc.description.substring(0,55), time:inc.date, unread:true, onClick:()=>{ closeNotifModal(); viewIncident(inc.id); } });
+    const reporter = inc.reporterName || (inc.anonymous ? 'Anonymous' : 'Resident');
+    const ini  = reporter.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase() || '??';
+    const date = inc.timestamp ? new Date(inc.timestamp).toLocaleDateString('en-PH',{month:'short',day:'numeric'}) : '';
+    items.push({ ini, color:{high:'#c0392b',medium:'#c0621a',low:'#5aaa4f'}[inc.priority]||'#c0621a', name:reporter, action:`Logged a ${inc.priority} priority ${inc.category||'incident'}`, detail:(inc.description||'').substring(0,55), time:date, unread:true, onClick:()=>{ closeNotifModal(); viewIncidentDetail(inc.id); } });
   });
-  const ex = getExchange();
+  const ex = exchangeData;
   if (ex.pending.length) items.push({ ini:'CE', color:'#c0621a', name:'Community Exchange', action:`${ex.pending.length} post${ex.pending.length>1?'s':''} pending approval`, detail:ex.pending.map(p=>p.title).join(', ').substring(0,55), time:'Now', unread:true, onClick:()=>{ closeNotifModal(); showPage('exchange',null); } });
   if (!items.length) items.push({ ini:'LB', color:'#0a4d3c', name:'System', action:'All caught up!', detail:'No pending items.', time:'Now', unread:false, onClick:closeNotifModal });
   return items;
@@ -2121,27 +2164,78 @@ function _notifClick(i) { const o = document.getElementById('notif-modal-overlay
 function closeNotifModal() { const o = document.getElementById('notif-modal-overlay'); if (!o) return; o.classList.remove('notif-modal-open'); setTimeout(() => { o.style.display = 'none'; }, 250); }
 
 /* ============================================================
+   STAFF STATS — Load overview counts from /api/staff/stats
+============================================================ */
+async function loadStaffStats() {
+  try {
+    const res  = await fetch('/api/staff/stats', { credentials: 'same-origin' });
+    if (!res.ok) return;
+    const d = await res.json();
+    if (!d.success) return;
+    const el = id => document.getElementById(id);
+    if (el('stat-verified-residents'))  el('stat-verified-residents').textContent  = d.verifiedResidents ?? '—';
+    if (el('stat-open-incidents'))      el('stat-open-incidents').textContent      = d.openIncidents ?? 0;
+    if (el('stat-pending-verif'))       el('stat-pending-verif').textContent       = d.pendingRegistrations ?? 0;
+    if (el('overview-pending-exchange'))el('overview-pending-exchange').textContent= d.pendingAds ?? 0;
+    const bv = el('badge-verif');
+    if (bv) bv.textContent = d.pendingRegistrations ?? 0;
+    const bi = el('badge-incidents');
+    if (bi) { bi.textContent = d.openIncidents ?? 0; bi.style.display = d.openIncidents > 0 ? '' : 'none'; }
+  } catch (e) {
+    console.warn('Could not load staff stats', e);
+  }
+}
+
+/* ============================================================
+   ACTIVITY FEED — Load recent activity from /api/admin/recent-activities
+============================================================ */
+async function loadActivityFeed() {
+  const feed = document.getElementById('activity-feed');
+  if (!feed) return;
+  try {
+    const res  = await fetch('/api/admin/recent-activities', { credentials: 'same-origin' });
+    if (!res.ok) { feed.innerHTML = '<div class="activity-item"><div class="act-dot" style="background:var(--gray-300)"></div><div class="act-body"><p style="color:var(--gray-400);font-size:12px">No activity yet</p></div></div>'; return; }
+    const data = await res.json();
+    const items = data.success ? (data.data || []) : [];
+    if (!items.length) {
+      feed.innerHTML = '<div class="activity-item"><div class="act-dot" style="background:var(--gray-300)"></div><div class="act-body"><p style="color:var(--gray-400);font-size:12px">No recent activity</p></div></div>';
+      return;
+    }
+    const colorMap = { registration:'var(--navy)', incident:'var(--red)', forum:'var(--gold)', reservation:'var(--green)' };
+    feed.innerHTML = items.slice(0, 8).map(a => {
+      const col  = colorMap[a.type] || 'var(--blue)';
+      const time = a.time ? new Date(a.time).toLocaleString('en-PH', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
+      return `<div class="activity-item">
+        <div class="act-dot" style="background:${col}"></div>
+        <div class="act-body"><p>${a.text || ''}</p><div class="act-time">${time}</div></div>
+      </div>`;
+    }).join('');
+  } catch (e) {
+    console.warn('Could not load activity feed', e);
+    feed.innerHTML = '<div class="activity-item"><div class="act-dot" style="background:var(--gray-300)"></div><div class="act-body"><p style="color:var(--gray-400);font-size:12px">Activity unavailable</p></div></div>';
+  }
+}
+
+/* ============================================================
    INIT
 ============================================================ */
 document.addEventListener('DOMContentLoaded', function() {
-  loadIncidents(); loadSettings();
+  loadSettings();
+  loadStaffStats();
+  loadActivityFeed();
   loadExchangeData();
-  if (document.getElementById('incidents-tbody')) {
-    renderOverviewIncidents(); updateIncidentStats(); updateDistribution(); updateCommonKeywords();
-    renderIncidentsTable('all');
-  }
   renderCalendar(); renderEventsList();
   initKanban();
   loadPendingRegistrations();
   loadRecentlyVerified();
+  loadIncidentReportsWithAnalysis();
+  loadForumPosts();
+  loadReservations();
   document.querySelector('.icon-btn[title="Notifications"]')?.addEventListener('click', openNotifModal);
   document.querySelector('.icon-btn[title="Settings"]')?.addEventListener('click', () => openModal('settings'));
-  window.addEventListener('storage', e => {
-    if (e.key === 'lba4_incidents') { loadIncidents(); if (document.getElementById('incidents-tbody')) { renderIncidentsTable('all'); renderOverviewIncidents(); updateIncidentStats(); updateDistribution(); updateCommonKeywords(); } _updateNotifBadge(); }
-  });
   _updateNotifBadge();
   if (document.getElementById('kw-high-grid')) {
-    loadKeywordsData(); // Load keywords for Word Bank
+    loadKeywordsData();
   }
   showPage('overview', document.querySelector('.nav-link.active'));
   console.log('%c LBA4 Staff Dashboard v4 loaded ✓', 'color:#0a4d3c;font-weight:bold;font-size:13px');
@@ -2437,27 +2531,23 @@ async function resolveIncident(id) {
   }
 }
 
-async function updateIncidentStats() {
+function updateIncidentStats() {
+  const total     = INCIDENTS.length;
   const highCount = INCIDENTS.filter(r => r.priority === 'high').length;
-  const mediumCount = INCIDENTS.filter(r => r.priority === 'medium').length;
-  const lowCount = INCIDENTS.filter(r => r.priority === 'low').length;
+  const medCount  = INCIDENTS.filter(r => r.priority === 'medium').length;
+  const lowCount  = INCIDENTS.filter(r => r.priority === 'low').length;
+  const openCount = INCIDENTS.filter(r => (r.status || 'open') !== 'resolved').length;
 
-  if (document.getElementById('dist-high-n')) {
-    document.getElementById('dist-high-n').textContent = highCount;
-    document.getElementById('dist-high-bar').style.width = highCount > 0 ? '100%' : '0%';
-  }
-  if (document.getElementById('dist-medium-n')) {
-    document.getElementById('dist-medium-n').textContent = mediumCount;
-    const total = highCount + mediumCount + lowCount;
-    document.getElementById('dist-medium-bar').style.width = (mediumCount / Math.max(total, 1)) * 100 + '%';
-  }
-  if (document.getElementById('dist-low-n')) {
-    document.getElementById('dist-low-n').textContent = lowCount;
-    const total = highCount + mediumCount + lowCount;
-    document.getElementById('dist-low-bar').style.width = (lowCount / Math.max(total, 1)) * 100 + '%';
-  }
+  const hn = document.getElementById('dist-high-n');    if (hn) hn.textContent = highCount;
+  const hb = document.getElementById('dist-high-bar');  if (hb) hb.style.width = Math.round((highCount / Math.max(total,1)) * 100) + '%';
+  const mn = document.getElementById('dist-medium-n');  if (mn) mn.textContent = medCount;
+  const mb = document.getElementById('dist-medium-bar'); if (mb) mb.style.width = Math.round((medCount / Math.max(total,1)) * 100) + '%';
+  const ln = document.getElementById('dist-low-n');     if (ln) ln.textContent = lowCount;
+  const lb = document.getElementById('dist-low-bar');   if (lb) lb.style.width = Math.round((lowCount / Math.max(total,1)) * 100) + '%';
+  const de = document.getElementById('dist-empty');     if (de) de.style.display = total ? 'none' : 'block';
 
-  document.getElementById('stat-open-incidents').textContent = highCount;
+  const si = document.getElementById('stat-open-incidents'); if (si) si.textContent = openCount;
+  const bi = document.getElementById('badge-incidents'); if (bi) { bi.textContent = openCount; bi.style.display = openCount > 0 ? '' : 'none'; }
 }
 
 function updateCommonKeywords() {
@@ -2605,6 +2695,9 @@ async function loadIncidentReportsWithAnalysis() {
     updateIncidentStats();
     updateCommonKeywords();
     renderIncidentsList();
+    renderOverviewIncidents();
+    refreshPreviewMap();
+    _updateNotifBadge();
   } catch (error) {
     console.error('Error loading incidents:', error);
   }
@@ -2656,7 +2749,3 @@ function initializeWordBankAndAnalysis() {
   }
 }
 
-// Call initialization when dashboard loads
-document.addEventListener('DOMContentLoaded', () => {
-  initializeWordBankAndAnalysis();
-});

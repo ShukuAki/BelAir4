@@ -154,27 +154,25 @@ function logAudit(action, target) {
 /* ─────────────────────────────────────────────
    STAFF MANAGEMENT
 ───────────────────────────────────────────── */
-function sendInvite() {
+async function sendInvite() {
   const name  = document.getElementById('invite-name').value.trim();
   const email = document.getElementById('invite-email').value.trim();
   if (!name)  { showToast('Please enter a full name','error'); return; }
   if (!email) { showToast('Please enter an email','error'); return; }
-  closeModal('inviteStaff');
-  const tbody = document.getElementById('pending-invites-tbody');
-  const today  = new Date();
-  const expiry = new Date(today.getTime()+7*24*60*60*1000);
-  const fmt = d => d.toLocaleDateString('en-PH',{month:'short',day:'numeric'});
-  const tr = document.createElement('tr');
-  tr.innerHTML = '<td><strong>'+email+'</strong></td><td><span class="tag tag-blue">Staff</span></td><td>Admin</td><td>'+fmt(today)+'</td><td>'+fmt(expiry)+'</td><td>'+
-    '<button class="btn btn-outline btn-sm" onclick="resendInvite(this)"><i class="fas fa-redo"></i> Resend</button> '+
-    '<button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="cancelInvite(this)"><i class="fas fa-times"></i> Cancel</button></td>';
-  tr.style.animation='fadeUp .3s ease both';
-  tbody.appendChild(tr);
-  document.getElementById('invite-name').value='';
-  document.getElementById('invite-email').value='';
-  document.getElementById('invite-msg').value='';
-  logAudit('Sent staff invitation', email);
-  showToast('Invitation sent to '+email);
+  try {
+    const res  = await fetch('/api/admin/staff', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email, tempPassword: 'Welcome@123' })
+    });
+    const data = await res.json();
+    if (!data.success) { showToast(data.error || 'Failed to create account','error'); return; }
+    closeModal('inviteStaff');
+    ['invite-name','invite-email','invite-msg'].forEach(id => document.getElementById(id).value='');
+    logAudit('Created staff account', email);
+    showToast('Staff account created for '+email);
+    await loadStaffAccounts();
+  } catch { showToast('Failed to create staff account','error'); }
 }
 
 function resendInvite(btn) {
@@ -194,41 +192,52 @@ function cancelInvite(btn) {
 }
 
 function openEditStaff(btn) {
-  const row = btn.closest('tr');
+  const row   = btn.closest('tr');
   const cells = row.querySelectorAll('td');
   document.getElementById('edit-staff-name').value  = cells[0].querySelector('strong').textContent;
-  document.getElementById('edit-staff-email').value = cells[1].textContent;
-  const statusText = cells[4].querySelector('.status-pill').textContent.trim();
+  document.getElementById('edit-staff-email').value = cells[1].textContent.trim();
+  const pill = cells[4] && cells[4].querySelector('.status-pill');
+  const statusText = pill ? pill.textContent.trim() : 'Active';
   document.getElementById('edit-staff-status').value = statusText.includes('Suspend') ? 'Suspended' : 'Active';
-  const rows = Array.from(document.getElementById('staff-tbody').querySelectorAll('tr'));
-  document.getElementById('edit-staff-row-ref').value = rows.indexOf(row);
+  document.getElementById('edit-staff-row-ref').value = row.getAttribute('data-staff-id') || '';
   openModal('editStaff');
 }
 
-function saveStaffEdit() {
+async function saveStaffEdit() {
   const name   = document.getElementById('edit-staff-name').value.trim();
   const email  = document.getElementById('edit-staff-email').value.trim();
   const status = document.getElementById('edit-staff-status').value;
   if (!name||!email) { showToast('Name and email required','error'); return; }
-  const idx  = parseInt(document.getElementById('edit-staff-row-ref').value);
-  const rows = Array.from(document.getElementById('staff-tbody').querySelectorAll('tr'));
-  const row  = rows[idx];
-  if (row) {
-    row.cells[0].innerHTML = '<strong>'+name+'</strong>';
-    row.cells[1].textContent = email;
-    const pill = row.cells[4].querySelector('.status-pill');
-    pill.className = 'status-pill '+(status==='Suspended'?'sp-open':'sp-resolved');
-    pill.textContent = status;
+  const id = document.getElementById('edit-staff-row-ref').value;
+  if (id && !isNaN(parseInt(id))) {
+    try {
+      const res  = await fetch('/api/admin/staff/'+id, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, status })
+      });
+      const data = await res.json();
+      if (!data.success) { showToast(data.error || 'Update failed','error'); return; }
+      await loadStaffAccounts();
+    } catch { showToast('Failed to update account','error'); return; }
   }
   closeModal('editStaff');
-  logAudit('Updated staff account', name);
-  showToast(name+"'s account updated");
+  logAudit('Updated staff account', email);
+  showToast(email+"'s account updated");
 }
 
-function removeStaff(btn) {
+async function removeStaff(btn) {
   const row  = btn.closest('tr');
   const name = row.querySelector('td strong').textContent;
+  const id   = row.getAttribute('data-staff-id');
   if (!confirm('Permanently remove "'+name+'"? This cannot be undone. Access revoked immediately.')) return;
+  if (id && !isNaN(parseInt(id))) {
+    try {
+      const res  = await fetch('/api/admin/staff/'+id, { method: 'DELETE' });
+      const data = await res.json();
+      if (!data.success) { showToast(data.error || 'Delete failed','error'); return; }
+    } catch { showToast('Failed to delete account','error'); return; }
+  }
   row.style.opacity='0'; row.style.transition='opacity .3s';
   setTimeout(() => { row.remove(); updateStaffCount(); }, 300);
   logAudit('Removed staff account', name);
@@ -310,15 +319,30 @@ function saveResidentEdit() {
   showToast(name+"'s record updated");
 }
 
-function banResident(btn) {
-  const row  = btn.closest('tr');
-  const name = row.querySelector('td strong').textContent;
+async function banResident(btn) {
+  const row    = btn.closest('tr');
+  const name   = row.querySelector('td strong').textContent;
+  const id     = row.getAttribute('data-res-id');
+  const email  = row.cells[4] ? row.cells[4].textContent.trim() : '—';
   const reason = prompt('Enter reason for banning "'+name+'":','Violation of community rules');
   if (!reason) return;
+  if (id && !isNaN(parseInt(id))) {
+    try {
+      const res  = await fetch('/api/admin/residents/'+id+'/ban', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason })
+      });
+      const data = await res.json();
+      if (!data.success) { showToast(data.error || 'Ban failed','error'); return; }
+    } catch { showToast('Failed to ban resident','error'); return; }
+  }
+  const today = new Date().toLocaleDateString('en-PH',{month:'short',day:'numeric'});
   row.setAttribute('data-status','Banned');
   row.cells[6].innerHTML = '<span class="status-pill sp-open">Banned</span>';
   row.cells[7].innerHTML =
-    '<button class="btn btn-outline btn-sm" onclick="viewBannedDetails(this,\''+name+'\',\''+reason+'\',\''+new Date().toLocaleDateString('en-PH',{month:'short',day:'numeric'})+'\',\'Permanent\',\'—\')"><i class="fas fa-eye"></i> Details</button> '+
+    '<button class="btn btn-outline btn-sm" onclick="editResident(this)" title="Edit"><i class="fas fa-edit"></i></button> '+
+    '<button class="btn btn-outline btn-sm" onclick="viewBannedDetails(this,\''+escQ(name)+'\',\''+escQ(reason)+'\',\''+today+'\',\'Permanent\',\''+escQ(email)+'\')"><i class="fas fa-eye"></i> Details</button> '+
     '<button class="btn btn-outline btn-sm" onclick="unbanResident(this)"><i class="fas fa-undo"></i> Unban</button> '+
     '<button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="removeResident(this)" title="Remove"><i class="fas fa-trash"></i></button>';
   addToBannedTable(name, reason);
@@ -327,10 +351,18 @@ function banResident(btn) {
   showToast(name+' has been banned','error');
 }
 
-function unbanResident(btn) {
+async function unbanResident(btn) {
   const row  = btn.closest('tr');
   const name = row.querySelector('td strong').textContent;
+  const id   = row.getAttribute('data-res-id');
   if (!confirm('Unban "'+name+'"? They will regain access.')) return;
+  if (id && !isNaN(parseInt(id))) {
+    try {
+      const res  = await fetch('/api/admin/residents/'+id+'/unban', { method: 'POST' });
+      const data = await res.json();
+      if (!data.success) { showToast(data.error || 'Unban failed','error'); return; }
+    } catch { showToast('Failed to unban resident','error'); return; }
+  }
   row.setAttribute('data-status','Verified');
   row.cells[6].innerHTML = '<span class="status-pill sp-approved">Verified</span>';
   row.cells[7].innerHTML =
@@ -338,17 +370,24 @@ function unbanResident(btn) {
     '<button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="banResident(this)" title="Ban"><i class="fas fa-ban"></i></button> '+
     '<button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="removeResident(this)" title="Remove"><i class="fas fa-trash"></i></button>';
   updateResidentStats();
-  // Remove from banned table if present
   removeBannedTableRow(name);
   logAudit('Unbanned resident',name);
   showToast(name+' has been unbanned');
 }
 
-function removeResident(btn) {
-  const row  = btn.closest('tr');
-  const name = row.querySelector('td strong').textContent;
-  if (!confirm('Permanently remove "'+name+'" from the directory?')) return;
+async function removeResident(btn) {
+  const row    = btn.closest('tr');
+  const name   = row.querySelector('td strong').textContent;
+  const id     = row.getAttribute('data-res-id');
   const status = row.getAttribute('data-status');
+  if (!confirm('Permanently remove "'+name+'" from the directory?')) return;
+  if (id && !isNaN(parseInt(id))) {
+    try {
+      const res  = await fetch('/api/admin/residents/'+id, { method: 'DELETE' });
+      const data = await res.json();
+      if (!data.success) { showToast(data.error || 'Delete failed','error'); return; }
+    } catch { showToast('Failed to remove resident','error'); return; }
+  }
   row.style.opacity='0'; row.style.transition='opacity .3s';
   setTimeout(() => {
     row.remove();
@@ -384,12 +423,13 @@ function updateResidentStats() {
 
 function exportResidents() {
   showToast('Exporting resident directory…','info');
+  const fn = 'residents_'+getDateSlug()+'.csv';
+  window.location.href = '/api/admin/export/residents';
   setTimeout(() => {
-    const fn='residents_export_'+getDateSlug()+'.csv';
-    addExportEntry(fn,'52 KB');
+    addExportEntry(fn,'~52 KB');
     logAudit('Exported resident directory',fn);
-    showToast('Download ready: '+fn);
-  }, 1200);
+    showToast('Download started: '+fn);
+  }, 800);
 }
 
 /* ─────────────────────────────────────────────
@@ -470,28 +510,27 @@ function updateBannedCountLabel() {
 /* ─────────────────────────────────────────────
    WORD BANK
 ───────────────────────────────────────────── */
-function addKeyword() {
+async function addKeyword() {
   const word        = document.getElementById('kw-word').value.trim();
   const translation = document.getElementById('kw-translation').value.trim();
   const severity    = document.getElementById('kw-severity').value;
-  const weight      = document.getElementById('kw-weight').value;
   if (!word) { showToast('Please enter a keyword','error'); return; }
-  const today = new Date().toLocaleDateString('en-PH',{month:'short',day:'numeric'});
-  const sc    = {Critical:'p-critical',High:'p-high',Medium:'p-medium',Low:'p-low'};
-  const tbody = document.getElementById('wordbank-tbody');
-  const tr    = document.createElement('tr');
-  tr.setAttribute('data-severity',severity);
-  tr.innerHTML = '<td><strong>'+word+'</strong></td><td>'+(translation||'—')+'</td><td><span class="priority '+sc[severity]+'">'+severity+'</span></td><td>'+weight+'</td><td>0</td><td>'+today+'</td><td>'+
-    '<button class="btn btn-outline btn-sm" onclick="editKeyword(this)"><i class="fas fa-edit"></i></button> '+
-    '<button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="deleteKeyword(this)"><i class="fas fa-trash"></i></button></td>';
-  tr.style.animation='fadeUp .3s ease both';
-  tbody.appendChild(tr);
-  closeModal('addKeyword');
-  document.getElementById('kw-word').value='';
-  document.getElementById('kw-translation').value='';
-  document.getElementById('kw-weight').value='5';
-  logAudit('Added keyword','"'+word+'" — '+severity);
-  showToast('Keyword "'+word+'" added ('+severity+')');
+  try {
+    const res  = await fetch('/api/keywords', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ keyword: word, description: translation, severity: severity.toLowerCase(), isActive: true, category: 'Manual', language: 'bilingual' })
+    });
+    const data = await res.json();
+    if (!data.success) { showToast(data.error || 'Failed to add keyword','error'); return; }
+    closeModal('addKeyword');
+    document.getElementById('kw-word').value='';
+    document.getElementById('kw-translation').value='';
+    document.getElementById('kw-weight').value='5';
+    logAudit('Added keyword','"'+word+'" — '+severity);
+    showToast('Keyword "'+word+'" added ('+severity+')');
+    await loadWordBankFromApi();
+  } catch { showToast('Failed to add keyword','error'); }
 }
 
 function editKeyword(btn) {
@@ -501,39 +540,50 @@ function editKeyword(btn) {
   document.getElementById('edit-kw-translation').value = cells[1].textContent==='—'?'':cells[1].textContent;
   document.getElementById('edit-kw-severity').value    = row.getAttribute('data-severity')||'Medium';
   document.getElementById('edit-kw-weight').value      = cells[3].textContent;
-  const rows = Array.from(document.getElementById('wordbank-tbody').querySelectorAll('tr'));
-  document.getElementById('edit-kw-row-ref').value = rows.indexOf(row);
+  document.getElementById('edit-kw-row-ref').value     = row.getAttribute('data-kw-id') || '';
   openModal('editKeyword');
 }
 
-function saveKeywordEdit() {
+async function saveKeywordEdit() {
   const word        = document.getElementById('edit-kw-word').value.trim();
   const translation = document.getElementById('edit-kw-translation').value.trim();
   const severity    = document.getElementById('edit-kw-severity').value;
-  const weight      = document.getElementById('edit-kw-weight').value;
   if (!word) { showToast('Keyword cannot be empty','error'); return; }
-  const idx  = parseInt(document.getElementById('edit-kw-row-ref').value);
-  const rows = Array.from(document.getElementById('wordbank-tbody').querySelectorAll('tr'));
-  const row  = rows[idx];
-  if (row) {
-    const today = new Date().toLocaleDateString('en-PH',{month:'short',day:'numeric'});
-    const sc    = {Critical:'p-critical',High:'p-high',Medium:'p-medium',Low:'p-low'};
-    row.setAttribute('data-severity',severity);
-    row.cells[0].innerHTML    = '<strong>'+word+'</strong>';
-    row.cells[1].textContent  = translation||'—';
-    row.cells[2].innerHTML    = '<span class="priority '+sc[severity]+'">'+severity+'</span>';
-    row.cells[3].textContent  = weight;
-    row.cells[5].textContent  = today;
+  const id = document.getElementById('edit-kw-row-ref').value;
+  if (id && !isNaN(parseInt(id))) {
+    try {
+      const numId = parseInt(id);
+      const res   = await fetch('/api/keywords/'+numId, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: numId, keyword: word, description: translation, severity: severity.toLowerCase(), isActive: true, category: 'Manual', language: 'bilingual' })
+      });
+      const data = await res.json();
+      if (!data.success) { showToast(data.error || 'Update failed','error'); return; }
+      closeModal('editKeyword');
+      logAudit('Edited keyword','"'+word+'" → '+severity);
+      showToast('Keyword "'+word+'" updated');
+      await loadWordBankFromApi();
+      return;
+    } catch { showToast('Failed to update keyword','error'); return; }
   }
   closeModal('editKeyword');
   logAudit('Edited keyword','"'+word+'" → '+severity);
   showToast('Keyword "'+word+'" updated');
 }
 
-function deleteKeyword(btn) {
+async function deleteKeyword(btn) {
   const row  = btn.closest('tr');
   const word = row.querySelector('td strong').textContent;
+  const id   = row.getAttribute('data-kw-id');
   if (!confirm('Delete keyword "'+word+'"? This affects real-time incident detection.')) return;
+  if (id && !isNaN(parseInt(id))) {
+    try {
+      const res  = await fetch('/api/keywords/'+id, { method: 'DELETE' });
+      const data = await res.json();
+      if (!data.success) { showToast(data.error || 'Delete failed','error'); return; }
+    } catch { showToast('Failed to delete keyword','error'); return; }
+  }
   row.style.opacity='0'; row.style.transition='opacity .3s';
   setTimeout(() => row.remove(), 300);
   logAudit('Deleted keyword','"'+word+'"');
@@ -600,28 +650,32 @@ function addExportEntry(filename, size) {
 function initExportButtons() {
   document.querySelectorAll('.export-btn').forEach(btn => {
     btn.addEventListener('click', function() {
-      const dataset = this.dataset.dataset;
-      const format  = this.dataset.format;
-      const ext     = format==='XLSX'?'xlsx':format==='PDF'?'pdf':format==='ALL'?'zip':'csv';
-      const filename = dataset.toLowerCase().replace(/\s/g,'_')+'_'+getDateSlug()+'.'+ext;
-      const sizes    = { CSV:'42 KB', XLSX:'68 KB', PDF:'215 KB', ALL:'380 KB' };
-      const size     = sizes[format] || '50 KB';
-
-      // Immediate visual feedback — show preparing state
+      const dataset  = this.dataset.dataset;
+      const format   = this.dataset.format;
       const origHtml = this.innerHTML;
       this.classList.add('loading');
       this.innerHTML = '<i class="fas fa-spinner"></i> Preparing…';
-      showToast('Preparing "'+dataset+'" as '+format+'…','info');
-
+      showToast('Preparing "'+dataset+'" export…','info');
+      const slug = dataset.toLowerCase().replace(/\s+/g,'_').replace(/-/g,'_');
       const self = this;
       setTimeout(() => {
         self.classList.remove('loading');
         self.innerHTML = origHtml;
-        // Add to recent exports immediately (no page refresh needed)
-        addExportEntry(filename, size);
-        logAudit('Exported '+dataset, filename+' ('+format+')');
-        showToast('✓ Ready: '+filename);
-      }, 1400);
+        if (format === 'CSV' || format === 'ALL') {
+          const filename = slug+'_'+getDateSlug()+'.csv';
+          window.location.href = '/api/admin/export/'+slug;
+          addExportEntry(filename, '~50 KB');
+          logAudit('Exported '+dataset, filename);
+          showToast('✓ Download started: '+filename);
+        } else {
+          const ext      = format==='XLSX'?'xlsx':format==='PDF'?'pdf':'csv';
+          const sizes    = { XLSX:'~68 KB', PDF:'~215 KB' };
+          const filename = slug+'_'+getDateSlug()+'.'+ext;
+          addExportEntry(filename, sizes[format]||'~50 KB');
+          logAudit('Exported '+dataset, filename+' ('+format+')');
+          showToast('✓ Ready: '+filename);
+        }
+      }, 800);
     });
   });
 }
@@ -682,12 +736,13 @@ function initAuditExport() {
   const btn = document.getElementById('exportLogBtn'); if (!btn) return;
   btn.addEventListener('click', () => {
     showToast('Exporting audit log…','info');
+    const fn = 'audit_log_'+getDateSlug()+'.csv';
+    window.location.href = '/api/admin/export/audit';
     setTimeout(() => {
-      const fn='audit_log_'+getDateSlug()+'.csv';
-      addExportEntry(fn,'88 KB');
+      addExportEntry(fn,'~88 KB');
       logAudit('Exported audit log',fn);
-      showToast('Download ready: '+fn);
-    }, 1200);
+      showToast('Download started: '+fn);
+    }, 800);
   });
 }
 
@@ -777,6 +832,10 @@ document.addEventListener('DOMContentLoaded', function() {
   initSaveSettings();
   initRolesPage();
   loadRecentActivities();
+  loadAdminStats();
+  loadStaffAccounts();
+  loadAllResidents();
+  loadWordBankFromApi();
   document.querySelectorAll('.stat-card').forEach((c,i)=>c.style.animationDelay=(i*0.07)+'s');
   showPage('overview', document.querySelector('.nav-link.active'));
   console.log('%c LBA4 Admin Panel ready','background:#0d1f3c;color:#f0b429;font-weight:bold;padding:3px 8px;border-radius:3px');
@@ -1037,4 +1096,132 @@ function formatRelativeTime(dateStr) {
   if (diffHours < 24) return `${diffHours}h ago`;
   if (diffDays < 7) return `${diffDays}d ago`;
   return d.toLocaleDateString();
+}
+
+/* ─────────────────────────────────────────────
+   HELPERS
+───────────────────────────────────────────── */
+function escHtml(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+function escQ(s) { return String(s||'').replace(/'/g,"\\'"); }
+
+/* ─────────────────────────────────────────────
+   DYNAMIC DATA LOADERS
+───────────────────────────────────────────── */
+async function loadAdminStats() {
+  try {
+    const res  = await fetch('/api/admin/stats', { credentials: 'same-origin' });
+    if (!res.ok) return;
+    const d = await res.json();
+    if (!d.success) return;
+    const pairs = [
+      ['stat-staff-count',    d.totalStaff],
+      ['stat-total-residents',d.totalResidents],
+      ['stat-verified',       d.totalResidents - d.bannedUsers],
+      ['stat-pending',        d.pendingRegistrations],
+      ['stat-banned-count',   d.bannedUsers],
+      ['overview-alert-count',d.openIncidents],
+    ];
+    pairs.forEach(([id,val]) => { const el=document.getElementById(id); if(el) el.textContent=val??'—'; });
+  } catch {}
+}
+
+async function loadStaffAccounts() {
+  const tbody = document.getElementById('staff-tbody'); if (!tbody) return;
+  try {
+    const res  = await fetch('/api/admin/staff', { credentials: 'same-origin' });
+    const data = await res.json();
+    if (!data.success) return;
+    const rows = data.data;
+    if (!rows.length) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--gray-400)">No staff accounts found.</td></tr>';
+      updateStaffCount(); return;
+    }
+    tbody.innerHTML = rows.map(s => {
+      const isAdmin   = s.role === 'Admin';
+      const tagClass  = isAdmin ? 'tag-navy' : 'tag-blue';
+      const spClass   = s.status === 'Active' ? 'sp-active' : 'sp-open';
+      const actions   = isAdmin
+        ? '<span style="color:var(--gray-400);font-size:12px;font-style:italic">Protected</span>'
+        : '<button class="btn btn-outline btn-sm" onclick="openEditStaff(this)"><i class="fas fa-edit"></i></button> '+
+          '<button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="removeStaff(this)"><i class="fas fa-trash"></i></button>';
+      return `<tr data-staff-id="${s.id}">`+
+        `<td><strong>${escHtml(s.name)}</strong></td>`+
+        `<td>${escHtml(s.email)}</td>`+
+        `<td><span class="tag ${tagClass}">${escHtml(s.role)}</span></td>`+
+        `<td>—</td>`+
+        `<td><span class="status-pill ${spClass}">${escHtml(s.status)}</span></td>`+
+        `<td>${actions}</td></tr>`;
+    }).join('');
+    updateStaffCount();
+  } catch { /* keep existing rows on error */ }
+}
+
+async function loadAllResidents() {
+  const tbody = document.getElementById('residents-tbody'); if (!tbody) return;
+  try {
+    const res  = await fetch('/api/admin/residents', { credentials: 'same-origin' });
+    const data = await res.json();
+    if (!data.success) return;
+    const rows = data.data;
+    if (!rows.length) {
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:20px;color:var(--gray-400)">No resident accounts found.</td></tr>';
+      updateResidentStats(); return;
+    }
+    const spMap = { Verified:'sp-approved', Pending:'sp-pending', Banned:'sp-open' };
+    tbody.innerHTML = rows.map(r => {
+      const sp  = spMap[r.status] || 'sp-pending';
+      const banBtn = r.status !== 'Banned'
+        ? `<button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="banResident(this)" title="Ban"><i class="fas fa-ban"></i></button> `
+        : `<button class="btn btn-outline btn-sm" onclick="unbanResident(this)"><i class="fas fa-undo"></i> Unban</button> `;
+      return `<tr data-status="${r.status}" data-res-id="${r.id}">`+
+        `<td><strong>${escHtml(r.name)}</strong></td>`+
+        `<td>—</td><td>—</td>`+
+        `<td>${escHtml(r.contact)}</td>`+
+        `<td>${escHtml(r.email)}</td>`+
+        `<td>—</td>`+
+        `<td><span class="status-pill ${sp}">${r.status}</span></td>`+
+        `<td>`+
+          `<button class="btn btn-outline btn-sm" onclick="editResident(this)" title="Edit"><i class="fas fa-edit"></i></button> `+
+          banBtn+
+          `<button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="removeResident(this)" title="Remove"><i class="fas fa-trash"></i></button>`+
+        `</td></tr>`;
+    }).join('');
+    updateResidentStats();
+  } catch { /* keep existing rows on error */ }
+}
+
+async function loadWordBankFromApi() {
+  const tbody = document.getElementById('wordbank-tbody'); if (!tbody) return;
+  try {
+    const res  = await fetch('/api/keywords', { credentials: 'same-origin' });
+    const data = await res.json();
+    if (!data.success) return;
+    const kws = data.data;
+    if (!kws.length) {
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--gray-400)">No keywords. Add one above.</td></tr>';
+      return;
+    }
+    const sc = { high:'p-critical', medium:'p-medium', low:'p-low', critical:'p-critical' };
+    tbody.innerHTML = kws.map(kw => {
+      const sev   = (kw.severity||'medium').toLowerCase();
+      const label = sev.charAt(0).toUpperCase()+sev.slice(1);
+      const cls   = sc[sev] || 'p-medium';
+      const date  = kw.updatedAt && kw.updatedAt !== '0001-01-01T00:00:00'
+        ? new Date(kw.updatedAt).toLocaleDateString('en-PH',{month:'short',day:'numeric'})
+        : kw.createdAt && kw.createdAt !== '0001-01-01T00:00:00'
+          ? new Date(kw.createdAt).toLocaleDateString('en-PH',{month:'short',day:'numeric'})
+          : '—';
+      return `<tr data-severity="${label}" data-kw-id="${kw.id}">`+
+        `<td><strong>${escHtml(kw.keyword||'')}</strong></td>`+
+        `<td>${escHtml(kw.description||'—')}</td>`+
+        `<td><span class="priority ${cls}">${label}</span></td>`+
+        `<td>—</td><td>0</td>`+
+        `<td>${date}</td>`+
+        `<td><button class="btn btn-outline btn-sm" onclick="editKeyword(this)"><i class="fas fa-edit"></i></button> `+
+        `<button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="deleteKeyword(this)"><i class="fas fa-trash"></i></button></td>`+
+        `</tr>`;
+    }).join('');
+  } catch { /* keep existing rows on error */ }
 }
