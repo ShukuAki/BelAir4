@@ -47,14 +47,17 @@
     <div class="nav-link" onclick="showPage('backups',this)"><i class="fas fa-database"></i> Backups</div>
 
     <div class="nav-group-label">Navigate</div>
-    <div class="nav-link staff-switch-link" onclick="window.location.href='staff-dashboard.html'">
+    <a asp-controller="Home" asp-action="staffDashboard" class="nav-link staff-switch-link" style="text-decoration:none;color:inherit">
       <i class="fas fa-arrow-left"></i> Staff Dashboard
       <span class="nav-badge" style="background:var(--accent);color:var(--navy-dark);animation:none">↗</span>
-    </div>
+    </a>
   </nav>
-  <div class="sb-footer" onclick="window.location.href='index.html'">
-    <i class="fas fa-sign-out-alt"></i> Sign Out
-  </div>
+  <form id="adminLogoutForm" method="post" asp-controller="Home" asp-action="Logout" style="margin:0">
+    @Html.AntiForgeryToken()
+    <button type="submit" class="sb-footer" style="background:none;border:none;width:100%;text-align:left;cursor:pointer;padding:0;font:inherit;color:inherit">
+      <i class="fas fa-sign-out-alt"></i> Sign Out
+    </button>
+  </form>
 </aside>
 
 <!-- TOPBAR -->

@@ -470,7 +470,8 @@ public partial class SqBelAir4Context : DbContext
             entity.HasOne(a => a.AdminUser)
                   .WithMany(u => u.AuditLogs)
                   .HasForeignKey(a => a.AdminUserId)
-                  .HasConstraintName("FK_AuditLogs_AdminUsers_AdminUserId");
+                  .HasConstraintName("FK_AuditLogs_AdminUsers_AdminUserId")
+                  .OnDelete(DeleteBehavior.SetNull);
 
             entity.HasIndex(e => e.Timestamp).HasDatabaseName("IX_AuditLogs_Timestamp");
             entity.HasIndex(e => new { e.Year, e.Month }).HasDatabaseName("IX_AuditLogs_YearMonth");

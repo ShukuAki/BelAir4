@@ -53,6 +53,10 @@ using (var scope = app.Services.CreateScope())
     var repo = scope.ServiceProvider.GetRequiredService<IRepo>();
     // Block on the async seed to keep Program.cs simple
     repo.SeedAsync().GetAwaiter().GetResult();
+
+    // Seed permissions and assign to super admin
+    PermissionSeeder.SeedPermissionsAsync(repo).GetAwaiter().GetResult();
+    PermissionSeeder.AssignDefaultPermissionsToSuperAdminAsync(repo).GetAwaiter().GetResult();
 }
 
 // Configure the HTTP request pipeline.
@@ -69,6 +73,9 @@ app.UseRouting();
 
 // enable session before auth
 app.UseSession();
+
+// Enable admin audit logging middleware
+app.UseMiddleware<AdminAuditMiddleware>();
 
 app.UseAuthorization();
 

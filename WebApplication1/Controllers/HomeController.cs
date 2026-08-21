@@ -422,7 +422,7 @@ namespace WebApplication1.Controllers
         public async Task<IActionResult> GetPosts()
         {
             var posts = await _repo.GetPostsAsync();
-            return Json(posts);
+            return Json(new { data = posts });
         }
 
         [HttpGet("/api/forums/posts/{id}")]
@@ -707,6 +707,261 @@ namespace WebApplication1.Controllers
 
             return Json(new { success = true, data = ordered });
         }
+
+        // ═══════════════════════════════════════════════════════════
+        //  USER DASHBOARD ENDPOINTS (UserType = 1 - Residents)
+        // ═══════════════════════════════════════════════════════════
+
+        [HttpGet]
+        [Filters.UserTypeAuthorize(1)]
+        public IActionResult UserDashboard() => View();
+
+        // GET /api/user/stats - Get dashboard overview statistics
+        [HttpGet("/api/user/stats")]
+        [Filters.UserTypeAuthorize(1)]
+        public async Task<IActionResult> GetUserStats()
+        {
+            try
+            {
+                var username = HttpContext.Session.GetString("Username");
+                if (string.IsNullOrEmpty(username))
+                    return Unauthorized(new { success = false, error = "Not logged in" });
+
+                var user = await _repo.GetByUsernameAsync(username);
+                if (user == null)
+                    return NotFound(new { success = false, error = "User not found" });
+
+                // Get user's data
+                var posts = await _repo.GetPostsAsync();
+                var myPosts = posts.Where(p => p.Author != null && p.Author.Equals(username, StringComparison.OrdinalIgnoreCase)).ToList();
+
+                var reports = await _repo.GetReportsAsync();
+                var myReports = reports.Where(r => r.ReporterName != null && r.ReporterName.Equals(username, StringComparison.OrdinalIgnoreCase)).ToList();
+
+                var reservations = await _repo.GetReservationsAsync();
+                var myReservations = reservations.Where(r => r.ResidentName != null && r.ResidentName.Equals(username, StringComparison.OrdinalIgnoreCase)).ToList();
+
+                var ads = await _repo.GetAdvertisementsAsync();
+                var myAds = ads.Where(a => a.ContactEmail != null && a.ContactEmail.Equals(username, StringComparison.OrdinalIgnoreCase)).ToList();
+
+                var vehicles = await _repo.GetVehiclesAsync();
+                var myVehicles = vehicles.Where(v => v.OwnerName != null && v.OwnerName.Equals(username, StringComparison.OrdinalIgnoreCase)).ToList();
+
+                var pets = await _repo.GetPetsAsync();
+                var myPets = pets.Where(p => p.OwnerName != null && p.OwnerName.Equals(username, StringComparison.OrdinalIgnoreCase)).ToList();
+
+                var registrations = await _repo.GetRegistrationsAsync();
+                var myReg = registrations.FirstOrDefault(r => r.Email != null && r.Email.Equals(username, StringComparison.OrdinalIgnoreCase));
+
+                return Ok(new
+                {
+                    success = true,
+                    totalPosts = myPosts.Count,
+                    totalReports = myReports.Count,
+                    pendingReservations = myReservations.Count(r => r.Status != null && r.Status.Equals("pending", StringComparison.OrdinalIgnoreCase)),
+                    activeAds = myAds.Count(a => a.Status != null && a.Status.Equals("approved", StringComparison.OrdinalIgnoreCase)),
+                    totalVehicles = myVehicles.Count,
+                    totalPets = myPets.Count,
+                    registrationStatus = myReg?.Status ?? "unknown"
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error getting user stats");
+                return StatusCode(500, new { success = false, error = "Failed to retrieve statistics" });
+            }
+        }
+
+        // GET /api/user/posts - Get user's forum posts
+        [HttpGet("/api/user/posts")]
+        [Filters.UserTypeAuthorize(1)]
+        public async Task<IActionResult> GetUserPosts()
+        {
+            try
+            {
+                var username = HttpContext.Session.GetString("Username");
+                if (string.IsNullOrEmpty(username))
+                    return Unauthorized(new { success = false, error = "Not logged in" });
+
+                var posts = await _repo.GetPostsAsync();
+                var myPosts = posts.Where(p => p.Author != null && p.Author.Equals(username, StringComparison.OrdinalIgnoreCase))
+                    .OrderByDescending(p => p.CreatedAt)
+                    .ToList();
+
+                return Ok(new { success = true, data = myPosts });
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error getting user posts");
+                return StatusCode(500, new { success = false, error = "Failed to retrieve posts" });
+            }
+        }
+
+        // GET /api/user/reports - Get user's concern reports
+        [HttpGet("/api/user/reports")]
+        [Filters.UserTypeAuthorize(1)]
+        public async Task<IActionResult> GetUserReports()
+        {
+            try
+            {
+                var username = HttpContext.Session.GetString("Username");
+                if (string.IsNullOrEmpty(username))
+                    return Unauthorized(new { success = false, error = "Not logged in" });
+
+                var reports = await _repo.GetReportsAsync();
+                var myReports = reports.Where(r => r.ReporterName != null && r.ReporterName.Equals(username, StringComparison.OrdinalIgnoreCase))
+                    .OrderByDescending(r => r.Timestamp)
+                    .ToList();
+
+                return Ok(new { success = true, data = myReports });
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error getting user reports");
+                return StatusCode(500, new { success = false, error = "Failed to retrieve reports" });
+            }
+        }
+
+        // GET /api/user/reservations - Get user's reservations
+        [HttpGet("/api/user/reservations")]
+        [Filters.UserTypeAuthorize(1)]
+        public async Task<IActionResult> GetUserReservations()
+        {
+            try
+            {
+                var username = HttpContext.Session.GetString("Username");
+                if (string.IsNullOrEmpty(username))
+                    return Unauthorized(new { success = false, error = "Not logged in" });
+
+                var reservations = await _repo.GetReservationsAsync();
+                var myReservations = reservations.Where(r => r.ResidentName != null && r.ResidentName.Equals(username, StringComparison.OrdinalIgnoreCase))
+                    .OrderByDescending(r => r.Date)
+                    .ToList();
+
+                return Ok(new { success = true, data = myReservations });
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error getting user reservations");
+                return StatusCode(500, new { success = false, error = "Failed to retrieve reservations" });
+            }
+        }
+
+        // GET /api/user/advertisements - Get user's advertisements
+        [HttpGet("/api/user/advertisements")]
+        [Filters.UserTypeAuthorize(1)]
+        public async Task<IActionResult> GetUserAdvertisements()
+        {
+            try
+            {
+                var username = HttpContext.Session.GetString("Username");
+                if (string.IsNullOrEmpty(username))
+                    return Unauthorized(new { success = false, error = "Not logged in" });
+
+                var ads = await _repo.GetAdvertisementsAsync();
+                var myAds = ads.Where(a => a.ContactEmail != null && a.ContactEmail.Equals(username, StringComparison.OrdinalIgnoreCase))
+                    .OrderByDescending(a => a.CreatedAt)
+                    .ToList();
+
+                return Ok(new { success = true, data = myAds });
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error getting user advertisements");
+                return StatusCode(500, new { success = false, error = "Failed to retrieve advertisements" });
+            }
+        }
+
+        // GET /api/user/vehicles - Get user's vehicles
+        [HttpGet("/api/user/vehicles")]
+        [Filters.UserTypeAuthorize(1)]
+        public async Task<IActionResult> GetUserVehicles()
+        {
+            try
+            {
+                var username = HttpContext.Session.GetString("Username");
+                if (string.IsNullOrEmpty(username))
+                    return Unauthorized(new { success = false, error = "Not logged in" });
+
+                var vehicles = await _repo.GetVehiclesAsync();
+                var myVehicles = vehicles.Where(v => v.OwnerName != null && v.OwnerName.Equals(username, StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+
+                return Ok(new { success = true, data = myVehicles });
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error getting user vehicles");
+                return StatusCode(500, new { success = false, error = "Failed to retrieve vehicles" });
+            }
+        }
+
+        // GET /api/user/pets - Get user's pets
+        [HttpGet("/api/user/pets")]
+        [Filters.UserTypeAuthorize(1)]
+        public async Task<IActionResult> GetUserPets()
+        {
+            try
+            {
+                var username = HttpContext.Session.GetString("Username");
+                if (string.IsNullOrEmpty(username))
+                    return Unauthorized(new { success = false, error = "Not logged in" });
+
+                var pets = await _repo.GetPetsAsync();
+                var myPets = pets.Where(p => p.OwnerName != null && p.OwnerName.Equals(username, StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+
+                return Ok(new { success = true, data = myPets });
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error getting user pets");
+                return StatusCode(500, new { success = false, error = "Failed to retrieve pets" });
+            }
+        }
+
+        // GET /api/user/profile - Get user's profile/registration info
+        [HttpGet("/api/user/profile")]
+        [Filters.UserTypeAuthorize(1)]
+        public async Task<IActionResult> GetUserProfile()
+        {
+            try
+            {
+                var username = HttpContext.Session.GetString("Username");
+                if (string.IsNullOrEmpty(username))
+                    return Unauthorized(new { success = false, error = "Not logged in" });
+
+                var user = await _repo.GetByUsernameAsync(username);
+                var registrations = await _repo.GetRegistrationsAsync();
+                var registration = registrations.FirstOrDefault(r => r.Email != null && r.Email.Equals(username, StringComparison.OrdinalIgnoreCase));
+
+                return Ok(new
+                {
+                    success = true,
+                    username = user?.Username,
+                    isBanned = user?.IsBanned ?? false,
+                    banReason = user?.BanReason,
+                    bannedUntil = user?.BannedUntil,
+                    registration = registration != null ? new
+                    {
+                        registration.FullName,
+                        registration.Email,
+                        registration.Mobile,
+                        registration.Address,
+                        registration.ResidentType,
+                        registration.Status,
+                        registration.SubmittedAt,
+                        registration.ReviewedAt,
+                        registration.ReviewedBy
+                    } : null
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error getting user profile");
+                return StatusCode(500, new { success = false, error = "Failed to retrieve profile" });
+            }
+        }
     }
 
     public class ForumBanRequest
@@ -723,5 +978,17 @@ namespace WebApplication1.Controllers
         public string Text { get; set; } = "";
         public string Meta { get; set; } = "";
         public DateTime Time { get; set; }
+    }
+
+    // User Dashboard Request DTOs
+    public class UserDashboardStatsResponse
+    {
+        public int TotalPosts { get; set; }
+        public int TotalReports { get; set; }
+        public int PendingReservations { get; set; }
+        public int ActiveAds { get; set; }
+        public int TotalVehicles { get; set; }
+        public int TotalPets { get; set; }
+        public string RegistrationStatus { get; set; } = "";
     }
 }

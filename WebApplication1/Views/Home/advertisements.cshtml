@@ -63,7 +63,7 @@
                         <div class="dropdown-menu">
                             <a asp-controller="Home" asp-action="announcement">Announcements</a>
                             <a asp-controller="Home" asp-action="forums">Forums/Discussions</a>
-                            <a asp-controller="Home" asp-action="advertisements">Advertisements</a>
+                            <a asp-controller="Home" asp-action="advertisements">Community Exchange</a>
                             <a asp-controller="Home" asp-action="calendars">Calendars</a>
                             <a asp-controller="Home" asp-action="meetingagendas">Meeting Record/Governance</a>
                             <a asp-controller="Home" asp-action="communitymap">Community Map</a>
@@ -104,9 +104,18 @@
 
   <!-- ACTION BAR -->
   <div class="action-bar">
-    <button class="btn-create" id="openCreateModal">
-      <i class="fas fa-plus"></i> Create Post
-    </button>
+    @if (!string.IsNullOrEmpty(username))
+    {
+      <button class="btn-create" id="openCreateModal">
+        <i class="fas fa-plus"></i> Create Post
+      </button>
+    }
+    else
+    {
+      <a asp-controller="Home" asp-action="login" class="btn-create">
+        <i class="fas fa-sign-in-alt"></i> Login to Post
+      </a>
+    }
     <div class="action-bar-right">
       <div class="search-wrap">
         <i class="fas fa-search search-icon"></i>
@@ -146,9 +155,18 @@
     <div class="empty-icon"><i class="fas fa-clipboard-list"></i></div>
     <h3>No posts found</h3>
     <p>Try adjusting your search or filter — or be the first to post something!</p>
-    <button class="btn-create" id="openCreateFromEmpty">
-      <i class="fas fa-plus"></i> Create Post
-    </button>
+    @if (!string.IsNullOrEmpty(username))
+    {
+      <button class="btn-create" id="openCreateFromEmpty">
+        <i class="fas fa-plus"></i> Create Post
+      </button>
+    }
+    else
+    {
+      <a asp-controller="Home" asp-action="login" class="btn-create">
+        <i class="fas fa-sign-in-alt"></i> Login to Post
+      </a>
+    }
   </div>
 
 </main>

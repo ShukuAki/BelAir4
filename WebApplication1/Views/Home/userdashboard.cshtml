@@ -1,0 +1,417 @@
+@{
+    ViewData["Title"] = "My Dashboard";
+    var username = Context.Session.GetString("Username");
+    var userType = Context.Session.GetInt32("UserType") ?? 0;
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>@ViewData["Title"] - Laguna BelAir 4</title>
+    <!-- Fonts: Playfair Display + Outfit -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Styles -->
+    <link rel="stylesheet" href="~/css/user-dashboard.css">
+</head>
+<body>
+    <!-- ═══════════════════════════════════════
+          HEADER / NAV
+        ═══════════════════════════════════════ -->
+    <div class="top-header-container">
+        <!-- Logo Section -->
+        <div class="logo-section">
+            <a asp-controller="Home" asp-action="Index" class="logo-link">
+                <img src="@(Url.Content("~/assets/LBAlogo.png"))" alt="Bel-Air Village Logo" class="logo-image">
+            </a>
+        </div>
+        <!-- Navbar Wrapper -->
+        <div class="header-center-wrapper">
+            <div class="navbar-two-rows">
+                <!-- Top Row: Utility Links -->
+                <div class="navbar-top-row">
+                    @if (!string.IsNullOrEmpty(username))
+                    {
+                        <span class="nav-user">Hello, @username</span>
+                        <form id="logoutForm" method="post" asp-controller="Home" asp-action="Logout" style="display:inline">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="nav-link btn-logout">Logout</button>
+                        </form>
+                    }
+                    else
+                    {
+                        <a asp-controller="Home" asp-action="login"><i class="fas fa-sign-in-alt"></i> Login</a>
+                        <span class="nav-separator">|</span>
+                        <a asp-controller="Home" asp-action="register"><i class="fas fa-user-plus"></i> Register</a>
+                    }
+                </div>
+                <!-- Bottom Row: Main Navigation -->
+                <div class="navbar-bottom-row">
+                    <a asp-controller="Home" asp-action="Index" class="nav-link">Home</a>
+                    <div class="dropdown">
+                        <a href="#" class="dropdown-toggle">About <i class="fas fa-chevron-down"></i></a>
+                        <div class="dropdown-menu">
+                            <a asp-controller="Home" asp-action="aboutlagunabelair">Laguna BelAir 4</a>
+                            <a asp-controller="Home" asp-action="committeesbods">Committees/BODs</a>
+                            <a asp-controller="Home" asp-action="landmarks">Landmarks</a>
+                            <a asp-controller="Home" asp-action="contacts">Contacts</a>
+                        </div>
+                    </div>
+                    <div class="dropdown">
+                        <a href="#" class="dropdown-toggle">Community <i class="fas fa-chevron-down"></i></a>
+                        <div class="dropdown-menu">
+                            <a asp-controller="Home" asp-action="announcement">Announcements</a>
+                            <a asp-controller="Home" asp-action="forums">Forums/Discussions</a>
+                            <a asp-controller="Home" asp-action="advertisements">Community Exchange</a>
+                            <a asp-controller="Home" asp-action="calendars">Calendars</a>
+                            <a asp-controller="Home" asp-action="meetingagendas">Meeting Record/Governance</a>
+                            <a asp-controller="Home" asp-action="communitymap">Community Map</a>
+                        </div>
+                    </div>
+                    <div class="dropdown">
+                        <a href="#" class="dropdown-toggle">Services <i class="fas fa-chevron-down"></i></a>
+                        <div class="dropdown-menu">
+                             @if (!string.IsNullOrEmpty(username) && userType == 1)
+                            {
+                                <a asp-controller="Home" asp-action="UserDashboard"><i class="fas fa-tachometer-alt"></i> My Dashboard</a>
+                            }
+                             <a asp-controller="Home" asp-action="reserve">Reserve Amenities</a>
+                            <a asp-controller="Home" asp-action="reportConcerns">Report Concerns/Incidents</a>
+                        </div>
+                    </div>
+                    <div class="dropdown">
+                        <a href="#" class="dropdown-toggle">Others <i class="fas fa-chevron-down"></i></a>
+                        <div class="dropdown-menu">
+                            <a asp-controller="Home" asp-action="formsDocuments">Downloadable Forms and Documents</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="user-dashboard-container">
+        <!-- Sidebar -->
+        <nav class="user-sidebar" id="userSidebar">
+            <div class="user-sidebar-header">
+                <h2><i class="fas fa-user-circle"></i> My Dashboard</h2>
+            </div>
+            <div class="user-nav-item active" data-page="overview">
+                <i class="fas fa-chart-line"></i>
+                <span>Overview</span>
+            </div>
+            <div class="user-nav-item" data-page="posts">
+                <i class="fas fa-comments"></i>
+                <span>My Posts</span>
+            </div>
+            <div class="user-nav-item" data-page="reports">
+                <i class="fas fa-exclamation-triangle"></i>
+                <span>My Reports</span>
+            </div>
+            <div class="user-nav-item" data-page="reservations">
+                <i class="fas fa-calendar-check"></i>
+                <span>Reservations</span>
+            </div>
+            <div class="user-nav-item" data-page="advertisements">
+                <i class="fas fa-bullhorn"></i>
+                <span>My Ads</span>
+            </div>
+            <div class="user-nav-item" data-page="vehicles">
+                <i class="fas fa-car"></i>
+                <span>My Vehicles</span>
+            </div>
+            <div class="user-nav-item" data-page="pets">
+                <i class="fas fa-paw"></i>
+                <span>My Pets</span>
+            </div>
+            <div class="user-nav-item" data-page="profile">
+                <i class="fas fa-id-card"></i>
+                <span>Profile</span>
+            </div>
+        </nav>
+
+        <!-- Toggle Button -->
+        <button class="user-toggle-btn" id="toggleSidebar">
+            <i class="fas fa-bars"></i>
+        </button>
+
+        <!-- Main Content -->
+        <main class="user-main-content" id="mainContent">
+            <!-- Overview Page -->
+            <div class="user-page active" id="page-overview">
+                <div class="user-page-header">
+                    <h1>Welcome back, @username!</h1>
+                    <p>Here's an overview of your activity and submissions</p>
+                </div>
+
+                <!-- Stats Grid -->
+                <div class="user-stats-grid" id="statsGrid">
+                    <div class="user-stat-card">
+                        <div class="user-stat-card-header">
+                            <span class="user-stat-card-title">Forum Posts</span>
+                            <div class="user-stat-card-icon blue">
+                                <i class="fas fa-comments"></i>
+                            </div>
+                        </div>
+                        <div class="user-stat-card-value" id="stat-posts">-</div>
+                    </div>
+                    <div class="user-stat-card">
+                        <div class="user-stat-card-header">
+                            <span class="user-stat-card-title">Reports Filed</span>
+                            <div class="user-stat-card-icon orange">
+                                <i class="fas fa-exclamation-triangle"></i>
+                            </div>
+                        </div>
+                        <div class="user-stat-card-value" id="stat-reports">-</div>
+                    </div>
+                    <div class="user-stat-card">
+                        <div class="user-stat-card-header">
+                            <span class="user-stat-card-title">Reservations</span>
+                            <div class="user-stat-card-icon green">
+                                <i class="fas fa-calendar-check"></i>
+                            </div>
+                        </div>
+                        <div class="user-stat-card-value" id="stat-reservations">-</div>
+                    </div>
+                    <div class="user-stat-card">
+                        <div class="user-stat-card-header">
+                            <span class="user-stat-card-title">Active Ads</span>
+                            <div class="user-stat-card-icon red">
+                                <i class="fas fa-bullhorn"></i>
+                            </div>
+                        </div>
+                        <div class="user-stat-card-value" id="stat-ads">-</div>
+                    </div>
+                    <div class="user-stat-card">
+                        <div class="user-stat-card-header">
+                            <span class="user-stat-card-title">Vehicles</span>
+                            <div class="user-stat-card-icon blue">
+                                <i class="fas fa-car"></i>
+                            </div>
+                        </div>
+                        <div class="user-stat-card-value" id="stat-vehicles">-</div>
+                    </div>
+                    <div class="user-stat-card">
+                        <div class="user-stat-card-header">
+                            <span class="user-stat-card-title">Pets</span>
+                            <div class="user-stat-card-icon green">
+                                <i class="fas fa-paw"></i>
+                            </div>
+                        </div>
+                        <div class="user-stat-card-value" id="stat-pets">-</div>
+                    </div>
+                </div>
+
+                <!-- Recent Activity -->
+                <div class="user-content-card">
+                    <div class="user-content-card-header">
+                        <h3 class="user-content-card-title">Quick Summary</h3>
+                    </div>
+                    <div id="summaryContent">
+                        <p style="color: var(--user-text-light); text-align: center; padding: 2rem;">
+                            Loading your dashboard data...
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Posts Page -->
+            <div class="user-page" id="page-posts">
+                <div class="user-page-header">
+                    <h1>My Forum Posts</h1>
+                    <p>View and manage your discussion posts</p>
+                </div>
+                <div class="user-content-card">
+                    <div class="user-content-card-header">
+                        <h3 class="user-content-card-title">All Posts</h3>
+                    </div>
+                    <div id="postsContent">
+                        <div class="user-loading">
+                            <i class="fas fa-spinner"></i>
+                            <p>Loading posts...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reports Page -->
+            <div class="user-page" id="page-reports">
+                <div class="user-page-header">
+                    <h1>My Reports</h1>
+                    <p>Track your submitted concern reports</p>
+                </div>
+                <div class="user-content-card">
+                    <div class="user-content-card-header">
+                        <h3 class="user-content-card-title">All Reports</h3>
+                    </div>
+                    <div id="reportsContent">
+                        <div class="user-loading">
+                            <i class="fas fa-spinner"></i>
+                            <p>Loading reports...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reservations Page -->
+            <div class="user-page" id="page-reservations">
+                <div class="user-page-header">
+                    <h1>My Reservations</h1>
+                    <p>Manage your facility reservations</p>
+                </div>
+                <div class="user-content-card">
+                    <div class="user-content-card-header">
+                        <h3 class="user-content-card-title">All Reservations</h3>
+                    </div>
+                    <div id="reservationsContent">
+                        <div class="user-loading">
+                            <i class="fas fa-spinner"></i>
+                            <p>Loading reservations...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Advertisements Page -->
+            <div class="user-page" id="page-advertisements">
+                <div class="user-page-header">
+                    <h1>My Advertisements</h1>
+                    <p>View your posted advertisements</p>
+                </div>
+                <div class="user-content-card">
+                    <div class="user-content-card-header">
+                        <h3 class="user-content-card-title">All Ads</h3>
+                    </div>
+                    <div id="advertisementsContent">
+                        <div class="user-loading">
+                            <i class="fas fa-spinner"></i>
+                            <p>Loading advertisements...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Vehicles Page -->
+            <div class="user-page" id="page-vehicles">
+                <div class="user-page-header">
+                    <h1>My Vehicles</h1>
+                    <p>Manage your registered vehicles</p>
+                </div>
+                <div class="user-content-card">
+                    <div class="user-content-card-header">
+                        <h3 class="user-content-card-title">All Vehicles</h3>
+                    </div>
+                    <div id="vehiclesContent">
+                        <div class="user-loading">
+                            <i class="fas fa-spinner"></i>
+                            <p>Loading vehicles...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pets Page -->
+            <div class="user-page" id="page-pets">
+                <div class="user-page-header">
+                    <h1>My Pets</h1>
+                    <p>View your registered pets</p>
+                </div>
+                <div class="user-content-card">
+                    <div class="user-content-card-header">
+                        <h3 class="user-content-card-title">All Pets</h3>
+                    </div>
+                    <div id="petsContent">
+                        <div class="user-loading">
+                            <i class="fas fa-spinner"></i>
+                            <p>Loading pets...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Profile Page -->
+            <div class="user-page" id="page-profile">
+                <div class="user-page-header">
+                    <h1>My Profile</h1>
+                    <p>View your account and registration details</p>
+                </div>
+                <div id="profileContent">
+                    <div class="user-loading">
+                        <i class="fas fa-spinner"></i>
+                        <p>Loading profile...</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+          FOOTER
+        ═══════════════════════════════════════ -->
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <a asp-controller="Home" asp-action="Index">
+                    <img src="@(Url.Content("~/assets/LBAlogo.png"))" alt="Bel-Air Village Logo" class="footer-logo">
+                </a>
+            </div>
+            <div class="footer-section">
+                <h3>Contact Us</h3>
+                <ul class="footer-links">
+                    <li><i class="fas fa-map-marker-alt"></i> P3 B15 Alpine St. LBA4, Brgy. Don Jose, Sta. Rosa, Laguna 4026</li>
+                    <li><i class="fas fa-phone"></i> (+63) 09398588138</li>
+                    <li><i class="fas fa-phone"></i> 0495603050</li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h3>Quick Links</h3>
+                <ul class="footer-links">
+                    <li><a asp-controller="Home" asp-action="aboutlagunabelair">About Us</a></li>
+                    <li><a asp-controller="Home" asp-action="contacts">Contact Us</a></li>
+                    <li><a asp-controller="Home" asp-action="Index">FAQs</a></li>
+                    <li><a asp-controller="Home" asp-action="Index">Privacy Policy</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h3>Site Links</h3>
+                <ul class="footer-links">
+                    <li><a asp-controller="Home" asp-action="announcement">Announcements</a></li>
+                    <li><a asp-controller="Home" asp-action="calendars">Community Calendar</a></li>
+                    <li><a asp-controller="Home" asp-action="formsDocuments">Forms &amp; Documents</a></li>
+                    <li><a asp-controller="Home" asp-action="reportConcerns">Report a Concern</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; <span id="current-year"></span> Laguna BelAir 4. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="~/js/user-dashboard.js"></script>
+    <script>
+        // Set current year in footer
+        document.getElementById('current-year').textContent = new Date().getFullYear();
+
+        // Mobile dropdown toggle support
+        document.querySelectorAll('.dropdown').forEach(dropdown => {
+            const toggle = dropdown.querySelector('.dropdown-toggle');
+            if (!toggle) return;
+            toggle.addEventListener('click', (e) => {
+                e.preventDefault();
+                const isOpen = dropdown.classList.contains('dropdown-open');
+                document.querySelectorAll('.dropdown').forEach(d => d.classList.remove('dropdown-open'));
+                if (!isOpen) dropdown.classList.add('dropdown-open');
+            });
+        });
+        document.addEventListener('click', (e) => {
+            document.querySelectorAll('.dropdown').forEach(d => {
+                if (!d.contains(e.target)) d.classList.remove('dropdown-open');
+            });
+        });
+    </script>
+</body>
+</html>

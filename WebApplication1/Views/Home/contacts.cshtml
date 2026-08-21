@@ -66,7 +66,7 @@
                         <div class="dropdown-menu">
                             <a asp-controller="Home" asp-action="announcement">Announcements</a>
                             <a asp-controller="Home" asp-action="forums">Forums/Discussions</a>
-                            <a asp-controller="Home" asp-action="advertisements">Advertisements</a>
+                            <a asp-controller="Home" asp-action="advertisements">Community Exchange</a>
                             <a asp-controller="Home" asp-action="calendars">Calendars</a>
                             <a asp-controller="Home" asp-action="meetingagendas">Meeting Record/Governance</a>
                             <a asp-controller="Home" asp-action="communitymap">Community Map</a>
@@ -104,7 +104,7 @@
   MAIN CONTENT
 ═══════════════════════════════════════ -->
 <main class="page-main">
-  <!-- Office Information Section -->
+  <!-- Office Information Section (unified contact info block) -->
   <section class="office-info-section">
     <h2><i class="fas fa-building"></i> Laguna BelAir 4 Homeowners Association Office</h2>
     <div class="office-details">
@@ -123,73 +123,11 @@
         <i class="fas fa-clock"></i>
         <p>Monday - Friday<br>8:00am to 5:00pm</p>
       </div>
-    </div>
-  </section>
-
-  <!-- Form and Map Section -->
-  <section class="form-map-section">
-    <!-- Left: Contact Form -->
-    <div class="contact-form-container">
-      <h3><i class="fas fa-envelope"></i> Send Us a Message</h3>
-      <form class="contact-form" id="contactForm">
-        <div class="form-row">
-          <div class="form-group">
-            <label for="name">Name <span class="required">*</span></label>
-            <input type="text" id="name" name="name" required placeholder="Your full name">
-          </div>
-          <div class="form-group">
-            <label for="email">Email <span class="required">*</span></label>
-            <input type="email" id="email" name="email" required placeholder="your@email.com">
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label for="phone">Contact Number <span class="required">*</span></label>
-            <input type="tel" id="phone" name="phone" required placeholder="09XX-XXX-XXXX">
-          </div>
-          <div class="form-group">
-            <label for="subject">Subject <span class="required">*</span></label>
-            <input type="text" id="subject" name="subject" required placeholder="Brief subject">
-          </div>
-        </div>
-        <div class="form-group">
-          <label for="message">Message <span class="required">*</span></label>
-          <textarea id="message" name="message" rows="6" required placeholder="How can we help you?"></textarea>
-        </div>
-        <button type="submit" class="submit-btn">
-          <i class="fas fa-paper-plane"></i> Send Message
-        </button>
-      </form>
-      <!-- Success Message -->
-      <div class="success-message" id="successMessage">
-        <i class="fas fa-check-circle"></i>
-        <p><strong>Thank you for contacting us!</strong> Your message has been sent successfully. We'll get back to you within 24-48 business hours.</p>
-      </div>
-    </div>
-
-    <!-- Right: Map -->
-    <div class="map-container">
-      <div class="map-wrapper">
-        <iframe
-          src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3868.516986757668!2d121.08090847585917!3d14.254847086230168!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3397d7c99e30ad4b%3A0x3e9c8c4ef2eb0a78!2sLaguna%20BelAir%204!5e0!3m2!1sen!2sph!4v1707480000000!5m2!1sen!2sph"
-          width="100%"
-          height="100%"
-          style="border:0;"
-          allowfullscreen=""
-          loading="lazy"
-          referrerpolicy="no-referrer-when-downgrade">
-        </iframe>
-      </div>
-    </div>
-  </section>
-
-  <!-- Emergency Notice -->
-  <section class="emergency-notice-section">
-    <div class="emergency-notice">
-      <i class="fas fa-exclamation-triangle"></i>
-      <div>
-        <p><strong>For urgent concerns, please contact Village Security directly</strong></p>
-        <p>📞 0956-6051482 / 049-5603050</p>
+      <div class="detail-item">
+        <i class="fas fa-exclamation-triangle"></i>
+        <p><strong>For urgent concerns, contact Village Security directly:</strong><br>
+          <a href="tel:09566051482">0956-6051482</a> / <a href="tel:0495603050">049-5603050</a>
+        </p>
       </div>
     </div>
   </section>

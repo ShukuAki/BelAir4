@@ -65,7 +65,7 @@
                         <div class="dropdown-menu">
                             <a asp-controller="Home" asp-action="announcement">Announcements</a>
                             <a asp-controller="Home" asp-action="forums">Forums/Discussions</a>
-                            <a asp-controller="Home" asp-action="advertisements">Advertisements</a>
+                            <a asp-controller="Home" asp-action="advertisements">Community Exchange</a>
                             <a asp-controller="Home" asp-action="calendars">Calendars</a>
                             <a asp-controller="Home" asp-action="meetingagendas">Meeting Record/Governance</a>
                             <a asp-controller="Home" asp-action="communitymap">Community Map</a>
@@ -74,6 +74,10 @@
                     <div class="dropdown">
                         <a href="#" class="dropdown-toggle">Services <i class="fas fa-chevron-down"></i></a>
                         <div class="dropdown-menu">
+                             @if (!string.IsNullOrEmpty(username) && userType == 1)
+                            {
+                                <a asp-controller="Home" asp-action="UserDashboard"><i class="fas fa-tachometer-alt"></i> My Dashboard</a>
+                            }
                              <a asp-controller="Home" asp-action="reserve">Reserve Amenities</a>
                             <a asp-controller="Home" asp-action="reportConcerns">Report Concerns/Incidents</a>
                         </div>
@@ -164,16 +168,21 @@
         return;
       }
 
-      const html = response.data.map(ann => `
+      const html = response.data.map((ann, idx) => {
+        const body = escapeHtml(ann.body || '');
+        const isLong = body.length > 240 || body.split('\n').length > 4;
+        return `
         <div class="announcement-card">
           <img src="@Url.Content("~/assets/LBAlogo.png")" alt="Laguna BelAir Logo">
           <h2>${escapeHtml(ann.title)}</h2>
-          <p>${escapeHtml(ann.body)}</p>
+          <p class="announcement-body" id="ann-body-${idx}">${body}</p>
+          ${isLong ? `<button type="button" class="read-more-toggle" id="ann-toggle-${idx}" onclick="toggleAnnouncement(${idx})">Read More</button>` : ''}
           <div style="font-size: 12px; color: #999; margin-top: 10px;">
             Posted on ${new Date(ann.postedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
           </div>
         </div>
-      `).join('');
+      `;
+      }).join('');
 
       container.innerHTML = html;
     } catch (err) {
@@ -182,6 +191,14 @@
         '<div style="padding: 40px; color: red;"><p>Failed to load announcements. Please try again later.</p></div>';
     }
   });
+
+  function toggleAnnouncement(idx) {
+    const body = document.getElementById(`ann-body-${idx}`);
+    const toggle = document.getElementById(`ann-toggle-${idx}`);
+    if (!body || !toggle) return;
+    const expanded = body.classList.toggle('expanded');
+    toggle.textContent = expanded ? 'Show Less' : 'Read More';
+  }
 
   // Set current year in footer
   document.getElementById('current-year').textContent = new Date().getFullYear();

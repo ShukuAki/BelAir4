@@ -328,8 +328,38 @@ a.active {
 .announcement-card p {
   font-size: 15px;
   color: var(--neutral-700);
-  margin-bottom: 22px;
+  margin-bottom: 12px;
   line-height: 1.6;
+}
+
+.announcement-card .announcement-body {
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.announcement-card .announcement-body.expanded {
+  -webkit-line-clamp: unset;
+  overflow: visible;
+}
+
+.announcement-card .read-more-toggle {
+  display: inline-block;
+  background: none;
+  border: none;
+  color: var(--green-800);
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 0 0 18px;
+  text-decoration: underline;
+}
+
+.announcement-card .read-more-toggle:hover {
+  color: var(--green-700);
 }
 
 .announcement-card .read-more {

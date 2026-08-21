@@ -832,32 +832,9 @@ namespace WebApplication1.Controllers
             }
         }
 
-        // GET /api/admin/staff
-        [HttpGet("admin/staff")]
-        [WebApplication1.Filters.UserTypeAuthorize(3)]
-        public async Task<IActionResult> GetStaff()
-        {
-            try
-            {
-                var all   = await _repo.GetAllAsync();
-                var staff = all
-                    .Where(u => u.Type >= 2)
-                    .Select(u => new
-                    {
-                        id     = u.Id,
-                        name   = u.Username,
-                        email  = u.Username,
-                        role   = u.Type == 3 ? "Admin" : "Staff",
-                        status = u.IsBanned ? "Suspended" : "Active"
-                    }).ToList();
-                return Ok(new { success = true, data = staff });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error getting staff list");
-                return StatusCode(500, new { success = false, error = "Failed to retrieve staff" });
-            }
-        }
+        // GET /api/admin/staff - This endpoint is now handled by AdminController
+        // The dedicated AdminController.GetStaff() returns AdminUser objects with full details
+        // If you need a simplified staff list for ApiController consumers, create a different route
 
         // POST /api/admin/staff
         [HttpPost("admin/staff")]
@@ -942,110 +919,6 @@ namespace WebApplication1.Controllers
             {
                 _logger.LogError(ex, "Error deleting staff {Id}", id);
                 return StatusCode(500, new { success = false, error = "Failed to delete staff account" });
-            }
-        }
-
-        // GET /api/admin/residents
-        [HttpGet("admin/residents")]
-        [WebApplication1.Filters.UserTypeAuthorize(3)]
-        public async Task<IActionResult> GetAllResidents()
-        {
-            try
-            {
-                var users         = await _repo.GetAllAsync();
-                var registrations = await _repo.GetRegistrationsAsync();
-
-                var residents = users
-                    .Where(u => u.Type == 1)
-                    .Select(u =>
-                    {
-                        var reg    = registrations.FirstOrDefault(r =>
-                            r.Email.Equals(u.Username, StringComparison.OrdinalIgnoreCase));
-                        var status = u.IsBanned ? "Banned" :
-                                     reg?.Status == "approved" ? "Verified" : "Pending";
-                        return new
-                        {
-                            id        = u.Id,
-                            name      = reg?.FullName ?? u.Username,
-                            email     = u.Username,
-                            contact   = reg?.Mobile   ?? "—",
-                            address   = reg?.Address  ?? "—",
-                            status,
-                            banReason = u.BanReason
-                        };
-                    }).ToList();
-
-                return Ok(new { success = true, data = residents });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error getting residents");
-                return StatusCode(500, new { success = false, error = "Failed to retrieve residents" });
-            }
-        }
-
-        // POST /api/admin/residents/{id}/ban
-        [HttpPost("admin/residents/{id}/ban")]
-        [WebApplication1.Filters.UserTypeAuthorize(3)]
-        public async Task<IActionResult> BanResidentAccount(int id, [FromBody] AdminBanRequest? req)
-        {
-            try
-            {
-                var user = await _repo.GetByIdAsync(id);
-                if (user is null || user.Type != 1)
-                    return NotFound(new { success = false, error = "Resident account not found" });
-
-                var ok = await _repo.SetUserBanAsync(user.Username, true, null, req?.Reason ?? "Admin action");
-                _logger.LogInformation("Admin banned resident {Username}", user.Username);
-                return ok ? Ok(new { success = true }) : NotFound(new { success = false, error = "Account not found" });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error banning resident {Id}", id);
-                return StatusCode(500, new { success = false, error = "Failed to ban resident" });
-            }
-        }
-
-        // POST /api/admin/residents/{id}/unban
-        [HttpPost("admin/residents/{id}/unban")]
-        [WebApplication1.Filters.UserTypeAuthorize(3)]
-        public async Task<IActionResult> UnbanResidentAccount(int id)
-        {
-            try
-            {
-                var user = await _repo.GetByIdAsync(id);
-                if (user is null || user.Type != 1)
-                    return NotFound(new { success = false, error = "Resident account not found" });
-
-                var ok = await _repo.SetUserBanAsync(user.Username, false, null, null);
-                _logger.LogInformation("Admin unbanned resident {Username}", user.Username);
-                return ok ? Ok(new { success = true }) : NotFound(new { success = false, error = "Account not found" });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error unbanning resident {Id}", id);
-                return StatusCode(500, new { success = false, error = "Failed to unban resident" });
-            }
-        }
-
-        // DELETE /api/admin/residents/{id}
-        [HttpDelete("admin/residents/{id}")]
-        [WebApplication1.Filters.UserTypeAuthorize(3)]
-        public async Task<IActionResult> DeleteResidentAccount(int id)
-        {
-            try
-            {
-                var user = await _repo.GetByIdAsync(id);
-                if (user is null || user.Type != 1)
-                    return NotFound(new { success = false, error = "Resident account not found" });
-
-                var ok = await _repo.DeleteAsync(id);
-                return ok ? Ok(new { success = true }) : NotFound(new { success = false, error = "Account not found" });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error deleting resident {Id}", id);
-                return StatusCode(500, new { success = false, error = "Failed to delete resident" });
             }
         }
 

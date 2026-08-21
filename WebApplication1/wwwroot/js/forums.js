@@ -656,9 +656,15 @@ document.addEventListener('DOMContentLoaded', function () {
 
   async function checkForumStatus() {
     try {
-      const response = await PageCoordinator.api.get('/api/forums/my-status');
-      forumBlocked = !!response.blocked;
-      forumBlockMsg = response.message || '';
+      const response = await fetch('/api/forums/my-status');
+      if (!response.ok) {
+        forumBlocked = false;
+        forumBlockMsg = '';
+        return;
+      }
+      const json = await response.json();
+      forumBlocked = !!json.blocked;
+      forumBlockMsg = json.message || '';
     } catch (e) {
       forumBlocked = false;
       forumBlockMsg = '';
@@ -672,9 +678,13 @@ document.addEventListener('DOMContentLoaded', function () {
   // ─────────────────────────────────────────
   async function loadPosts() {
     try {
-      const response = await PageCoordinator.api.get('/api/forums/posts');
+      const response = await fetch('/api/forums/posts');
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const json = await response.json();
       // adapt server shape to client expected fields
-      POSTS = (response.data || []).map(p => ({
+      POSTS = (json.data || []).map(p => ({
         id: p.id,
         title: p.title,
         category: p.category,
@@ -690,7 +700,7 @@ document.addEventListener('DOMContentLoaded', function () {
     } catch (e) {
       // If server fetch fails, show empty list and log.
       POSTS = [];
-      console.warn('Could not load posts from server.', e);
+      console.error('Could not load posts from server.', e);
     }
     if (currentYearEl) currentYearEl.textContent = new Date().getFullYear();
     renderPosts();

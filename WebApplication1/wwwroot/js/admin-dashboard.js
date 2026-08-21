@@ -218,6 +218,71 @@ const AdminDashboard = {
         this.populateKeywords();
     },
 
+    // Load backups
+    loadBackups: async function () {
+        try {
+            const result = await AdminAPI.backups.getAll();
+            this.backups = (result && result.success && result.data) ? result.data : [];
+        } catch (error) {
+            console.error('Failed to load backups:', error);
+            this.backups = [];
+        }
+        this.populateBackups();
+    },
+
+    populateBackups: function () {
+        const tbody = document.getElementById('backup-tbody');
+        if (!tbody) return;
+        if (!this.backups.length) {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:24px">No backups found.</td></tr>';
+            return;
+        }
+        tbody.innerHTML = this.backups.slice(0, 10).map(b => {
+            const statusClass = b.status === 'Completed' ? 'status-pill sp-approved' : 
+                               b.status === 'In Progress' ? 'status-pill sp-pending' : 
+                               'status-pill sp-rejected';
+            return `
+            <tr>
+                <td><strong>#${b.id}</strong></td>
+                <td>${b.createdAt ? new Date(b.createdAt).toLocaleString() : '—'}</td>
+                <td>${b.backupType || 'Manual'}</td>
+                <td>${b.fileSizeMb ? `${b.fileSizeMb} MB` : '—'}</td>
+                <td><span class="${statusClass}">${b.status}</span></td>
+                <td>
+                    ${b.status === 'Completed' ? `<button class="btn btn-outline btn-sm"><i class="fas fa-download"></i> Download</button>` : ''}
+                </td>
+            </tr>`;
+        }).join('');
+    },
+
+    runManualBackup: async function () {
+        if (!confirm('Create a manual backup now? This may take a few minutes.')) return;
+
+        try {
+            const btn = document.getElementById('mainBackupBtn');
+            if (btn) {
+                const originalHtml = btn.innerHTML;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating backup...';
+                btn.disabled = true;
+
+                await AdminAPI.backups.create({
+                    backupType: 'Manual',
+                    triggeredBy: 'Admin',
+                    status: 'In Progress'
+                });
+
+                alert('Backup started successfully!');
+                await this.loadBackups();
+
+                btn.innerHTML = originalHtml;
+                btn.disabled = false;
+            }
+        } catch (error) {
+            console.error('Failed to create backup:', error);
+            alert('Failed to create backup. Please try again.');
+        }
+    },
+
     populateKeywords: function () {
         const tbody = document.getElementById('wordbank-tbody');
         if (!tbody) return;
@@ -1064,6 +1129,7 @@ const AdminDashboard = {
         document.getElementById('topbar-title').textContent = this.getTitleForPage(pageName);
 
         if (pageName === 'integrations') this.loadSubscriberStats();
+        if (pageName === 'backups') this.loadBackups();
 
         this.currentPage = pageName;
     },
@@ -1208,6 +1274,57 @@ function filterKeywords(severity, element) {
     }
 }
 
+// Navigation function
+function showPage(page, navElement) {
+    // Update current page
+    AdminDashboard.currentPage = page;
+
+    // Hide all pages
+    document.querySelectorAll('.page').forEach(p => {
+        p.classList.remove('active');
+    });
+
+    // Show selected page
+    const targetPage = document.getElementById(`page-${page}`);
+    if (targetPage) {
+        targetPage.classList.add('active');
+    }
+
+    // Update nav active state
+    document.querySelectorAll('.nav-link').forEach(link => {
+        link.classList.remove('active');
+    });
+    if (navElement && navElement.classList) {
+        navElement.classList.add('active');
+    }
+
+    // Update topbar title
+    const titles = {
+        'overview': 'Admin Overview',
+        'auditlog': 'Audit Log',
+        'staffaccounts': 'Staff Accounts',
+        'roles': 'Roles & Permissions',
+        'allresidents': 'Residents & Banned',
+        'appsettings': 'App Settings',
+        'wordbank': 'Word Bank Config',
+        'integrations': 'Integrations',
+        'dataexport': 'Data Export',
+        'backups': 'Backups'
+    };
+    const titleEl = document.getElementById('topbar-title');
+    const breadcrumbEl = document.getElementById('breadcrumb-label');
+    if (titleEl) titleEl.textContent = titles[page] || 'Admin Panel';
+    if (breadcrumbEl) breadcrumbEl.textContent = titles[page] || 'Admin Panel';
+}
+
+// Sidebar toggle
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    if (sidebar) {
+        sidebar.classList.toggle('collapsed');
+    }
+}
+
 // Residents page helper functions (legacy onclick support)
 function exportResidents() {
     alert('Resident export is not yet implemented on the backend.');
@@ -1223,4 +1340,75 @@ function editResident() {
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
     AdminDashboard.init();
+
+    // Wire up main backup button
+    const backupBtn = document.getElementById('mainBackupBtn');
+    if (backupBtn) {
+        backupBtn.addEventListener('click', () => AdminDashboard.runManualBackup());
+    }
+
+    // Wire up export buttons
+    document.querySelectorAll('.export-btn').forEach(btn => {
+        btn.addEventListener('click', async function() {
+            const dataset = this.getAttribute('data-dataset');
+            const format = this.getAttribute('data-format');
+
+            if (!dataset || !format) return;
+
+            const datasetMap = {
+                'Resident Directory': 'residents',
+                'Incident Reports': 'incidents',
+                'Audit Log': 'auditlog',
+                'Staff Activity': 'staff'
+            };
+
+            const datasetKey = datasetMap[dataset] || dataset.toLowerCase();
+            const exportFormat = format === 'ALL' ? 'CSV' : format;
+
+            try {
+                // Show loading state
+                const originalText = this.innerHTML;
+                this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Exporting...';
+                this.disabled = true;
+
+                // Download file
+                const response = await fetch(`/api/admin/export/${datasetKey}?format=${exportFormat}`);
+                if (!response.ok) throw new Error('Export failed');
+
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${datasetKey}_${new Date().toISOString().split('T')[0]}.${exportFormat.toLowerCase()}`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+
+                // Add to recent exports table
+                const tbody = document.getElementById('recent-exports-tbody');
+                if (tbody) {
+                    if (tbody.querySelector('td[colspan]')) {
+                        tbody.innerHTML = '';
+                    }
+                    const row = tbody.insertRow(0);
+                    row.innerHTML = `
+                        <td><i class="fas fa-file-csv"></i> ${dataset}.${exportFormat.toLowerCase()}</td>
+                        <td>Current Admin</td>
+                        <td>${new Date().toLocaleString()}</td>
+                        <td>${(blob.size / 1024).toFixed(1)} KB</td>
+                    `;
+                }
+
+                // Restore button
+                this.innerHTML = originalText;
+                this.disabled = false;
+            } catch (error) {
+                console.error('Export failed:', error);
+                alert('Failed to export data. Please try again.');
+                this.innerHTML = originalText;
+                this.disabled = false;
+            }
+        });
+    });
 });

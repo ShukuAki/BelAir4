@@ -30,9 +30,24 @@
             <div class="navbar-two-rows">
                 <!-- Top Row: Utility Links -->
                 <div class="navbar-top-row">
-                    <a asp-controller="Home" asp-action="login"><i class="fas fa-sign-in-alt"></i> Login</a>
-                    <span class="nav-separator">|</span>
-                    <a asp-controller="Home" asp-action="register"><i class="fas fa-user-plus"></i> Register</a>
+                    @{
+                        var username = Context.Session.GetString("Username");
+                        var userType = Context.Session.GetInt32("UserType") ?? 0;
+                    }
+                    @if (!string.IsNullOrEmpty(username))
+                    {
+                        <span class="nav-user">Hello, @username</span>
+                        <form id="logoutForm" method="post" asp-controller="Home" asp-action="Logout" style="display:inline">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="nav-link btn-logout">Logout</button>
+                        </form>
+                    }
+                    else
+                    {
+                        <a asp-controller="Home" asp-action="login"><i class="fas fa-sign-in-alt"></i> Login</a>
+                        <span class="nav-separator">|</span>
+                        <a asp-controller="Home" asp-action="register"><i class="fas fa-user-plus"></i> Register</a>
+                    }
                 </div>
                 <!-- Bottom Row: Main Navigation -->
                 <div class="navbar-bottom-row">
@@ -51,7 +66,7 @@
                         <div class="dropdown-menu">
                             <a asp-controller="Home" asp-action="announcement">Announcements</a>
                             <a asp-controller="Home" asp-action="forums">Forums/Discussions</a>
-                            <a asp-controller="Home" asp-action="advertisements">Advertisements</a>
+                            <a asp-controller="Home" asp-action="advertisements">Community Exchange</a>
                             <a asp-controller="Home" asp-action="calendars">Calendars</a>
                             <a asp-controller="Home" asp-action="meetingagendas">Meeting Record/Governance</a>
                             <a asp-controller="Home" asp-action="communitymap">Community Map</a>
@@ -60,6 +75,10 @@
                     <div class="dropdown">
                         <a href="#" class="dropdown-toggle">Services <i class="fas fa-chevron-down"></i></a>
                         <div class="dropdown-menu">
+                             @if (!string.IsNullOrEmpty(username) && userType == 1)
+                            {
+                                <a asp-controller="Home" asp-action="UserDashboard"><i class="fas fa-tachometer-alt"></i> My Dashboard</a>
+                            }
                              <a asp-controller="Home" asp-action="reserve">Reserve Amenities</a>
                             <a asp-controller="Home" asp-action="reportconcerns">Report Concerns/Incidents</a>
                         </div>
@@ -84,7 +103,7 @@
                     <div class="hero-content">
                         <h1 class="hero-title">
                             <span class="hero-line">WELCOME TO</span>
-                            <span class="hero-name">BEL-AIR VILLAGE 4</span>
+                            <span class="hero-name">LAGUNA BELAIR 4</span>
                         </h1>
                         <p class="hero-subtitle">A premier residential community in Santa Rosa, Laguna <br> where safety, harmony, and active living thrive.</p>
                         <div class="search-container">
@@ -145,7 +164,7 @@
                     </div>
                 </section>
 
-                <!-- Quick Links Grid - 5 Items Only -->
+                <!-- Quick Links Grid -->
                 <section class="links-section">
                     <h2 class="section-title">QUICK LINKS</h2>
                     <div class="links-grid">
@@ -156,15 +175,6 @@
                                 </div>
                                 <h3>News & Notices</h3>
                                 <p>Stay updated with community announcements</p>
-                            </a>
-                        </div>
-                        <div class="link-box">
-                            <a asp-controller="Home" asp-action="meetingAgendas" style="text-decoration: none; color: inherit;">
-                                <div class="link-icon">
-                                    <i class="fas fa-clipboard-list"></i>
-                                </div>
-                                <h3>Meeting Minutes & Agendas</h3>
-                                <p>Access board meeting records</p>
                             </a>
                         </div>
                         <div class="link-box">
@@ -190,7 +200,7 @@
                                 <div class="link-icon">
                                     <i class="fas fa-store"></i>
                                 </div>
-                                <h3>Marketplace/Classifieds</h3>
+                                <h3>Community Exchange</h3>
                                 <p>Buy, sell, and connect locally</p>
                             </a>
                         </div>

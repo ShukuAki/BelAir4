@@ -33,124 +33,6 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   // ========================================
-  // CONTACT FORM HANDLING
-  // ========================================
-  const contactForm = document.getElementById('contactForm');
-  const successMessage = document.getElementById('successMessage');
-
-  if (contactForm) {
-    contactForm.addEventListener('submit', function(e) {
-      e.preventDefault();
-
-      // Get form values
-      const name = document.getElementById('name').value.trim();
-      const email = document.getElementById('email').value.trim();
-      const phone = document.getElementById('phone').value.trim();
-      const subject = document.getElementById('subject').value.trim();
-      const message = document.getElementById('message').value.trim();
-
-      // Basic validation
-      if (!name || !email || !phone || !subject || !message) {
-        showToast('Please fill in all required fields.', 'error');
-        return;
-      }
-
-      // Email validation
-      const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailPattern.test(email)) {
-        showToast('Please enter a valid email address.', 'error');
-        return;
-      }
-
-      // Phone validation (Philippine format)
-      const phoneDigits = phone.replace(/\D/g, '');
-      if (phoneDigits.length < 10 || phoneDigits.length > 11) {
-        showToast('Please enter a valid contact number (10-11 digits).', 'error');
-        return;
-      }
-
-      // Show success message
-      successMessage.classList.add('show');
-      contactForm.reset();
-
-      // Scroll to success message
-      successMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
-      // Hide after 7 seconds
-      setTimeout(function() {
-        successMessage.classList.remove('show');
-      }, 7000);
-
-      // Log form data (in real app, send to server)
-      console.log('Contact Form Data:', {
-        name: name,
-        email: email,
-        phone: phone,
-        subject: subject,
-        message: message,
-        timestamp: new Date().toISOString()
-      });
-    });
-  }
-
-  // ========================================
-  // PHONE NUMBER FORMATTING
-  // ========================================
-  const phoneInput = document.getElementById('phone');
-  if (phoneInput) {
-    phoneInput.addEventListener('input', function(e) {
-      // Remove all non-numeric characters
-      let value = e.target.value.replace(/\D/g, '');
-      // Limit to 11 digits (Philippine format)
-      if (value.length > 11) {
-        value = value.slice(0, 11);
-      }
-      // Format as Philippine number (e.g., 0923-456-7890)
-      if (value.length > 4 && value.length <= 7) {
-        value = value.slice(0, 4) + '-' + value.slice(4);
-      } else if (value.length > 7) {
-        value = value.slice(0, 4) + '-' + value.slice(4, 7) + '-' + value.slice(7);
-      }
-      e.target.value = value;
-    });
-  }
-
-  // ========================================
-  // FORM FIELD VALIDATION STYLING
-  // ========================================
-  const formInputs = document.querySelectorAll('.form-group input, .form-group textarea');
-  formInputs.forEach(function(input) {
-    // Validate on blur
-    input.addEventListener('blur', function() {
-      if (this.hasAttribute('required') && !this.value.trim()) {
-        this.style.borderColor = '#c0392b';
-      } else if (this.type === 'email' && this.value.trim()) {
-        const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailPattern.test(this.value)) {
-          this.style.borderColor = '#c0392b';
-        } else {
-          this.style.borderColor = '#138a6a';
-        }
-      } else if (this.id === 'phone' && this.value.trim()) {
-        const phoneDigits = this.value.replace(/\D/g, '');
-        if (phoneDigits.length < 10 || phoneDigits.length > 11) {
-          this.style.borderColor = '#c0392b';
-        } else {
-          this.style.borderColor = '#138a6a';
-        }
-      } else if (this.value.trim()) {
-        this.style.borderColor = '#138a6a';
-      }
-    });
-    // Clear validation styling on input
-    input.addEventListener('input', function() {
-      if (this.value.trim()) {
-        this.style.borderColor = '#d1d5db';
-      }
-    });
-  });
-
-  // ========================================
   // SMOOTH SCROLL FOR INTERNAL LINKS
   // ========================================
   const links = document.querySelectorAll('a[href^="#"]');
@@ -197,7 +79,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }, { threshold: 0.1 });
 
-  document.querySelectorAll('.office-info-section, .contact-form-container, .map-container, .emergency-notice').forEach(el => {
+  document.querySelectorAll('.office-info-section').forEach(el => {
     el.style.opacity = '0';
     el.style.transform = 'translateY(20px)';
     el.style.transition = 'opacity 0.5s ease, transform 0.5s ease';

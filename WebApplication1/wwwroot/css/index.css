@@ -413,12 +413,17 @@ a.active {
   margin-bottom: 50px;
   position: relative;
   z-index: 1;
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 0 20px;
 }
 .links-grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 0;
   max-width: 100%;
+  justify-items: center;
 }
 .link-box {
   background-color: white;
@@ -430,9 +435,11 @@ a.active {
   cursor: pointer;
   position: relative;
   z-index: 1;
-  margin: 0 -2px;
+  margin: 0;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
   overflow: hidden;
+  width: 100%;
+  max-width: 250px;
 }
 .link-box a {
   text-decoration: none;
@@ -838,7 +845,8 @@ a.active {
     padding-left: 0;
   }
   .links-grid {
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
   }
   .link-box {
     padding: 20px 10px;
@@ -888,6 +896,7 @@ a.active {
   }
   .links-grid {
     grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
   }
   .link-box h3 {
     font-size: 0.9rem;

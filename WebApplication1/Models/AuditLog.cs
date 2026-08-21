@@ -6,7 +6,7 @@ public class AuditLog
 {
     public int Id { get; set; }
 
-    public int AdminUserId { get; set; }
+    public int? AdminUserId { get; set; }
 
     public AdminUser? AdminUser { get; set; }
 
