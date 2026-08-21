@@ -78,12 +78,12 @@
                             <a asp-controller="Home" asp-action="reportConcerns">Report Concerns/Incidents</a>
                         </div>
                     </div>
-                    @* <div class="dropdown">
-                                <a href="#" class="dropdown-toggle">Others <i class="fas fa-chevron-down"></i></a>
-                                <div class="dropdown-menu">
-                                    <a asp-controller="Home" asp-action="formsDocuments">Downloadable Forms and Documents</a>
-                                </div>
-                            </div> *@
+                    <div class="dropdown">
+                        <a href="#" class="dropdown-toggle">Others <i class="fas fa-chevron-down"></i></a>
+                        <div class="dropdown-menu">
+                            <a asp-controller="Home" asp-action="formsDocuments">Downloadable Forms and Documents</a>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -115,8 +115,8 @@
     <footer class="footer">
         <div class="footer-content">
             <div class="footer-section footer-logo-section">
-                <a href="index.html" class="footer-logo-link">
-                    <img src="~/assets/LBAlogo.png" alt="Bel-Air Village Logo" class="footer-logo">
+                <a asp-controller="Home" asp-action="Index" class="footer-logo-link">
+                    <img src="@Url.Content("~/assets/LBAlogo.png")" alt="Bel-Air Village Logo" class="footer-logo">
                     </a>
                 </div>
                 <div class="footer-section">
@@ -130,19 +130,19 @@
                 <div class="footer-section">
                     <h3>Quick Links</h3>
                     <ul class="footer-links">
-                        <li><a href="about-laguna-belair.html">About Us</a></li>
-                        <li><a href="contacts.html">Contact Us</a></li>
-                        <li><a href="faq.html">FAQs</a></li>
-                        <li><a href="privacy-policy.html">Privacy Policy</a></li>
+                        <li><a asp-controller="Home" asp-action="aboutLagunaBelAir">About Us</a></li>
+                        <li><a asp-controller="Home" asp-action="contacts">Contact Us</a></li>
+                        <li><a href="#">FAQs</a></li>
+                        <li><a href="#">Privacy Policy</a></li>
                     </ul>
                 </div>
                 <div class="footer-section">
                     <h3>Site Links</h3>
                     <ul class="footer-links">
-                        <li><a href="announcement.html">Announcements</a></li>
-                        <li><a href="calendars.html">Community Calendar</a></li>
-                        <li><a href="forms-documents.html">Forms &amp; Documents</a></li>
-                        <li><a href="report-concerns.html">Report a Concern</a></li>
+                        <li><a asp-controller="Home" asp-action="announcement">Announcements</a></li>
+                        <li><a asp-controller="Home" asp-action="calendars">Community Calendar</a></li>
+                        <li><a asp-controller="Home" asp-action="formsDocuments">Forms &amp; Documents</a></li>
+                        <li><a asp-controller="Home" asp-action="reportConcerns">Report a Concern</a></li>
                     </ul>
                 </div>
             </div>
@@ -166,7 +166,7 @@
 
       const html = response.data.map(ann => `
         <div class="announcement-card">
-          <img src="~/assets/LBAlogo.png" alt="Laguna BelAir Logo">
+          <img src="@Url.Content("~/assets/LBAlogo.png")" alt="Laguna BelAir Logo">
           <h2>${escapeHtml(ann.title)}</h2>
           <p>${escapeHtml(ann.body)}</p>
           <div style="font-size: 12px; color: #999; margin-top: 10px;">

@@ -37,86 +37,40 @@ document.addEventListener('DOMContentLoaded', function() {
   let currentMonth = currentDate.getMonth();
   let currentYear = currentDate.getFullYear();
   
-  // Sample events data (in a real app, this would come from a server)
-  const eventsData = {
-    // Format: "YYYY-MM-DD": [events array]
-    [getDateKey(new Date())]: [
-      {
-        time: "10:00 AM",
-        title: "Village Council Meeting",
-        description: "Monthly council meeting at Town Hall"
-      },
-      {
-        time: "2:30 PM",
-        title: "Park Cleanup Event",
-        description: "Community park cleanup at Central Park"
-      },
-      {
-        time: "7:00 PM",
-        title: "Public Safety Workshop",
-        description: "Fire safety and prevention workshop"
-      }
-    ],
-    [getDateKey(new Date(currentYear, currentMonth, 5))]: [
-      {
-        time: "9:00 AM",
-        title: "Building Permit Deadline",
-        description: "Last day to submit building permits for Q1"
-      }
-    ],
-    [getDateKey(new Date(currentYear, currentMonth, 12))]: [
-      {
-        time: "6:00 PM",
-        title: "Community Dinner",
-        description: "Annual community potluck dinner"
-      }
-    ],
-    [getDateKey(new Date(currentYear, currentMonth, 15))]: [
-      {
-        time: "8:00 AM",
-        title: "Road Maintenance",
-        description: "Main Street will be closed for maintenance"
-      },
-      {
-        time: "3:00 PM",
-        title: "Library Story Time",
-        description: "Children's story time at village Library"
-      }
-    ],
-    [getDateKey(new Date(currentYear, currentMonth, 20))]: [
-      {
-        time: "All Day",
-        title: "Incident Report Filed",
-        description: "Water main break reported on Oak Street"
-      }
-    ],
-    [getDateKey(new Date(currentYear, currentMonth, 25))]: [
-      {
-        time: "1:00 PM",
-        title: "Farmers Market",
-        description: "Weekly farmers market at Town Square"
-      }
-    ],
-    [getDateKey(new Date(currentYear, currentMonth, 28))]: [
-      {
-        time: "10:00 AM",
-        title: "Tax Payment Due",
-        description: "Quarterly property tax payments due"
-      }
-    ],
-    [getDateKey(new Date(currentYear, currentMonth + 1, 3))]: [
-      {
-        time: "7:00 PM",
-        title: "Planning Board Meeting",
-        description: "Monthly planning board meeting"
-      }
-    ]
-  };
-  
+  // Events data loaded from the community calendar API
+  // Format: "YYYY-MM-DD": [events array]
+  let eventsData = {};
+
+  // Load real events from the HOA events API (same backend used by the Calendars page)
+  async function loadEvents() {
+    try {
+      const response = await fetch('/api/hoa-events');
+      const result = await response.json();
+      const events = (result && result.data) || [];
+
+      eventsData = {};
+      events.forEach(evt => {
+        const dateKey = evt.date;
+        if (!dateKey) return;
+        if (!eventsData[dateKey]) eventsData[dateKey] = [];
+        eventsData[dateKey].push({
+          time: evt.time || "TBD",
+          title: evt.title,
+          description: evt.description || ""
+        });
+      });
+    } catch (err) {
+      console.error('Error loading community calendar events:', err);
+      eventsData = {};
+    }
+  }
+
   // Initialize
-  function init() {
+  async function init() {
     // Set current year in footer
     if (currentYearEl) currentYearEl.textContent = currentYear;
+    // Load real events from the database
+    await loadEvents();
     // Set today's date display
     updateDateDisplay(currentDate);
     // Generate calendar for current month
@@ -414,48 +368,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }, 4000);
   }
   
-  // Add more sample events for demonstration
-  function addMoreSampleEvents() {
-    // Add events for next few days
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const dayAfter = new Date();
-    dayAfter.setDate(dayAfter.getDate() + 2);
-    
-    eventsData[getDateKey(tomorrow)] = [
-      {
-        time: "8:00 AM - 5:00 PM",
-        title: "Village Offices Open",
-        description: "All village offices open for regular business"
-      }
-    ];
-    
-    eventsData[getDateKey(dayAfter)] = [
-      {
-        time: "9:00 AM",
-        title: "Trash Collection",
-        description: "Regular trash and recycling collection"
-      },
-      {
-        time: "6:30 PM",
-        title: "Zoning Board Hearing",
-        description: "Public hearing on proposed zoning changes"
-      }
-    ];
-    
-    // Add an event for next week
-    const nextWeek = new Date();
-    nextWeek.setDate(nextWeek.getDate() + 7);
-    
-    eventsData[getDateKey(nextWeek)] = [
-      {
-        time: "All Day",
-        title: "Incident Report Filed",
-        description: "Power outage reported in Maplewood area"
-      }
-    ];
-  }
-  
   // Add active class to current page
   function setActiveNav() {
     const currentPath = window.location.pathname;
@@ -471,7 +383,6 @@ document.addEventListener('DOMContentLoaded', function() {
   }
   
   // Call initialization
-  addMoreSampleEvents(); // Add more events for demo
   setActiveNav();
   init();
 });

@@ -188,7 +188,97 @@ namespace WebApplication1.Controllers
             }
         }
 
-        // GET /api/incidents/{priority} - Get incidents by priority level
+        // GET /api/subscribers - Get all push notification subscribers
+        [HttpGet("subscribers")]
+        public async Task<IActionResult> GetSubscribers()
+        {
+            try
+            {
+                var subscribers = await _repo.GetSubscribersAsync();
+                return Ok(new { success = true, data = subscribers });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting subscribers");
+                return StatusCode(500, new { success = false, error = "Failed to retrieve subscribers" });
+            }
+        }
+
+        // GET /api/subscribers/stats - Get subscriber counts
+        [HttpGet("subscribers/stats")]
+        public async Task<IActionResult> GetSubscriberStats()
+        {
+            try
+            {
+                var all = await _repo.GetSubscribersAsync();
+                var activeCount = await _repo.GetActiveSubscriberCountAsync();
+                var totalSent = all.Sum(s => s.NotificationsSentCount);
+                return Ok(new
+                {
+                    success = true,
+                    data = new
+                    {
+                        totalSubscribers = all.Count,
+                        activeSubscribers = activeCount,
+                        notificationsSent = totalSent
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting subscriber stats");
+                return StatusCode(500, new { success = false, error = "Failed to retrieve subscriber stats" });
+            }
+        }
+
+        // POST /api/subscribers - Subscribe to push notifications
+        [HttpPost("subscribers")]
+        public async Task<IActionResult> CreateSubscriber([FromBody] SubscriberRequest request)
+        {
+            try
+            {
+                if (request == null || string.IsNullOrWhiteSpace(request.Email))
+                    return BadRequest(new { success = false, error = "Email is required" });
+
+                var existing = await _repo.GetSubscriberByEmailAsync(request.Email.Trim());
+                if (existing != null)
+                {
+                    return Ok(new { success = true, data = existing, message = "Already subscribed" });
+                }
+
+                var subscriber = new NotificationSubscriber
+                {
+                    Email = request.Email.Trim(),
+                    ResidentName = request.ResidentName,
+                    DeviceInfo = request.DeviceInfo
+                };
+                var created = await _repo.CreateSubscriberAsync(subscriber);
+                return Ok(new { success = true, data = created });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creating subscriber");
+                return StatusCode(500, new { success = false, error = "Failed to subscribe" });
+            }
+        }
+
+        // DELETE /api/subscribers/{id} - Unsubscribe / remove a subscriber
+        [HttpDelete("subscribers/{id}")]
+        public async Task<IActionResult> DeleteSubscriber(int id)
+        {
+            try
+            {
+                var success = await _repo.DeleteSubscriberAsync(id);
+                if (!success) return NotFound(new { success = false, error = "Subscriber not found" });
+                return Ok(new { success = true });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deleting subscriber");
+                return StatusCode(500, new { success = false, error = "Failed to delete subscriber" });
+            }
+        }
+
         [HttpGet("incidents/{priority}")]
         public async Task<IActionResult> GetIncidentsByPriority(string priority)
         {
@@ -1163,8 +1253,8 @@ public class ContentApiController : ControllerBase
     { _repo = repo; _logger = logger; }
 
     // ── Announcements ─────────────────────────────────────────
+    // Publicly readable so announcements can display on the public Announcements page.
     [HttpGet("announcements")]
-    [WebApplication1.Filters.UserTypeAuthorize(2, 3)]
     public async Task<IActionResult> GetAnnouncements()
     {
         try { return Ok(new { success = true, data = await _repo.GetAnnouncementsAsync() }); }
@@ -1200,8 +1290,8 @@ public class ContentApiController : ControllerBase
     }
 
     // ── Events ────────────────────────────────────────────────
+    // Publicly readable so the Community Calendar can display on the public Home page.
     [HttpGet("hoa-events")]
-    [WebApplication1.Filters.UserTypeAuthorize(2, 3)]
     public async Task<IActionResult> GetEvents()
     {
         try { return Ok(new { success = true, data = await _repo.GetEventsAsync() }); }
@@ -1238,7 +1328,6 @@ public class ContentApiController : ControllerBase
 
     // ── BOD Members ───────────────────────────────────────────
     [HttpGet("bod-members")]
-    [WebApplication1.Filters.UserTypeAuthorize(2, 3)]
     public async Task<IActionResult> GetBodMembers()
     {
         try { return Ok(new { success = true, data = await _repo.GetBodMembersAsync() }); }
@@ -1275,7 +1364,6 @@ public class ContentApiController : ControllerBase
 
     // ── Meeting Records ───────────────────────────────────────
     [HttpGet("meeting-records")]
-    [WebApplication1.Filters.UserTypeAuthorize(2, 3)]
     public async Task<IActionResult> GetMeetingRecords()
     {
         try { return Ok(new { success = true, data = await _repo.GetMeetingRecordsAsync() }); }
@@ -1287,7 +1375,7 @@ public class ContentApiController : ControllerBase
     public async Task<IActionResult> CreateMeetingRecord([FromBody] MeetingRecordRequest req)
     {
         try {
-            var r = new WebApplication1.Models.MeetingRecord { Title = req.Title ?? "", Date = req.Date, Type = req.Type, UploadedBy = req.UploadedBy };
+            var r = new WebApplication1.Models.MeetingRecord { Title = req.Title ?? "", Date = req.Date, Time = req.Time, Location = req.Location, Type = req.Type, UploadedBy = req.UploadedBy };
             return Ok(new { success = true, data = await _repo.CreateMeetingRecordAsync(r) });
         } catch (Exception ex) { _logger.LogError(ex, "CreateMeetingRecord"); return StatusCode(500, new { success = false, error = ex.Message }); }
     }
@@ -1297,7 +1385,7 @@ public class ContentApiController : ControllerBase
     public async Task<IActionResult> UpdateMeetingRecord(int id, [FromBody] MeetingRecordRequest req)
     {
         try {
-            var r = new WebApplication1.Models.MeetingRecord { Id = id, Title = req.Title ?? "", Date = req.Date, Type = req.Type, UploadedBy = req.UploadedBy };
+            var r = new WebApplication1.Models.MeetingRecord { Id = id, Title = req.Title ?? "", Date = req.Date, Time = req.Time, Location = req.Location, Type = req.Type, UploadedBy = req.UploadedBy };
             return Ok(new { success = await _repo.UpdateMeetingRecordAsync(r) });
         } catch (Exception ex) { _logger.LogError(ex, "UpdateMeetingRecord"); return StatusCode(500, new { success = false, error = ex.Message }); }
     }
@@ -1312,7 +1400,6 @@ public class ContentApiController : ControllerBase
 
     // ── Documents ─────────────────────────────────────────────
     [HttpGet("hoa-documents")]
-    [WebApplication1.Filters.UserTypeAuthorize(2, 3)]
     public async Task<IActionResult> GetDocuments()
     {
         try { return Ok(new { success = true, data = await _repo.GetDocumentsAsync() }); }
@@ -1593,7 +1680,7 @@ public class ContentApiController : ControllerBase
 public class AnnouncementRequest { public string? Title{get;set;} public string? Body{get;set;} public string? Category{get;set;} public string? PostedBy{get;set;} public string? Status{get;set;} public DateTime? ScheduledAt{get;set;} }
 public class EventRequest { public string? Title{get;set;} public string? Description{get;set;} public string? Date{get;set;} public string? Time{get;set;} public string? Location{get;set;} public string? Category{get;set;} public string? CreatedBy{get;set;} }
 public class BodMemberRequest { public string? Name{get;set;} public string? Position{get;set;} public string? Term{get;set;} public string? Phone{get;set;} public string? Email{get;set;} }
-public class MeetingRecordRequest { public string? Title{get;set;} public string? Date{get;set;} public string? Type{get;set;} public string? UploadedBy{get;set;} }
+public class MeetingRecordRequest { public string? Title{get;set;} public string? Date{get;set;} public string? Time{get;set;} public string? Location{get;set;} public string? Type{get;set;} public string? UploadedBy{get;set;} }
 public class DocumentRequest { public string? Name{get;set;} public string? Category{get;set;} public string? UploadedBy{get;set;} }
 public class ContactRequest { public string? Name{get;set;} public string? Role{get;set;} public string? Phone{get;set;} public string? Email{get;set;} }
 public class TaskRequest { public string? Title{get;set;} public string? Description{get;set;} public string? Category{get;set;} public string? Priority{get;set;} public string? Status{get;set;} public DateTime? DueDate{get;set;} public string? AssignedTo{get;set;} public int? AutoDeleteAfterDays{get;set;} public string? Notes{get;set;} }

@@ -11,7 +11,7 @@
 <!-- Icons -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <!-- Styles -->
-<link rel="stylesheet" href="meeting-agendas.css">
+<link rel="stylesheet" href="~/css/meeting-agendas.css">
 </head>
 <body>
 
@@ -79,12 +79,12 @@
                             <a asp-controller="Home" asp-action="reportConcerns">Report Concerns/Incidents</a>
                         </div>
                     </div>
-                    @* <div class="dropdown">
-                                <a href="#" class="dropdown-toggle">Others <i class="fas fa-chevron-down"></i></a>
-                                <div class="dropdown-menu">
-                                    <a asp-controller="Home" asp-action="formsDocuments">Downloadable Forms and Documents</a>
-                                </div>
-                            </div> *@
+                    <div class="dropdown">
+                        <a href="#" class="dropdown-toggle">Others <i class="fas fa-chevron-down"></i></a>
+                        <div class="dropdown-menu">
+                            <a asp-controller="Home" asp-action="formsDocuments">Downloadable Forms and Documents</a>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -110,15 +110,13 @@
       <h2><i class="fas fa-search"></i> Search Records</h2>
       <div class="search-form">
         <div class="search-input-group">
-          <input type="text" class="search-input" placeholder="Search meeting, keyword, or document">
+          <input type="text" id="records-search-input" class="search-input" placeholder="Search meeting, keyword, or document">
         </div>
         <div class="filter-row">
           <div class="filter-group">
             <label for="year-filter">Year</label>
             <select id="year-filter" class="filter-select">
               <option value="">All Years</option>
-              <option value="2026">2026</option>
-              <option value="2025">2025</option>
             </select>
           </div>
           <div class="filter-group">
@@ -130,7 +128,7 @@
               <option value="resolution">Resolution</option>
             </select>
           </div>
-          <button class="search-btn"><i class="fas fa-search"></i> Search</button>
+          <button type="button" id="records-search-btn" class="search-btn"><i class="fas fa-search"></i> Search</button>
         </div>
       </div>
     </div>
@@ -145,27 +143,27 @@
           <i class="fas fa-calendar"></i>
           <div>
             <span class="info-label">Date</span>
-            <span class="info-value">March 15, 2026</span>
+            <span class="info-value" id="upcoming-meeting-date">Loading...</span>
           </div>
         </div>
         <div class="info-item">
           <i class="fas fa-clock"></i>
           <div>
             <span class="info-label">Time</span>
-            <span class="info-value">7:00 PM</span>
+            <span class="info-value" id="upcoming-meeting-time">—</span>
           </div>
         </div>
         <div class="info-item">
           <i class="fas fa-map-marker-alt"></i>
           <div>
             <span class="info-label">Location</span>
-            <span class="info-value">HOA Office, Laguna BelAir 4</span>
+            <span class="info-value" id="upcoming-meeting-location">—</span>
           </div>
         </div>
       </div>
       <div class="meeting-actions">
-        <button class="btn btn-primary"><i class="fas fa-file-alt"></i> View Agenda</button>
-        <button class="btn btn-secondary"><i class="fas fa-calendar-plus"></i> Add to Calendar</button>
+        <button type="button" id="view-agenda-btn" class="btn btn-primary"><i class="fas fa-file-alt"></i> View Agenda</button>
+        <button type="button" id="add-to-calendar-btn" class="btn btn-secondary"><i class="fas fa-calendar-plus"></i> Add to Calendar</button>
       </div>
     </div>
   </section>
@@ -184,7 +182,7 @@
             <th>Status</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody id="meeting-records-body">
           <tr>
             <td data-label="Date">January 10, 2026</td>
             <td data-label="Agenda">
@@ -209,37 +207,37 @@
   <section class="governance-section">
     <h2 class="section-title"><i class="fas fa-gavel"></i> HOA Governance & Policies</h2>
     <div class="governance-grid">
-      <div class="governance-card">
+      <div class="governance-card" data-governance-category="bylaws">
         <div class="card-icon">
           <i class="fas fa-book"></i>
         </div>
         <h3>HOA By-Laws</h3>
         <p>Official rules governing the homeowners association</p>
         <div class="card-actions">
-          <button class="btn btn-sm btn-primary"><i class="fas fa-eye"></i> View</button>
-          <button class="btn btn-sm btn-secondary"><i class="fas fa-download"></i> Download</button>
+          <button type="button" class="btn btn-sm btn-primary governance-view-btn"><i class="fas fa-eye"></i> View</button>
+          <button type="button" class="btn btn-sm btn-secondary governance-download-btn"><i class="fas fa-download"></i> Download</button>
         </div>
       </div>
-      <div class="governance-card">
+      <div class="governance-card" data-governance-category="rules">
         <div class="card-icon">
           <i class="fas fa-clipboard-list"></i>
         </div>
         <h3>Rules and Regulations</h3>
         <p>Community guidelines and standards</p>
         <div class="card-actions">
-          <button class="btn btn-sm btn-primary"><i class="fas fa-eye"></i> View</button>
-          <button class="btn btn-sm btn-secondary"><i class="fas fa-download"></i> Download</button>
+          <button type="button" class="btn btn-sm btn-primary governance-view-btn"><i class="fas fa-eye"></i> View</button>
+          <button type="button" class="btn btn-sm btn-secondary governance-download-btn"><i class="fas fa-download"></i> Download</button>
         </div>
       </div>
-      <div class="governance-card">
+      <div class="governance-card" data-governance-category="resolutions">
         <div class="card-icon">
           <i class="fas fa-stamp"></i>
         </div>
         <h3>Board Resolutions</h3>
         <p>Official decisions and resolutions</p>
         <div class="card-actions">
-          <button class="btn btn-sm btn-primary"><i class="fas fa-eye"></i> View</button>
-          <button class="btn btn-sm btn-secondary"><i class="fas fa-download"></i> Download</button>
+          <button type="button" class="btn btn-sm btn-primary governance-view-btn"><i class="fas fa-eye"></i> View</button>
+          <button type="button" class="btn btn-sm btn-secondary governance-download-btn"><i class="fas fa-download"></i> Download</button>
         </div>
       </div>
     </div>
@@ -248,17 +246,10 @@
   <!-- Meeting Archive Section -->
   <section class="archive-section">
     <h2 class="section-title"><i class="fas fa-archive"></i> Archive</h2>
-    <div class="archive-card">
-      <h3 class="archive-year">2025</h3>
-      <ul class="archive-list">
-        <li>
-          <a href="#" class="archive-link">
-            <i class="fas fa-folder"></i>
-            <span>November Board Meeting</span>
-            <span class="archive-action">View Records <i class="fas fa-chevron-right"></i></span>
-          </a>
-        </li>
-      </ul>
+    <div id="archive-container">
+      <div class="archive-card">
+        <p style="padding:12px;text-align:center;color:var(--gray-400,#888)">Loading archive...</p>
+      </div>
     </div>
   </section>
 
@@ -275,8 +266,8 @@
 <footer class="footer">
   <div class="footer-content">
     <div class="footer-section footer-logo-section">
-      <a href="index.html" class="footer-logo-link">
-        <img src="LBAlogo.png" alt="Bel-Air Village Logo" class="footer-logo">
+      <a asp-controller="Home" asp-action="Index" class="footer-logo-link">
+        <img src="@Url.Content("~/assets/LBAlogo.png")" alt="Bel-Air Village Logo" class="footer-logo">
       </a>
     </div>
     <div class="footer-section">
@@ -290,19 +281,19 @@
     <div class="footer-section">
       <h3>Quick Links</h3>
       <ul class="footer-links">
-        <li><a href="about-laguna-belair.html">About Us</a></li>
-        <li><a href="contacts.html">Contact Us</a></li>
-        <li><a href="faq.html">FAQs</a></li>
-        <li><a href="privacy-policy.html">Privacy Policy</a></li>
+        <li><a asp-controller="Home" asp-action="aboutLagunaBelAir">About Us</a></li>
+        <li><a asp-controller="Home" asp-action="contacts">Contact Us</a></li>
+        <li><a href="#">FAQs</a></li>
+        <li><a href="#">Privacy Policy</a></li>
       </ul>
     </div>
     <div class="footer-section">
       <h3>Site Links</h3>
       <ul class="footer-links">
-        <li><a href="announcement.html">Announcements</a></li>
-        <li><a href="calendars.html">Community Calendar</a></li>
-        <li><a href="forms-documents.html">Forms &amp; Documents</a></li>
-        <li><a href="report-concerns.html">Report a Concern</a></li>
+        <li><a asp-controller="Home" asp-action="announcement">Announcements</a></li>
+        <li><a asp-controller="Home" asp-action="calendars">Community Calendar</a></li>
+        <li><a asp-controller="Home" asp-action="formsDocuments">Forms &amp; Documents</a></li>
+        <li><a asp-controller="Home" asp-action="reportConcerns">Report a Concern</a></li>
       </ul>
     </div>
   </div>
@@ -312,7 +303,8 @@
 </footer>
 
 <!-- JavaScript -->
-<script src="meeting-agendas.js"></script>
+<script src="~/js/page-coordinator.js"></script>
+<script src="~/js/meetingagendas-wire.js"></script>
 <script>
   // Set current year in footer
   document.getElementById('current-year').textContent = new Date().getFullYear();

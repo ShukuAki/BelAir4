@@ -166,6 +166,14 @@ namespace WebApplication1.Repository
         Task<bool> UpdateBackupRecordAsync(BackupRecord backupRecord);
         Task<bool> DeleteBackupRecordAsync(int id);
 
+        // Push Notification Subscribers
+        Task<List<NotificationSubscriber>> GetSubscribersAsync();
+        Task<int> GetActiveSubscriberCountAsync();
+        Task<NotificationSubscriber?> GetSubscriberByEmailAsync(string email);
+        Task<NotificationSubscriber> CreateSubscriberAsync(NotificationSubscriber subscriber);
+        Task<bool> DeactivateSubscriberAsync(int id);
+        Task<bool> DeleteSubscriberAsync(int id);
+
         // Staff Dashboard - Tasks
         Task<List<TaskModel>> GetTasksAsync();
         Task<TaskModel?> GetTaskByIdAsync(int id);
@@ -311,7 +319,13 @@ namespace WebApplication1.Repository
                 CREATE TABLE bod_members (id INT IDENTITY PRIMARY KEY, name VARCHAR(200) NOT NULL, position VARCHAR(100), term VARCHAR(50), phone VARCHAR(50), email VARCHAR(200), created_at DATETIME2 DEFAULT GETUTCDATE());
 
                 IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME='meeting_records')
-                CREATE TABLE meeting_records (id INT IDENTITY PRIMARY KEY, title VARCHAR(300) NOT NULL, date VARCHAR(20), type VARCHAR(50), file_path NVARCHAR(MAX), uploaded_by VARCHAR(100), uploaded_at DATETIME2 DEFAULT GETUTCDATE());
+                CREATE TABLE meeting_records (id INT IDENTITY PRIMARY KEY, title VARCHAR(300) NOT NULL, date VARCHAR(20), time VARCHAR(20), location VARCHAR(200), type VARCHAR(50), file_path NVARCHAR(MAX), uploaded_by VARCHAR(100), uploaded_at DATETIME2 DEFAULT GETUTCDATE());
+
+                IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='meeting_records' AND COLUMN_NAME='time')
+                ALTER TABLE meeting_records ADD time VARCHAR(20) NULL;
+
+                IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='meeting_records' AND COLUMN_NAME='location')
+                ALTER TABLE meeting_records ADD location VARCHAR(200) NULL;
 
                 IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME='hoa_documents')
                 CREATE TABLE hoa_documents (id INT IDENTITY PRIMARY KEY, name VARCHAR(300) NOT NULL, category VARCHAR(100), file_path NVARCHAR(MAX), uploaded_by VARCHAR(100), uploaded_at DATETIME2 DEFAULT GETUTCDATE());
@@ -1299,6 +1313,44 @@ namespace WebApplication1.Repository
             var existing = await _db.BackupRecords.FindAsync(id);
             if (existing is null) return false;
             _db.BackupRecords.Remove(existing);
+            return await _db.SaveChangesAsync() > 0;
+        }
+
+        // ── ADMIN DASHBOARD - Push Notification Subscribers ────────────────────
+        public async Task<List<NotificationSubscriber>> GetSubscribersAsync() =>
+            await _db.NotificationSubscribers.AsNoTracking()
+                .OrderByDescending(s => s.SubscribedAt)
+                .ToListAsync();
+
+        public async Task<int> GetActiveSubscriberCountAsync() =>
+            await _db.NotificationSubscribers.CountAsync(s => s.IsActive);
+
+        public async Task<NotificationSubscriber?> GetSubscriberByEmailAsync(string email) =>
+            await _db.NotificationSubscribers.FirstOrDefaultAsync(s => s.Email == email);
+
+        public async Task<NotificationSubscriber> CreateSubscriberAsync(NotificationSubscriber subscriber)
+        {
+            subscriber.SubscribedAt = DateTime.UtcNow;
+            subscriber.IsActive = true;
+            _db.NotificationSubscribers.Add(subscriber);
+            await _db.SaveChangesAsync();
+            return subscriber;
+        }
+
+        public async Task<bool> DeactivateSubscriberAsync(int id)
+        {
+            var existing = await _db.NotificationSubscribers.FindAsync(id);
+            if (existing is null) return false;
+            existing.IsActive = false;
+            existing.UnsubscribedAt = DateTime.UtcNow;
+            return await _db.SaveChangesAsync() > 0;
+        }
+
+        public async Task<bool> DeleteSubscriberAsync(int id)
+        {
+            var existing = await _db.NotificationSubscribers.FindAsync(id);
+            if (existing is null) return false;
+            _db.NotificationSubscribers.Remove(existing);
             return await _db.SaveChangesAsync() > 0;
         }
 

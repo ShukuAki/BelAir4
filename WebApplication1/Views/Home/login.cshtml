@@ -72,12 +72,12 @@
                             <a asp-controller="Home" asp-action="reportConcerns">Report Concerns/Incidents</a>
                         </div>
                     </div>
-                    @* <div class="dropdown">
-                                <a href="#" class="dropdown-toggle">Others <i class="fas fa-chevron-down"></i></a>
-                                <div class="dropdown-menu">
-                                    <a asp-controller="Home" asp-action="formsDocuments">Downloadable Forms and Documents</a>
-                                </div>
-                            </div> *@
+                    <div class="dropdown">
+                        <a href="#" class="dropdown-toggle">Others <i class="fas fa-chevron-down"></i></a>
+                        <div class="dropdown-menu">
+                            <a asp-controller="Home" asp-action="formsDocuments">Downloadable Forms and Documents</a>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -124,7 +124,7 @@
                             <input type="checkbox" name="remember" />
                             <span>Remember Me</span>
                         </label>
-                        <a href="forgot-password.html" class="forgot-password">Forgot Password?</a>
+                        <a asp-controller="Home" asp-action="forgotPassword" class="forgot-password">Forgot Password?</a>
                     </div>
 
                     <button type="submit" class="login-btn">
@@ -133,7 +133,7 @@
                     </button>
 
                     <div class="register-link">
-                        <p>Not a Member? <a href="register.html">Register here</a></p>
+                        <p>Not a Member? <a asp-controller="Home" asp-action="Register">Register here</a></p>
                     </div>
                 </form>
             </div>

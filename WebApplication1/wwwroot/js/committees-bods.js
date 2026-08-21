@@ -56,7 +56,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   try {
     // Load BOD members from API
     const response = await PageCoordinator.api.get('/api/bod-members');
-    boardMembers = response.data || [];
+    const rawMembers = response.data || [];
+
+    // Map raw DB fields (id, name, position, term, phone, email) to the
+    // shape expected by the org tree renderer (level, image, description).
+    boardMembers = rawMembers.map(m => ({
+      ...m,
+      level: /president/i.test(m.position || '') ? 'President' : 'Officer',
+      image: m.image || '/assets/LBAlogo.png',
+      description: m.description || `${m.position || 'Board Member'} of Laguna BelAir 4 Homeowners Association.`
+    }));
 
     if (!boardMembers.length) {
       orgTree.innerHTML = '<div style="padding: 40px; text-align: center; color: #999;"><p>No board members available at this time.</p></div>';

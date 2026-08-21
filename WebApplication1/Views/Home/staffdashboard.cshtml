@@ -181,37 +181,26 @@
     </div>
     <div class="kanban-board" id="kanban-board">
       <div class="k-col" data-col="todo">
-        <div class="k-col-head"><div class="k-col-dot" style="background:#9e9a94"></div><div class="k-col-title">To Do</div><div class="k-col-count" id="k-count-todo">4</div></div>
+        <div class="k-col-head"><div class="k-col-dot" style="background:#9e9a94"></div><div class="k-col-title">To Do</div><div class="k-col-count" id="k-count-todo">0</div></div>
         <div class="k-col-body" id="k-body-todo">
-          <div class="k-card kc-orange" draggable="true" data-task-id="t1" data-priority="high" data-due="2026-02-28"><div class="k-card-header-row"><span class="tag tag-orange">Admin</span><button class="k-card-del" onclick="deleteTask(this)"><i class="fas fa-times"></i></button></div><div class="k-card-title">Update emergency contact list for Phase 3</div><div class="k-card-meta"><div class="k-card-date overdue"><i class="fas fa-clock"></i> Feb 28</div><div class="mini-avs"><div class="mini-av ma-g">MS</div></div></div></div>
-          <div class="k-card kc-orange" draggable="true" data-task-id="t2" data-priority="medium" data-due="2026-03-01"><div class="k-card-header-row"><span class="tag tag-orange">Admin</span><button class="k-card-del" onclick="deleteTask(this)"><i class="fas fa-times"></i></button></div><div class="k-card-title">Prepare March BOD meeting agenda</div><div class="k-card-meta"><div class="k-card-date"><i class="fas fa-calendar"></i> Mar 1</div><div class="mini-avs"><div class="mini-av ma-b">JT</div></div></div></div>
-          <div class="k-card kc-yellow" draggable="true" data-task-id="t3" data-priority="medium" data-due="2026-03-05"><div class="k-card-header-row"><span class="tag tag-gray">Maintenance</span><button class="k-card-del" onclick="deleteTask(this)"><i class="fas fa-times"></i></button></div><div class="k-card-title">Schedule annual park equipment inspection</div><div class="k-card-meta"><div class="k-card-date"><i class="fas fa-calendar"></i> Mar 5</div><div class="mini-avs"><div class="mini-av ma-a">RL</div></div></div></div>
-          <div class="k-card" draggable="true" data-task-id="t4" data-priority="low" data-due="2026-02-20"><div class="k-card-header-row"><span class="tag tag-blue">Communications</span><button class="k-card-del" onclick="deleteTask(this)"><i class="fas fa-times"></i></button></div><div class="k-card-title">Post February community newsletter</div><div class="k-card-meta"><div class="k-card-date"><i class="fas fa-calendar"></i> Feb 20</div><div class="mini-avs"><div class="mini-av ma-b">CP</div></div></div></div>
           <button class="k-add-btn" onclick="openModal('addTask')"><i class="fas fa-plus"></i> Add task</button>
         </div>
       </div>
       <div class="k-col" data-col="progress">
-        <div class="k-col-head"><div class="k-col-dot" style="background:#1a5fa8"></div><div class="k-col-title">In Progress</div><div class="k-col-count" id="k-count-progress">2</div></div>
+        <div class="k-col-head"><div class="k-col-dot" style="background:#1a5fa8"></div><div class="k-col-title">In Progress</div><div class="k-col-count" id="k-count-progress">0</div></div>
         <div class="k-col-body" id="k-body-progress">
-          <div class="k-card kc-orange" draggable="true" data-task-id="t5" data-priority="high" data-due="2026-02-28"><div class="k-card-header-row"><span class="tag tag-orange">Finance</span><button class="k-card-del" onclick="deleteTask(this)"><i class="fas fa-times"></i></button></div><div class="k-card-title">Q1 dues follow-up — 18 households</div><div class="k-card-meta"><div class="k-card-date"><i class="fas fa-calendar"></i> Feb 28</div><div class="mini-avs"><div class="mini-av ma-b">JT</div></div></div></div>
-          <div class="k-card kc-yellow" draggable="true" data-task-id="t6" data-priority="medium" data-due="2026-02-25"><div class="k-card-header-row"><span class="tag tag-gray">Maintenance</span><button class="k-card-del" onclick="deleteTask(this)"><i class="fas fa-times"></i></button></div><div class="k-card-title">Repaint perimeter fence — Block C</div><div class="k-card-meta"><div class="k-card-date"><i class="fas fa-calendar"></i> Feb 25</div><div class="mini-avs"><div class="mini-av ma-a">RL</div></div></div></div>
           <button class="k-add-btn" onclick="openModal('addTask')"><i class="fas fa-plus"></i> Add task</button>
         </div>
       </div>
       <div class="k-col" data-col="review">
-        <div class="k-col-head"><div class="k-col-dot" style="background:#c06418"></div><div class="k-col-title">For Review</div><div class="k-col-count" id="k-count-review">2</div></div>
+        <div class="k-col-head"><div class="k-col-dot" style="background:#c06418"></div><div class="k-col-title">For Review</div><div class="k-col-count" id="k-count-review">0</div></div>
         <div class="k-col-body" id="k-body-review">
-          <div class="k-card kc-orange" draggable="true" data-task-id="t7" data-priority="high" data-due="2026-02-19"><div class="k-card-header-row"><span class="tag tag-orange">Admin</span><button class="k-card-del" onclick="deleteTask(this)"><i class="fas fa-times"></i></button></div><div class="k-card-title">Gate pass policy revision — BOD approval</div><div class="k-card-meta"><div class="k-card-date"><i class="fas fa-calendar"></i> Feb 19</div><div class="mini-avs"><div class="mini-av ma-b">JT</div><div class="mini-av ma-g">MS</div></div></div></div>
-          <div class="k-card kc-yellow" draggable="true" data-task-id="t8" data-priority="medium" data-due="2026-02-22"><div class="k-card-header-row"><span class="tag tag-green">Environment</span><button class="k-card-del" onclick="deleteTask(this)"><i class="fas fa-times"></i></button></div><div class="k-card-title">Main Blvd landscaping proposal — 3 quotes</div><div class="k-card-meta"><div class="k-card-date"><i class="fas fa-calendar"></i> Feb 22</div><div class="mini-avs"><div class="mini-av ma-g">MS</div></div></div></div>
           <button class="k-add-btn" onclick="openModal('addTask')"><i class="fas fa-plus"></i> Add task</button>
         </div>
       </div>
       <div class="k-col" data-col="done">
-        <div class="k-col-head"><div class="k-col-dot" style="background:#2e7a50"></div><div class="k-col-title">Done</div><div class="k-col-count" id="k-count-done">3</div></div>
+        <div class="k-col-head"><div class="k-col-dot" style="background:#2e7a50"></div><div class="k-col-title">Done</div><div class="k-col-count" id="k-count-done">0</div></div>
         <div class="k-col-body" id="k-body-done">
-          <div class="k-card kc-green" draggable="true" data-task-id="t9" data-priority="low" data-due="2026-02-15"><div class="k-card-header-row"><span class="tag tag-green"><i class="fas fa-check"></i> Done</span><button class="k-card-del" onclick="deleteTask(this)"><i class="fas fa-times"></i></button></div><div class="k-card-title">Install CCTV cameras at Gate 2</div><div class="k-card-meta"><div class="k-card-date"><i class="fas fa-check-circle"></i> Feb 15</div><div class="mini-avs"><div class="mini-av ma-a">RL</div></div></div></div>
-          <div class="k-card kc-green" draggable="true" data-task-id="t10" data-priority="low" data-due="2026-02-10"><div class="k-card-header-row"><span class="tag tag-green"><i class="fas fa-check"></i> Done</span><button class="k-card-del" onclick="deleteTask(this)"><i class="fas fa-times"></i></button></div><div class="k-card-title">Submit Q4 2025 financial report</div><div class="k-card-meta"><div class="k-card-date"><i class="fas fa-check-circle"></i> Feb 10</div><div class="mini-avs"><div class="mini-av ma-b">JT</div></div></div></div>
-          <div class="k-card kc-green" draggable="true" data-task-id="t11" data-priority="low" data-due="2026-02-08"><div class="k-card-header-row"><span class="tag tag-green"><i class="fas fa-check"></i> Done</span><button class="k-card-del" onclick="deleteTask(this)"><i class="fas fa-times"></i></button></div><div class="k-card-title">Conduct fire drill — Blocks A &amp; B</div><div class="k-card-meta"><div class="k-card-date"><i class="fas fa-check-circle"></i> Feb 8</div><div class="mini-avs"><div class="mini-av ma-g">MS</div></div></div></div>
           <button class="k-add-btn" onclick="openModal('addTask')"><i class="fas fa-plus"></i> Add task</button>
         </div>
       </div>
@@ -253,7 +242,7 @@
 
 <!-- ═══════ COMMUNITY EXCHANGE ═══════ -->
 <div class="page" id="page-exchange">
-  <div class="sec-header"><h2><i class="fas fa-store"></i> Community Exchange Approvals</h2><a href="advertisements.html" target="_blank" class="btn btn-outline btn-sm"><i class="fas fa-external-link-alt"></i> View Public Page</a></div>
+  <div class="sec-header"><h2><i class="fas fa-store"></i> Community Exchange Approvals</h2><a asp-controller="Home" asp-action="advertisements" target="_blank" class="btn btn-outline btn-sm"><i class="fas fa-external-link-alt"></i> View Public Page</a></div>
   <div class="card" style="margin-bottom:18px">
     <div class="card-header"><h3><i class="fas fa-clock"></i> Pending A (<span id="pending-exchange-count">5</span>)</h3></div>
     <div id="pending-exchange-list"></div>
@@ -268,14 +257,14 @@
 <div class="page" id="page-forums">
   <div class="sec-header">
     <h2><i class="fas fa-comments"></i> Usap Tayo Para sa HOA</h2>
-    <a href="forums.html" target="_blank" class="btn btn-primary"><i class="fas fa-external-link-alt"></i> Open Forum Page</a>
+    <a asp-controller="Home" asp-action="forums" target="_blank" class="btn btn-primary"><i class="fas fa-external-link-alt"></i> Open Forum Page</a>
   </div>
 
   <!-- Info banner -->
   <div class="info-banner" style="margin-bottom:20px">
     <i class="fas fa-info-circle"></i> <strong>Moderate community discussions.</strong>
     Review all forum posts below and remove any that violate community guidelines. You can also open the full
-    <a href="forums.html" target="_blank" style="color:var(--green);font-weight:800;text-decoration:underline">forum page</a> to reply.
+    <a asp-controller="Home" asp-action="forums" target="_blank" style="color:var(--green);font-weight:800;text-decoration:underline">forum page</a> to reply.
   </div>
 
   <!-- Live stats pulled from the database -->
@@ -304,7 +293,7 @@
         <i class="fas fa-comments" style="font-size:32px;color:var(--green);display:block;margin-bottom:10px"></i>
         <div style="font-size:14px;font-weight:800;color:var(--green);margin-bottom:6px">Manage Full Forum</div>
         <div style="font-size:12px;color:var(--gray-400);margin-bottom:14px">Reply, moderate, and control all discussions from the forum page</div>
-        <a href="forums.html" target="_blank" class="btn btn-primary" style="width:100%;justify-content:center"><i class="fas fa-external-link-alt"></i> Go to Forum Page</a>
+        <a asp-controller="Home" asp-action="forums" target="_blank" class="btn btn-primary" style="width:100%;justify-content:center"><i class="fas fa-external-link-alt"></i> Go to Forum Page</a>
       </div>
     </div>
   </div>
@@ -340,9 +329,7 @@
   <div class="sec-header"><h2><i class="fas fa-bullhorn"></i> Announcements</h2><button class="btn btn-primary" onclick="openModal('addAnnouncement')"><i class="fas fa-plus"></i> Post Announcement</button></div>
   <div class="card"><div class="card-header"><h3><i class="fas fa-list"></i> Published &amp; Scheduled</h3></div>
   <div class="tbl-wrap"><table><thead><tr><th>Title</th><th>Category</th><th>Posted By</th><th>Date</th><th>Status</th><th>Actions</th></tr></thead><tbody id="announcements-tbody">
-    <tr id="ann-1"><td><strong>February Community Newsletter</strong></td><td><span class="tag tag-blue">Newsletter</span></td><td>Maria Santos</td><td>Feb 15</td><td><span class="status-pill sp-approved">Published</span></td><td><button class="btn btn-outline btn-sm" onclick="editAnnouncement('ann-1','February Community Newsletter','General')"><i class="fas fa-edit"></i> Edit</button> <button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="deleteAnnouncement('ann-1','February Community Newsletter')"><i class="fas fa-trash"></i></button></td></tr>
-    <tr id="ann-2"><td><strong>Water Interruption — Feb 20</strong></td><td><span class="tag tag-red">Urgent</span></td><td>Maria Santos</td><td>Feb 14</td><td><span class="status-pill sp-approved">Published</span></td><td><button class="btn btn-outline btn-sm" onclick="editAnnouncement('ann-2','Water Interruption — Feb 20','Urgent')"><i class="fas fa-edit"></i> Edit</button> <button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="deleteAnnouncement('ann-2','Water Interruption')"><i class="fas fa-trash"></i></button></td></tr>
-    <tr id="ann-3"><td><strong>March BOD Meeting Agenda</strong></td><td><span class="tag tag-orange">Governance</span></td><td>Jess Torres</td><td>Feb 12</td><td><span class="status-pill sp-approved">Published</span></td><td><button class="btn btn-outline btn-sm" onclick="editAnnouncement('ann-3','March BOD Meeting Agenda','Governance')"><i class="fas fa-edit"></i> Edit</button> <button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="deleteAnnouncement('ann-3','March BOD Meeting Agenda')"><i class="fas fa-trash"></i></button></td></tr>
+    <tr><td colspan="6" style="text-align:center;padding:24px;color:var(--gray-400)"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>
   </tbody></table></div></div>
 </div>
 
@@ -352,7 +339,7 @@
   <div class="grid-60-40" style="align-items:start">
     <div class="card">
       <div class="card-header">
-        <h3><i class="fas fa-calendar"></i> <span id="cal-month-label">February 2026</span></h3>
+        <h3><i class="fas fa-calendar"></i> <span id="cal-month-label">Loading…</span></h3>
         <div style="display:flex;gap:6px"><button class="btn btn-outline btn-sm" onclick="calNav(-1)"><i class="fas fa-chevron-left"></i></button><button class="btn btn-outline btn-sm" onclick="calNav(1)"><i class="fas fa-chevron-right"></i></button></div>
       </div>
       <div style="padding:16px"><div class="cal-grid" id="cal-grid"></div></div>
@@ -376,24 +363,7 @@
   <div class="card">
     <div class="card-header"><h3><i class="fas fa-user-tie"></i> Board of Directors</h3></div>
     <div class="bods-grid" id="bods-grid">
-      <div class="bod-card" id="bod-1" data-name="Roberto Dela Cruz" data-pos="President" data-term="2024–2026" data-phone="09171234567">
-        <div class="bod-avatar">RD</div><div class="bod-name">Roberto Dela Cruz</div><div class="bod-pos">President</div>
-        <div class="bod-term">Term: 2024–2026</div>
-        <div class="bod-contact"><i class="fas fa-phone"></i> 09171234567</div>
-        <div class="bod-actions"><button class="btn btn-outline btn-sm" onclick="viewBodMember('bod-1')"><i class="fas fa-eye"></i> View</button><button class="btn btn-outline btn-sm" onclick="editBodMember('bod-1')"><i class="fas fa-edit"></i> Edit</button><button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="deleteBodMember('bod-1','Roberto Dela Cruz')"><i class="fas fa-trash"></i></button></div>
-      </div>
-      <div class="bod-card" id="bod-2" data-name="Carla Reyes" data-pos="Vice President" data-term="2024–2026" data-phone="09181234567">
-        <div class="bod-avatar" style="background:linear-gradient(135deg,#1a5fa8,#4a90e2)">CR</div><div class="bod-name">Carla Reyes</div><div class="bod-pos">Vice President</div>
-        <div class="bod-term">Term: 2024–2026</div>
-        <div class="bod-contact"><i class="fas fa-phone"></i> 09181234567</div>
-        <div class="bod-actions"><button class="btn btn-outline btn-sm" onclick="viewBodMember('bod-2')"><i class="fas fa-eye"></i> View</button><button class="btn btn-outline btn-sm" onclick="editBodMember('bod-2')"><i class="fas fa-edit"></i> Edit</button><button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="deleteBodMember('bod-2','Carla Reyes')"><i class="fas fa-trash"></i></button></div>
-      </div>
-      <div class="bod-card" id="bod-3" data-name="Jose Santos" data-pos="Treasurer" data-term="2024–2026" data-phone="09191234567">
-        <div class="bod-avatar" style="background:linear-gradient(135deg,#c06418,#e8903a)">JS</div><div class="bod-name">Jose Santos</div><div class="bod-pos">Treasurer</div>
-        <div class="bod-term">Term: 2024–2026</div>
-        <div class="bod-contact"><i class="fas fa-phone"></i> 09191234567</div>
-        <div class="bod-actions"><button class="btn btn-outline btn-sm" onclick="viewBodMember('bod-3')"><i class="fas fa-eye"></i> View</button><button class="btn btn-outline btn-sm" onclick="editBodMember('bod-3')"><i class="fas fa-edit"></i> Edit</button><button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="deleteBodMember('bod-3','Jose Santos')"><i class="fas fa-trash"></i></button></div>
-      </div>
+      <div class="empty-state-inline" style="padding:32px"><i class="fas fa-spinner fa-spin"></i><span>Loading board members...</span></div>
     </div>
   </div>
 </div>
@@ -403,8 +373,7 @@
   <div class="sec-header"><h2><i class="fas fa-clipboard-list"></i> Meeting Records &amp; Governance</h2><button class="btn btn-primary" onclick="openModal('addMeeting')"><i class="fas fa-plus"></i> Upload Record</button></div>
   <div class="card"><div class="card-header"><h3><i class="fas fa-file-alt"></i> Meeting Records</h3></div>
   <div class="tbl-wrap"><table><thead><tr><th>Title</th><th>Date</th><th>Type</th><th>File</th><th>Actions</th></tr></thead><tbody id="meetings-tbody">
-    <tr id="meet-1"><td><strong>BOD Meeting Minutes — Feb 2026</strong></td><td>Feb 7</td><td><span class="tag tag-orange">BOD</span></td><td><span class="tag tag-gray"><i class="fas fa-file-pdf"></i> PDF</span></td><td><button class="btn btn-outline btn-sm" onclick="showToast('Download started')"><i class="fas fa-download"></i></button> <button class="btn btn-outline btn-sm" onclick="editMeeting('meet-1','BOD Meeting Minutes — Feb 2026','BOD','2026-02-07')"><i class="fas fa-edit"></i></button> <button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="deleteMeeting('meet-1','BOD Meeting Minutes')"><i class="fas fa-trash"></i></button></td></tr>
-    <tr id="meet-2"><td><strong>Annual General Meeting — Jan 2026</strong></td><td>Jan 15</td><td><span class="tag tag-blue">AGM</span></td><td><span class="tag tag-gray"><i class="fas fa-file-pdf"></i> PDF</span></td><td><button class="btn btn-outline btn-sm" onclick="showToast('Download started')"><i class="fas fa-download"></i></button> <button class="btn btn-outline btn-sm" onclick="editMeeting('meet-2','Annual General Meeting — Jan 2026','AGM','2026-01-15')"><i class="fas fa-edit"></i></button> <button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="deleteMeeting('meet-2','Annual General Meeting')"><i class="fas fa-trash"></i></button></td></tr>
+    <tr><td colspan="5" style="text-align:center;padding:24px"><i class="fas fa-spinner fa-spin"></i> Loading meeting records...</td></tr>
   </tbody></table></div></div>
 </div>
 
@@ -413,9 +382,7 @@
   <div class="sec-header"><h2><i class="fas fa-file-alt"></i> Forms &amp; Documents</h2><button class="btn btn-primary" onclick="openModal('addDocument')"><i class="fas fa-upload"></i> Upload Document</button></div>
   <div class="card"><div class="card-header"><h3><i class="fas fa-folder-open"></i> All Documents</h3></div>
   <div class="tbl-wrap"><table><thead><tr><th>Document Name</th><th>Category</th><th>Actions</th></tr></thead><tbody id="documents-tbody">
-    <tr id="doc-1"><td><strong>Gate Pass Application Form</strong></td><td><span class="tag tag-orange">Form</span></td><td><button class="btn btn-outline btn-sm" onclick="viewDocument('Gate Pass Application Form')"><i class="fas fa-eye"></i> View</button> <button class="btn btn-outline btn-sm" onclick="showToast('Download started')"><i class="fas fa-download"></i> Download</button> <button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="deleteDocument('doc-1','Gate Pass Application Form')"><i class="fas fa-trash"></i> Delete</button></td></tr>
-    <tr id="doc-2"><td><strong>Amenity Reservation Form</strong></td><td><span class="tag tag-blue">Form</span></td><td><button class="btn btn-outline btn-sm" onclick="viewDocument('Amenity Reservation Form')"><i class="fas fa-eye"></i> View</button> <button class="btn btn-outline btn-sm" onclick="showToast('Download started')"><i class="fas fa-download"></i> Download</button> <button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="deleteDocument('doc-2','Amenity Reservation Form')"><i class="fas fa-trash"></i> Delete</button></td></tr>
-    <tr id="doc-3"><td><strong>House Renovation Guidelines</strong></td><td><span class="tag tag-green">Policy</span></td><td><button class="btn btn-outline btn-sm" onclick="viewDocument('House Renovation Guidelines')"><i class="fas fa-eye"></i> View</button> <button class="btn btn-outline btn-sm" onclick="showToast('Download started')"><i class="fas fa-download"></i> Download</button> <button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="deleteDocument('doc-3','House Renovation Guidelines')"><i class="fas fa-trash"></i> Delete</button></td></tr>
+    <tr><td colspan="3" style="text-align:center;padding:24px"><i class="fas fa-spinner fa-spin"></i> Loading documents...</td></tr>
   </tbody></table></div></div>
 </div>
 
@@ -424,9 +391,7 @@
   <div class="sec-header"><h2><i class="fas fa-phone-alt"></i> Contacts Management</h2><button class="btn btn-primary" onclick="openModal('addContact')"><i class="fas fa-plus"></i> Add Contact</button></div>
   <div class="card"><div class="card-header"><h3><i class="fas fa-address-book"></i> Directory</h3></div>
   <div class="tbl-wrap"><table><thead><tr><th>Name / Office</th><th>Role</th><th>Phone</th><th>Email</th><th>Actions</th></tr></thead><tbody id="contacts-tbody">
-    <tr id="con-1"><td><strong>HOA Office</strong></td><td>Main Office</td><td>0495603050</td><td><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="a9c1c6c8e9c5cbc89d87cac6c4">[email&#160;protected]</a></td><td><button class="btn btn-outline btn-sm" onclick="editContact('con-1','HOA Office','Main Office','0495603050','hoa@lba4.com')"><i class="fas fa-edit"></i> Edit</button> <button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="deleteContact('con-1','HOA Office')"><i class="fas fa-trash"></i></button></td></tr>
-    <tr id="con-2"><td><strong>Security Office</strong></td><td>Security</td><td>09398588138</td><td>—</td><td><button class="btn btn-outline btn-sm" onclick="editContact('con-2','Security Office','Security','09398588138','')"><i class="fas fa-edit"></i> Edit</button> <button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="deleteContact('con-2','Security Office')"><i class="fas fa-trash"></i></button></td></tr>
-    <tr id="con-3"><td><strong>Maintenance Team</strong></td><td>Maintenance</td><td>09171234567</td><td>—</td><td><button class="btn btn-outline btn-sm" onclick="editContact('con-3','Maintenance Team','Maintenance','09171234567','')"><i class="fas fa-edit"></i> Edit</button> <button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="deleteContact('con-3','Maintenance Team')"><i class="fas fa-trash"></i></button></td></tr>
+    <tr><td colspan="5" style="text-align:center;padding:24px"><i class="fas fa-spinner fa-spin"></i> Loading contacts...</td></tr>
   </tbody></table></div></div>
 </div>
 
@@ -512,22 +477,29 @@
 <div class="page" id="page-reports">
   <div class="sec-header"><h2><i class="fas fa-chart-bar"></i> Reports &amp; Analytics</h2><button class="btn btn-primary"><i class="fas fa-download"></i> Export</button></div>
   <div class="stats-row">
-    <div class="stat-card"><div class="stat-icon si-red"><i class="fas fa-exclamation-circle"></i></div><div class="stat-info"><div class="stat-val">48</div><div class="stat-label">Total Incidents (Feb)</div><div class="stat-sub sub-down">+12% from last month</div></div></div>
-    <div class="stat-card"><div class="stat-icon si-green"><i class="fas fa-check-circle"></i></div><div class="stat-info"><div class="stat-val">36</div><div class="stat-label">Resolved (Feb)</div><div class="stat-sub sub-up">75% resolution rate</div></div></div>
-    <div class="stat-card"><div class="stat-icon si-blue"><i class="fas fa-store"></i></div><div class="stat-info"><div class="stat-val">23</div><div class="stat-label">Exchange Posts (Feb)</div><div class="stat-sub sub-up">+5 from last month</div></div></div>
-    <div class="stat-card"><div class="stat-icon si-yellow"><i class="fas fa-users"></i></div><div class="stat-info"><div class="stat-val">342</div><div class="stat-label">Verified Residents</div><div class="stat-sub sub-up">+4 this month</div></div></div>
+    <div class="stat-card"><div class="stat-icon si-red"><i class="fas fa-exclamation-circle"></i></div><div class="stat-info"><div class="stat-val" id="rep-total-incidents">—</div><div class="stat-label">Total Incidents (This Month)</div><div class="stat-sub" id="rep-total-incidents-sub"></div></div></div>
+    <div class="stat-card"><div class="stat-icon si-green"><i class="fas fa-check-circle"></i></div><div class="stat-info"><div class="stat-val" id="rep-resolved-incidents">—</div><div class="stat-label">Resolved (This Month)</div><div class="stat-sub" id="rep-resolved-sub"></div></div></div>
+    <div class="stat-card"><div class="stat-icon si-blue"><i class="fas fa-store"></i></div><div class="stat-info"><div class="stat-val" id="rep-exchange-posts">—</div><div class="stat-label">Exchange Posts (This Month)</div><div class="stat-sub" id="rep-exchange-sub"></div></div></div>
+    <div class="stat-card"><div class="stat-icon si-yellow"><i class="fas fa-users"></i></div><div class="stat-info"><div class="stat-val" id="rep-verified-residents">—</div><div class="stat-label">Verified Residents</div><div class="stat-sub" id="rep-verified-sub"></div></div></div>
   </div>
 </div>
 
 <!-- ═══════ SUBSCRIBERS ═══════ -->
 <div class="page" id="page-subscribers">
   <div class="sec-header"><h2><i class="fas fa-bell"></i> Notification Subscribers</h2></div>
-  <div class="card" style="padding:60px 20px;text-align:center">
-    <i class="fas fa-tools" style="font-size:48px;color:var(--gray-300);display:block;margin-bottom:16px"></i>
-    <div style="font-size:18px;font-weight:800;color:var(--gray-600);margin-bottom:8px">Coming Soon</div>
-    <div style="font-size:13px;color:var(--gray-400)">Subscriber management will be available in a future update.</div>
+  <div class="stats-row">
+    <div class="stat-card"><div class="stat-icon si-navy"><i class="fas fa-users"></i></div><div class="stat-info"><div class="stat-val" id="sub-total-count">0</div><div class="stat-label">Total Subscribers</div></div></div>
+    <div class="stat-card"><div class="stat-icon si-green"><i class="fas fa-check-circle"></i></div><div class="stat-info"><div class="stat-val" id="sub-active-count">0</div><div class="stat-label">Active</div></div></div>
+    <div class="stat-card"><div class="stat-icon si-gold"><i class="fas fa-paper-plane"></i></div><div class="stat-info"><div class="stat-val" id="sub-sent-count">0</div><div class="stat-label">Notifications Sent</div></div></div>
+  </div>
+  <div class="card">
+    <div class="card-header"><h3><i class="fas fa-list"></i> Subscriber List</h3></div>
+    <div class="tbl-wrap"><table><thead><tr><th>Name</th><th>Email</th><th>Subscribed</th><th>Status</th><th>Actions</th></tr></thead><tbody id="subscribers-tbody">
+      <tr><td colspan="5" style="text-align:center;padding:24px"><i class="fas fa-spinner fa-spin"></i> Loading subscribers...</td></tr>
+    </tbody></table></div>
   </div>
 </div>
+
 
 </main>
 
@@ -867,6 +839,6 @@
 <div class="notif-modal-overlay" id="notif-modal-overlay"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<script src="~/js/staff-dashboard.js?v=3"></script>
+<script src="~/js/staff-dashboard.js?v=5"></script>
 </body>
 </html>

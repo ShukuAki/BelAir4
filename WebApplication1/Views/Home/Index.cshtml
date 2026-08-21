@@ -111,24 +111,24 @@
                             <p>Report a Concern</p>
                         </a>
                     </div>
-                   @*  <div class="action-circle">
-                        <a href="reserve.html" style="text-decoration: none; color: inherit;">
+                    <div class="action-circle">
+                        <a asp-controller="Home" asp-action="reserve" style="text-decoration: none; color: inherit;">
                             <div class="circle-icon">
                                 <i class="fas fa-calendar-check"></i>
                             </div>
-                            <p>Reserve Amenities</p>
+                            <p>reserve amenities</p>
                         </a>
                     </div>
                     <div class="action-circle">
-                        <a href="calendars.html" style="text-decoration: none; color: inherit;">
+                        <a asp-controller="Home" asp-action="calendars" style="text-decoration: none; color: inherit;">
                             <div class="circle-icon">
                                 <i class="fas fa-calendar-alt"></i>
                             </div>
-                            <p>Community Calendar</p>
+                            <p>community calendar</p>
                         </a>
-                    </div> *@
+                    </div>
                     <div class="action-circle">
-                        <a href="forums.html" style="text-decoration: none; color: inherit;">
+                        <a asp-controller="Home" asp-action="forums" style="text-decoration: none; color: inherit;">
                             <div class="circle-icon">
                                 <i class="fas fa-comments"></i>
                             </div>
@@ -150,7 +150,7 @@
                     <h2 class="section-title">QUICK LINKS</h2>
                     <div class="links-grid">
                         <div class="link-box">
-                            <a href="announcement.html" style="text-decoration: none; color: inherit;">
+                            <a asp-controller="Home" asp-action="announcement" style="text-decoration: none; color: inherit;">
                                 <div class="link-icon">
                                     <i class="fas fa-newspaper"></i>
                                 </div>
@@ -159,7 +159,7 @@
                             </a>
                         </div>
                         <div class="link-box">
-                            <a href="meeting-agendas.html" style="text-decoration: none; color: inherit;">
+                            <a asp-controller="Home" asp-action="meetingAgendas" style="text-decoration: none; color: inherit;">
                                 <div class="link-icon">
                                     <i class="fas fa-clipboard-list"></i>
                                 </div>
@@ -168,7 +168,7 @@
                             </a>
                         </div>
                         <div class="link-box">
-                            <a href="committees-bods.html" style="text-decoration: none; color: inherit;">
+                            <a asp-controller="Home" asp-action="committeesBods" style="text-decoration: none; color: inherit;">
                                 <div class="link-icon">
                                     <i class="fas fa-users"></i>
                                 </div>
@@ -177,7 +177,7 @@
                             </a>
                         </div>
                         <div class="link-box">
-                            <a href="landmarks.html" style="text-decoration: none; color: inherit;">
+                            <a asp-controller="Home" asp-action="landMarks" style="text-decoration: none; color: inherit;">
                                 <div class="link-icon">
                                     <i class="fas fa-map-marked-alt"></i>
                                 </div>
@@ -186,7 +186,7 @@
                             </a>
                         </div>
                         <div class="link-box">
-                            <a href="advertisements.html" style="text-decoration: none; color: inherit;">
+                            <a asp-controller="Home" asp-action="advertisements" style="text-decoration: none; color: inherit;">
                                 <div class="link-icon">
                                     <i class="fas fa-store"></i>
                                 </div>
@@ -198,7 +198,7 @@
                 </section>
 
                 <!-- Calendar Section -->
-                @* <section id="community-calendar" class="calendar-section">
+                <section id="community-calendar" class="calendar-section">
                     <h2 class="section-title">Community Calendar</h2>
                     <div class="calendar-container">
                         <!-- Left Side: Events List -->
@@ -237,7 +237,7 @@
                             </div>
                         </div>
                     </div>
-                </section> *@
+                </section>
             </div>
 
             <!-- ═══════════════════════════════════════
@@ -246,7 +246,7 @@
             <footer class="footer">
                 <div class="footer-content">
                     <div class="footer-section footer-logo-section">
-                            <a href="index.html" class="footer-logo-link">
+                            <a asp-controller="Home" asp-action="Index" class="footer-logo-link">
                             <img src="@(Url.Content("~/assets/LBAlogo.png"))" alt="Bel-Air Village Logo" class="footer-logo">
                             </a>
                         </div>
@@ -261,21 +261,21 @@
                         <div class="footer-section">
                             <h3>Quick Links</h3>
                             <ul class="footer-links">
-                                <li><a href="about-laguna-belair.html">About Us</a></li>
-                                <li><a href="contacts.html">Contact Us</a></li>
-                                <li><a href="faq.html">FAQs</a></li>
-                                <li><a href="privacy-policy.html">Privacy Policy</a></li>
+                                <li><a asp-controller="Home" asp-action="aboutlagunabelair">About Us</a></li>
+                                <li><a asp-controller="Home" asp-action="contacts">Contact Us</a></li>
+                                <li><a asp-controller="Home" asp-action="Index">FAQs</a></li>
+                                <li><a asp-controller="Home" asp-action="Index">Privacy Policy</a></li>
                             </ul>
                         </div>
-                      @*   <div class="footer-section">
+                        <div class="footer-section">
                             <h3>Site Links</h3>
                             <ul class="footer-links">
-                                <li><a href="announcement.html">Announcements</a></li>
-                                <li><a href="calendars.html">Community Calendar</a></li>
-                                <li><a href="forms-documents.html">Forms &amp; Documents</a></li>
-                                <li><a href="report-concerns.html">Report a Concern</a></li>
+                                <li><a asp-controller="Home" asp-action="announcement">Announcements</a></li>
+                                <li><a asp-controller="Home" asp-action="calendars">Community Calendar</a></li>
+                                <li><a asp-controller="Home" asp-action="formsDocuments">Forms &amp; Documents</a></li>
+                                <li><a asp-controller="Home" asp-action="reportConcerns">Report a Concern</a></li>
                             </ul>
-                        </div> *@
+                        </div>
                     </div>
                     <div class="footer-bottom">
                         <p>&copy; <span id="current-year"></span> Laguna BelAir 4. All rights reserved.</p>

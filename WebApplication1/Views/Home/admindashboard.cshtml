@@ -137,38 +137,24 @@
     <div class="grid-60-40">
       <div class="card">
         <div class="card-header"><h3><i class="fas fa-exclamation-triangle"></i> System Alerts & Flags</h3></div>
+        <div id="overview-alerts-list">
         <div class="alert-item alert-critical">
           <div class="alert-icon"><i class="fas fa-database"></i></div>
-          <div class="alert-body"><div class="alert-title">Database storage at 78% capacity</div><div class="alert-meta">Estimated full in 14 days · Auto-backup enabled</div></div>
-          <div class="alert-actions"><button class="btn btn-outline btn-sm" onclick="showPage('backups',document.querySelector('[onclick*=backups]'))">Manage</button></div>
+          <div class="alert-body"><div class="alert-title">Loading system alerts...</div></div>
         </div>
-        <div class="alert-item alert-warn">
-          <div class="alert-icon"><i class="fas fa-user-times"></i></div>
-          <div class="alert-body"><div class="alert-title">Staff account login anomaly — Rodel L.</div><div class="alert-meta">5 failed login attempts · Feb 18, 2:14 AM</div></div>
-          <div class="alert-actions"><button class="btn btn-outline btn-sm" onclick="showPage('staffaccounts',document.querySelector('[onclick*=staffaccounts]'))">Review</button></div>
-        </div>
-        <div class="alert-item alert-info">
-          <div class="alert-icon"><i class="fas fa-key"></i></div>
-          <div class="alert-body"><div class="alert-title">Push notification service expiring in 7 days</div><div class="alert-meta">Subscriber notification integration — renewal required</div></div>
-          <div class="alert-actions"><button class="btn btn-primary btn-sm" onclick="showPage('integrations',document.querySelector('[onclick*=integrations]'))">Renew</button></div>
         </div>
       </div>
       <div class="flex-col gap-16">
         <div class="card">
-          <div class="card-header"><h3><i class="fas fa-chart-line"></i> Platform Metrics (Feb 2026)</h3></div>
-          <div class="card-body">
-            <div class="metric-row"><div class="metric-label">Total Logins</div><div class="metric-val">1,284</div><div class="metric-trend up">↑ 8%</div></div>
-            <div class="metric-row"><div class="metric-label">Reports Filed</div><div class="metric-val">48</div><div class="metric-trend up">↑ 18%</div></div>
-            <div class="metric-row"><div class="metric-label">Data Exported</div><div class="metric-val">12 files</div><div class="metric-trend neutral">—</div></div>
-            <div class="metric-row"><div class="metric-label">Avg. Response Time</div><div class="metric-val">1.8 hrs</div><div class="metric-trend up">↓ Better</div></div>
+          <div class="card-header"><h3><i class="fas fa-chart-line"></i> Platform Metrics (This Month)</h3></div>
+          <div class="card-body" id="overview-metrics-body">
+            <div class="metric-row"><div class="metric-label">Loading metrics...</div></div>
           </div>
         </div>
         <div class="card">
           <div class="card-header"><h3><i class="fas fa-clock"></i> Recent Admin Actions</h3><button class="see-all" onclick="showPage('auditlog',document.querySelector('[onclick*=auditlog]'))">Full Log</button></div>
-          <div class="scroll-y" style="max-height:160px">
-            <div class="activity-item"><div class="act-dot" style="background:var(--navy)"></div><div class="act-body"><p><strong>Admin</strong> updated role permissions for <em>Staff</em></p><div class="act-time">Today, 9:00 AM</div></div></div>
-            <div class="activity-item"><div class="act-dot" style="background:var(--gold)"></div><div class="act-body"><p><strong>Admin</strong> exported resident data (CSV)</p><div class="act-time">Today, 8:30 AM</div></div></div>
-            <div class="activity-item"><div class="act-dot" style="background:var(--red)"></div><div class="act-body"><p><strong>Admin</strong> banned user <em>TestAccount01</em></p><div class="act-time">Feb 17</div></div></div>
+          <div class="scroll-y" style="max-height:160px" id="overview-recent-actions">
+            <div class="activity-item"><div class="act-dot" style="background:var(--gray-300)"></div><div class="act-body"><p style="color:var(--gray-400);font-size:12px">Loading recent actions...</p></div></div>
           </div>
         </div>
       </div>
@@ -176,10 +162,9 @@
     <div class="grid-2">
       <div class="card">
         <div class="card-header"><h3><i class="fas fa-users-cog"></i> Staff Accounts</h3><button class="see-all" onclick="showPage('staffaccounts',document.querySelector('[onclick*=staffaccounts]'))">Manage</button></div>
-        <div class="staff-mini-item"><div class="staff-av" style="background:linear-gradient(135deg,#0a4d3c,#1a7a58)">MS</div><div class="staff-info"><div class="staff-name">Maria Santos</div><div class="staff-role">Staff</div></div><span class="status-pill sp-active">Online</span></div>
-        <div class="staff-mini-item"><div class="staff-av" style="background:linear-gradient(135deg,#1a3fa8,#3a60e2)">JT</div><div class="staff-info"><div class="staff-name">Jess Torres</div><div class="staff-role">Staff</div></div><span class="status-pill sp-resolved">Active</span></div>
-        <div class="staff-mini-item"><div class="staff-av" style="background:linear-gradient(135deg,#7a3a10,#c06418)">RL</div><div class="staff-info"><div class="staff-name">Rodel Lim</div><div class="staff-role">Staff</div></div><span class="status-pill sp-pending">Away</span></div>
-        <div class="staff-mini-item"><div class="staff-av" style="background:linear-gradient(135deg,#333,#666)">CP</div><div class="staff-info"><div class="staff-name">Carlo Padilla</div><div class="staff-role">Staff</div></div><span class="status-pill sp-resolved">Active</span></div>
+        <div id="overview-staff-mini-list">
+          <div class="staff-mini-item"><div class="staff-info"><div class="staff-name" style="color:var(--gray-400)">Loading staff...</div></div></div>
+        </div>
       </div>
       <div class="card">
         <div class="card-header"><h3><i class="fas fa-bolt"></i> Admin Quick Actions</h3></div>
@@ -229,34 +214,15 @@
       <button class="btn btn-primary" onclick="openModal('inviteStaff')"><i class="fas fa-user-plus"></i> Invite Staff</button>
     </div>
     <div class="card" style="margin-bottom:18px">
-      <div class="card-header"><h3><i class="fas fa-user-clock"></i> Pending Invitation (1)</h3></div>
+      <div class="card-header"><h3><i class="fas fa-user-clock"></i> Pending Invitations <span id="pending-invites-count">(0)</span></h3></div>
       <div class="tbl-wrap"><table><thead><tr><th>Email</th><th>Role</th><th>Invited By</th><th>Date Sent</th><th>Expires</th><th>Actions</th></tr></thead><tbody id="pending-invites-tbody">
-        <tr><td><strong>newstaff@lba4.com</strong></td><td><span class="tag tag-blue">Staff</span></td><td>Admin</td><td>Feb 17</td><td>Feb 24</td><td>
-          <button class="btn btn-outline btn-sm" onclick="resendInvite(this)"><i class="fas fa-redo"></i> Resend</button>
-          <button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="cancelInvite(this)"><i class="fas fa-times"></i> Cancel</button>
-        </td></tr>
+        <tr><td colspan="6" style="text-align:center;padding:24px"><i class="fas fa-spinner fa-spin"></i> Loading invitations...</td></tr>
       </tbody></table></div>
     </div>
     <div class="card">
       <div class="card-header"><h3><i class="fas fa-users"></i> Active Staff</h3></div>
       <div class="tbl-wrap"><table><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Last Login</th><th>Status</th><th>Actions</th></tr></thead><tbody id="staff-tbody">
-        <tr data-protected="true"><td><strong>System Administrator</strong></td><td>admin@lba4.com</td><td><span class="tag tag-navy">Admin</span></td><td>Today, 9:00 AM</td><td><span class="status-pill sp-active">Active</span></td><td><span style="color:var(--gray-400);font-size:12px;font-style:italic">Protected</span></td></tr>
-        <tr><td><strong>Maria Santos</strong></td><td>maria@lba4.com</td><td><span class="tag tag-blue">Staff</span></td><td>Today, 8:12 AM</td><td><span class="status-pill sp-active">Online</span></td><td>
-          <button class="btn btn-outline btn-sm" onclick="openEditStaff(this)"><i class="fas fa-edit"></i></button>
-          <button class="btn btn-outline btn-sm" style="color:var(--red)" title="Remove account" onclick="removeStaff(this)"><i class="fas fa-trash"></i></button>
-        </td></tr>
-        <tr><td><strong>Jess Torres</strong></td><td>jess@lba4.com</td><td><span class="tag tag-blue">Staff</span></td><td>Feb 17, 3:45 PM</td><td><span class="status-pill sp-resolved">Active</span></td><td>
-          <button class="btn btn-outline btn-sm" onclick="openEditStaff(this)"><i class="fas fa-edit"></i></button>
-          <button class="btn btn-outline btn-sm" style="color:var(--red)" title="Remove account" onclick="removeStaff(this)"><i class="fas fa-trash"></i></button>
-        </td></tr>
-        <tr><td><strong>Rodel Lim</strong></td><td>rodel@lba4.com</td><td><span class="tag tag-blue">Staff</span></td><td>Feb 17, 2:10 AM</td><td><span class="status-pill sp-pending">⚠ Flagged</span></td><td>
-          <button class="btn btn-outline btn-sm" onclick="openEditStaff(this)"><i class="fas fa-edit"></i></button>
-          <button class="btn btn-outline btn-sm" style="color:var(--red)" title="Remove account" onclick="removeStaff(this)"><i class="fas fa-trash"></i></button>
-        </td></tr>
-        <tr><td><strong>Carlo Padilla</strong></td><td>carlo@lba4.com</td><td><span class="tag tag-blue">Staff</span></td><td>Feb 17, 11:30 AM</td><td><span class="status-pill sp-resolved">Active</span></td><td>
-          <button class="btn btn-outline btn-sm" onclick="openEditStaff(this)"><i class="fas fa-edit"></i></button>
-          <button class="btn btn-outline btn-sm" style="color:var(--red)" title="Remove account" onclick="removeStaff(this)"><i class="fas fa-trash"></i></button>
-        </td></tr>
+        <tr><td colspan="6" style="text-align:center;padding:24px"><i class="fas fa-spinner fa-spin"></i> Loading staff accounts...</td></tr>
       </tbody></table></div>
     </div>
   </div>
@@ -274,36 +240,16 @@
       <div class="card roles-list-card">
         <div class="card-header"><h3><i class="fas fa-shield-alt"></i> All Roles</h3></div>
         <div id="roles-list">
-          <div class="role-list-item active-role" data-role-id="admin" onclick="selectRole('admin',this)">
-            <div class="rli-icon rli-admin"><i class="fas fa-crown"></i></div>
-            <div class="rli-body">
-              <div class="rli-name">Admin</div>
-              <div class="rli-desc">Full system access — protected</div>
-              <div class="rli-count">1 user</div>
-            </div>
-            <span class="role-lock-badge"><i class="fas fa-lock"></i></span>
-          </div>
-          <div class="role-list-item" data-role-id="staff" onclick="selectRole('staff',this)">
-            <div class="rli-icon rli-staff"><i class="fas fa-user-shield"></i></div>
-            <div class="rli-body">
-              <div class="rli-name">Staff</div>
-              <div class="rli-desc">Operational access — day-to-day tasks</div>
-              <div class="rli-count" id="staff-role-count">4 users</div>
-            </div>
-            <div class="rli-actions">
-              <button class="btn btn-outline btn-sm" onclick="event.stopPropagation();openRenameRole('staff')" title="Rename"><i class="fas fa-pen"></i></button>
-              <button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="event.stopPropagation();deleteRole('staff')" title="Delete"><i class="fas fa-trash"></i></button>
-            </div>
-          </div>
+          <div style="text-align:center;padding:24px;color:var(--gray-400)"><i class="fas fa-spinner fa-spin"></i> Loading roles...</div>
         </div>
       </div>
       <div class="card roles-editor-card">
         <div class="card-header">
           <h3><i class="fas fa-sliders-h"></i> Permissions — <span id="perm-role-name">Admin</span></h3>
           <div id="perm-editor-actions" style="display:none;gap:6px">
-            <button class="btn btn-outline btn-sm" onclick="setAllPerms('full')">All Full</button>
-            <button class="btn btn-outline btn-sm" onclick="setAllPerms('none')">Clear All</button>
-            <button class="btn btn-primary btn-sm" onclick="savePermissions()"><i class="fas fa-save"></i> Save</button>
+            <button class="btn btn-outline btn-sm" onclick="AdminDashboard.setAllPerms('full')">All Full</button>
+            <button class="btn btn-outline btn-sm" onclick="AdminDashboard.setAllPerms('none')">Clear All</button>
+            <button class="btn btn-primary btn-sm" onclick="AdminDashboard.savePermissions()"><i class="fas fa-save"></i> Save</button>
           </div>
           <div id="perm-admin-notice" style="font-size:11.5px;color:var(--gray-400);font-style:italic">Read-only — Admin always has full access</div>
         </div>
@@ -343,30 +289,7 @@
         </div>
       </div>
       <div class="tbl-wrap"><table><thead><tr><th>Name</th><th>Unit</th><th>Block</th><th>Contact</th><th>Email</th><th>Verified</th><th>Status</th><th>Actions</th></tr></thead><tbody id="residents-tbody">
-        <tr data-status="Verified"><td><strong>Juan dela Cruz</strong></td><td>House 5</td><td>Block C</td><td>09171234567</td><td>juan@email.com</td><td>Jan 10</td><td><span class="status-pill sp-approved">Verified</span></td><td>
-          <button class="btn btn-outline btn-sm" onclick="editResident(this)" title="Edit"><i class="fas fa-edit"></i></button>
-          <button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="banResident(this)" title="Ban"><i class="fas fa-ban"></i></button>
-          <button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="removeResident(this)" title="Remove"><i class="fas fa-trash"></i></button>
-        </td></tr>
-        <tr data-status="Verified"><td><strong>Ana Reyes</strong></td><td>House 3</td><td>Block D</td><td>09181234567</td><td>ana@email.com</td><td>Jan 12</td><td><span class="status-pill sp-approved">Verified</span></td><td>
-          <button class="btn btn-outline btn-sm" onclick="editResident(this)" title="Edit"><i class="fas fa-edit"></i></button>
-          <button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="banResident(this)" title="Ban"><i class="fas fa-ban"></i></button>
-          <button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="removeResident(this)" title="Remove"><i class="fas fa-trash"></i></button>
-        </td></tr>
-        <tr data-status="Verified"><td><strong>Maria Lopez</strong></td><td>House 4</td><td>Block A</td><td>09191234567</td><td>mlopez@email.com</td><td>Feb 17</td><td><span class="status-pill sp-approved">Verified</span></td><td>
-          <button class="btn btn-outline btn-sm" onclick="editResident(this)" title="Edit"><i class="fas fa-edit"></i></button>
-          <button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="banResident(this)" title="Ban"><i class="fas fa-ban"></i></button>
-          <button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="removeResident(this)" title="Remove"><i class="fas fa-trash"></i></button>
-        </td></tr>
-        <tr data-status="Pending"><td><strong>Sofia Mendez</strong></td><td>House 7</td><td>Block B</td><td>09201234567</td><td>sofia@email.com</td><td>—</td><td><span class="status-pill sp-pending">Pending</span></td><td>
-          <button class="btn btn-outline btn-sm" onclick="editResident(this)" title="Edit"><i class="fas fa-edit"></i></button>
-          <button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="removeResident(this)" title="Remove"><i class="fas fa-trash"></i></button>
-        </td></tr>
-        <tr data-status="Banned"><td><strong>TestAccount01</strong></td><td>—</td><td>—</td><td>—</td><td>fake@test.com</td><td>—</td><td><span class="status-pill sp-open">Banned</span></td><td>
-          <button class="btn btn-outline btn-sm" onclick="viewBannedDetails(this,'TestAccount01','Fake account, spam posts','Feb 17','Permanent','fake@test.com')"><i class="fas fa-eye"></i> Details</button>
-          <button class="btn btn-outline btn-sm" onclick="unbanResident(this)"><i class="fas fa-undo"></i> Unban</button>
-          <button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="removeResident(this)" title="Remove"><i class="fas fa-trash"></i></button>
-        </td></tr>
+        <tr><td colspan="8" style="text-align:center;padding:24px"><i class="fas fa-spinner fa-spin"></i> Loading residents...</td></tr>
       </tbody></table></div>
     </div>
 
@@ -374,23 +297,10 @@
     <div class="card">
       <div class="card-header">
         <h3><i class="fas fa-ban"></i> Banned Users Detail</h3>
-        <span id="banned-count-label" style="font-size:12px;color:var(--gray-400);font-weight:700">2 currently banned</span>
+        <span id="banned-count-label" style="font-size:12px;color:var(--gray-400);font-weight:700">0 currently banned</span>
       </div>
       <div class="tbl-wrap"><table><thead><tr><th>Name / Account</th><th>Reason</th><th>Banned By</th><th>Date</th><th>Duration</th><th>Actions</th></tr></thead><tbody id="banned-tbody">
-        <tr>
-          <td><strong>TestAccount01</strong></td><td>Fake account, spam posts</td><td>Admin</td><td>Feb 17</td><td>Permanent</td>
-          <td>
-            <button class="btn btn-outline btn-sm" onclick="viewBannedDetails(this,'TestAccount01','Fake account, spam posts','Feb 17','Permanent','fake@test.com')"><i class="fas fa-eye"></i> View</button>
-            <button class="btn btn-outline btn-sm" onclick="unbanFromBannedTable(this)"><i class="fas fa-undo"></i> Unban</button>
-          </td>
-        </tr>
-        <tr>
-          <td><strong>Rina Dela Rosa</strong></td><td>Repeated spam, unsolicited ads in forum</td><td>Carlo P.</td><td>Feb 16</td><td>30 days</td>
-          <td>
-            <button class="btn btn-outline btn-sm" onclick="viewBannedDetails(this,'Rina Dela Rosa','Repeated spam, unsolicited ads in forum','Feb 16','30 days','rina@email.com')"><i class="fas fa-eye"></i> View</button>
-            <button class="btn btn-outline btn-sm" onclick="unbanFromBannedTable(this)"><i class="fas fa-undo"></i> Unban</button>
-          </td>
-        </tr>
+        <tr><td colspan="6" style="text-align:center;padding:24px"><i class="fas fa-spinner fa-spin"></i> Loading banned users...</td></tr>
       </tbody></table></div>
     </div>
   </div>
@@ -422,13 +332,13 @@
       <div class="card">
         <div class="card-header"><h3><i class="fas fa-toggle-on"></i> Feature Toggles</h3></div>
         <div class="card-body">
-          <div class="toggle-row"><div class="toggle-label"><strong>Forum Enabled</strong><div class="toggle-desc">Residents can post & comment in the community forum</div></div><label class="toggle-switch"><input type="checkbox" checked><span class="toggle-slider"></span></label></div>
-          <div class="toggle-row"><div class="toggle-label"><strong>Marketplace / Ads</strong><div class="toggle-desc">Residents can list products & services for sale</div></div><label class="toggle-switch"><input type="checkbox" checked><span class="toggle-slider"></span></label></div>
-          <div class="toggle-row"><div class="toggle-label"><strong>Incident Reports</strong><div class="toggle-desc">Residents can file and track incident reports</div></div><label class="toggle-switch"><input type="checkbox" checked><span class="toggle-slider"></span></label></div>
-          <div class="toggle-row"><div class="toggle-label"><strong>Amenity Reservations</strong><div class="toggle-desc">Residents can book amenities online</div></div><label class="toggle-switch"><input type="checkbox" checked><span class="toggle-slider"></span></label></div>
-          <div class="toggle-row"><div class="toggle-label"><strong>Push Notifications</strong><div class="toggle-desc">Send push alerts to subscribed residents</div></div><label class="toggle-switch"><input type="checkbox" checked><span class="toggle-slider"></span></label></div>
-          <div class="toggle-row"><div class="toggle-label"><strong>Maintenance Mode</strong><div class="toggle-desc">Show maintenance page to residents (staff can still access)</div></div><label class="toggle-switch"><input type="checkbox"><span class="toggle-slider"></span></label></div>
-          <div class="toggle-row"><div class="toggle-label"><strong>Two-Factor Auth Required</strong><div class="toggle-desc">Require 2FA for all staff logins</div></div><label class="toggle-switch"><input type="checkbox" checked><span class="toggle-slider"></span></label></div>
+          <div class="toggle-row"><div class="toggle-label"><strong>Forum Enabled</strong><div class="toggle-desc">Residents can post & comment in the community forum</div></div><label class="toggle-switch"><input type="checkbox" id="setting-forum-enabled" checked><span class="toggle-slider"></span></label></div>
+          <div class="toggle-row"><div class="toggle-label"><strong>Marketplace / Ads</strong><div class="toggle-desc">Residents can list products & services for sale</div></div><label class="toggle-switch"><input type="checkbox" id="setting-marketplace-enabled" checked><span class="toggle-slider"></span></label></div>
+          <div class="toggle-row"><div class="toggle-label"><strong>Incident Reports</strong><div class="toggle-desc">Residents can file and track incident reports</div></div><label class="toggle-switch"><input type="checkbox" id="setting-incidents-enabled" checked><span class="toggle-slider"></span></label></div>
+          <div class="toggle-row"><div class="toggle-label"><strong>Amenity Reservations</strong><div class="toggle-desc">Residents can book amenities online</div></div><label class="toggle-switch"><input type="checkbox" id="setting-reservations-enabled" checked><span class="toggle-slider"></span></label></div>
+          <div class="toggle-row"><div class="toggle-label"><strong>Push Notifications</strong><div class="toggle-desc">Send push alerts to subscribed residents</div></div><label class="toggle-switch"><input type="checkbox" id="setting-push-enabled" checked><span class="toggle-slider"></span></label></div>
+          <div class="toggle-row"><div class="toggle-label"><strong>Maintenance Mode</strong><div class="toggle-desc">Show maintenance page to residents (staff can still access)</div></div><label class="toggle-switch"><input type="checkbox" id="setting-maintenance-mode"><span class="toggle-slider"></span></label></div>
+          <div class="toggle-row"><div class="toggle-label"><strong>Two-Factor Auth Required</strong><div class="toggle-desc">Require 2FA for all staff logins</div></div><label class="toggle-switch"><input type="checkbox" id="setting-2fa-required" checked><span class="toggle-slider"></span></label></div>
         </div>
       </div>
     </div>
@@ -444,37 +354,13 @@
       <div class="card-header"><h3><i class="fas fa-list"></i> Keyword Registry</h3>
         <div class="chip-row" id="wb-chips">
           <div class="chip active" onclick="filterKeywords('all',this)">All</div>
-          <div class="chip" onclick="filterKeywords('Critical',this)">Critical</div>
-          <div class="chip" onclick="filterKeywords('High',this)">High</div>
-          <div class="chip" onclick="filterKeywords('Medium',this)">Medium</div>
-          <div class="chip" onclick="filterKeywords('Low',this)">Low</div>
+          <div class="chip" onclick="filterKeywords('high',this)">High</div>
+          <div class="chip" onclick="filterKeywords('medium',this)">Medium</div>
+          <div class="chip" onclick="filterKeywords('low',this)">Low</div>
         </div>
       </div>
-      <div class="tbl-wrap"><table><thead><tr><th>Keyword</th><th>Translation</th><th>Severity</th><th>Weight Score</th><th>Times Triggered</th><th>Last Updated</th><th>Actions</th></tr></thead><tbody id="wordbank-tbody">
-        <tr data-severity="Critical"><td><strong>tubig</strong></td><td>water</td><td><span class="priority p-critical">Critical</span></td><td>10</td><td>14</td><td>Feb 10</td><td>
-          <button class="btn btn-outline btn-sm" onclick="editKeyword(this)"><i class="fas fa-edit"></i></button>
-          <button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="deleteKeyword(this)"><i class="fas fa-trash"></i></button>
-        </td></tr>
-        <tr data-severity="Critical"><td><strong>baha</strong></td><td>flood</td><td><span class="priority p-critical">Critical</span></td><td>10</td><td>9</td><td>Feb 10</td><td>
-          <button class="btn btn-outline btn-sm" onclick="editKeyword(this)"><i class="fas fa-edit"></i></button>
-          <button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="deleteKeyword(this)"><i class="fas fa-trash"></i></button>
-        </td></tr>
-        <tr data-severity="Critical"><td><strong>sunog</strong></td><td>fire</td><td><span class="priority p-critical">Critical</span></td><td>10</td><td>3</td><td>Jan 20</td><td>
-          <button class="btn btn-outline btn-sm" onclick="editKeyword(this)"><i class="fas fa-edit"></i></button>
-          <button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="deleteKeyword(this)"><i class="fas fa-trash"></i></button>
-        </td></tr>
-        <tr data-severity="High"><td><strong>aso</strong></td><td>dog</td><td><span class="priority p-high">High</span></td><td>8</td><td>8</td><td>Feb 12</td><td>
-          <button class="btn btn-outline btn-sm" onclick="editKeyword(this)"><i class="fas fa-edit"></i></button>
-          <button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="deleteKeyword(this)"><i class="fas fa-trash"></i></button>
-        </td></tr>
-        <tr data-severity="Medium"><td><strong>ilaw</strong></td><td>light</td><td><span class="priority p-medium">Medium</span></td><td>5</td><td>6</td><td>Feb 5</td><td>
-          <button class="btn btn-outline btn-sm" onclick="editKeyword(this)"><i class="fas fa-edit"></i></button>
-          <button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="deleteKeyword(this)"><i class="fas fa-trash"></i></button>
-        </td></tr>
-        <tr data-severity="Low"><td><strong>parking</strong></td><td>parking</td><td><span class="priority p-low">Low</span></td><td>2</td><td>5</td><td>Jan 15</td><td>
-          <button class="btn btn-outline btn-sm" onclick="editKeyword(this)"><i class="fas fa-edit"></i></button>
-          <button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="deleteKeyword(this)"><i class="fas fa-trash"></i></button>
-        </td></tr>
+      <div class="tbl-wrap"><table><thead><tr><th>Keyword</th><th>Description</th><th>Severity</th><th>Category</th><th>Language</th><th>Last Updated</th><th>Actions</th></tr></thead><tbody id="wordbank-tbody">
+        <tr><td colspan="7" style="text-align:center;padding:24px"><i class="fas fa-spinner fa-spin"></i> Loading keywords...</td></tr>
       </tbody></table></div>
     </div>
   </div>
@@ -489,11 +375,10 @@
         <div class="int-body">
           <div class="int-name">Subscribe Notification (Push Alerts)</div>
           <div class="int-desc">Residents can subscribe to receive push notifications for announcements, incidents, and HOA alerts directly to their devices.</div>
-          <div class="int-meta"><span class="status-pill sp-approved">Connected</span> · 214 active subscribers · Renews Mar 1</div>
+          <div class="int-meta"><span class="status-pill sp-approved">Connected</span> · <span id="int-active-count">0</span> active subscribers</div>
           <div class="int-stats" style="margin-top:10px;display:flex;gap:16px;flex-wrap:wrap">
-            <div style="font-size:11.5px;color:var(--gray-600)"><strong style="font-size:15px;color:var(--navy)">214</strong><br>Subscribers</div>
-            <div style="font-size:11.5px;color:var(--gray-600)"><strong style="font-size:15px;color:var(--navy)">1,842</strong><br>Sent this month</div>
-            <div style="font-size:11.5px;color:var(--gray-600)"><strong style="font-size:15px;color:var(--navy)">78%</strong><br>Open rate</div>
+            <div style="font-size:11.5px;color:var(--gray-600)"><strong style="font-size:15px;color:var(--navy)" id="int-subscriber-count">0</strong><br>Subscribers</div>
+            <div style="font-size:11.5px;color:var(--gray-600)"><strong style="font-size:15px;color:var(--navy)" id="int-sent-count">0</strong><br>Notifications sent</div>
           </div>
         </div>
         <div class="int-actions" style="display:flex;flex-direction:column;gap:8px">
@@ -547,9 +432,7 @@
       <div class="card">
         <div class="card-header"><h3><i class="fas fa-clock"></i> Recent Exports</h3><span class="export-live-badge"><i class="fas fa-circle" style="color:var(--green);font-size:8px"></i> Live</span></div>
         <div class="tbl-wrap"><table><thead><tr><th>File</th><th>Exported By</th><th>Date</th><th>Size</th></tr></thead><tbody id="recent-exports-tbody">
-          <tr><td><strong>residents_feb2026.csv</strong></td><td>Admin</td><td>Today 8:30 AM</td><td>48 KB</td></tr>
-          <tr><td><strong>incidents_jan2026.pdf</strong></td><td>Maria Santos</td><td>Feb 10</td><td>210 KB</td></tr>
-          <tr><td><strong>audit_log_feb2026.csv</strong></td><td>Admin</td><td>Feb 8</td><td>125 KB</td></tr>
+          <tr><td colspan="4" style="text-align:center;padding:24px;color:var(--gray-400)">No exports yet this session.</td></tr>
         </tbody></table></div>
       </div>
     </div>
@@ -563,10 +446,7 @@
     <div class="card">
       <div class="card-header"><h3><i class="fas fa-list"></i> Backup History (Last 10)</h3></div>
       <div class="tbl-wrap"><table><thead><tr><th>Backup ID</th><th>Date & Time</th><th>Type</th><th>Size</th><th>Status</th><th>Actions</th></tr></thead><tbody id="backup-tbody">
-        <tr><td class="mono">BKP-0234</td><td>Feb 18, 3:00 AM</td><td>Auto</td><td>1.2 GB</td><td><span class="status-pill sp-approved">Success</span></td><td><button class="btn btn-outline btn-sm" onclick="downloadBackup(this)"><i class="fas fa-download"></i></button> <button class="btn btn-outline btn-sm" onclick="restoreBackup(this)"><i class="fas fa-undo"></i> Restore</button></td></tr>
-        <tr><td class="mono">BKP-0233</td><td>Feb 17, 3:00 AM</td><td>Auto</td><td>1.19 GB</td><td><span class="status-pill sp-approved">Success</span></td><td><button class="btn btn-outline btn-sm" onclick="downloadBackup(this)"><i class="fas fa-download"></i></button> <button class="btn btn-outline btn-sm" onclick="restoreBackup(this)"><i class="fas fa-undo"></i> Restore</button></td></tr>
-        <tr><td class="mono">BKP-0232</td><td>Feb 16, 3:00 AM</td><td>Auto</td><td>1.18 GB</td><td><span class="status-pill sp-approved">Success</span></td><td><button class="btn btn-outline btn-sm" onclick="downloadBackup(this)"><i class="fas fa-download"></i></button> <button class="btn btn-outline btn-sm" onclick="restoreBackup(this)"><i class="fas fa-undo"></i> Restore</button></td></tr>
-        <tr><td class="mono">BKP-0231</td><td>Feb 12, 10:45 AM</td><td>Manual</td><td>1.17 GB</td><td><span class="status-pill sp-approved">Success</span></td><td><button class="btn btn-outline btn-sm" onclick="downloadBackup(this)"><i class="fas fa-download"></i></button> <button class="btn btn-outline btn-sm" onclick="restoreBackup(this)"><i class="fas fa-undo"></i> Restore</button></td></tr>
+        <tr><td colspan="6" style="text-align:center;padding:24px"><i class="fas fa-spinner fa-spin"></i> Loading backups...</td></tr>
       </tbody></table></div>
     </div>
   </div>
@@ -687,15 +567,15 @@
     <div class="modal-head"><h3>Add Keyword</h3><button class="modal-close" onclick="closeModal('addKeyword')"><i class="fas fa-times"></i></button></div>
     <div class="form-row">
       <div class="form-group"><label>Keyword (Tagalog/English)</label><input type="text" id="kw-word" placeholder="e.g. sinasalakay"></div>
-      <div class="form-group"><label>Translation</label><input type="text" id="kw-translation" placeholder="e.g. being attacked"></div>
+      <div class="form-group"><label>Description</label><input type="text" id="kw-description" placeholder="e.g. being attacked"></div>
     </div>
     <div class="form-row">
-      <div class="form-group"><label>Severity Level</label><select id="kw-severity"><option>Critical</option><option>High</option><option>Medium</option><option>Low</option></select></div>
-      <div class="form-group"><label>Weight Score (1–10)</label><input type="number" id="kw-weight" min="1" max="10" value="5"></div>
+      <div class="form-group"><label>Severity Level</label><select id="kw-severity"><option value="high">High</option><option value="medium" selected>Medium</option><option value="low">Low</option></select></div>
+      <div class="form-group"><label>Category</label><input type="text" id="kw-category" placeholder="e.g. Safety, Infrastructure"></div>
     </div>
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="closeModal('addKeyword')">Cancel</button>
-      <button class="btn btn-primary" onclick="addKeyword()"><i class="fas fa-plus"></i> Add Keyword</button>
+      <button class="btn btn-primary" onclick="AdminDashboard.addKeyword()"><i class="fas fa-plus"></i> Add Keyword</button>
     </div>
   </div>
 </div>
@@ -706,16 +586,16 @@
     <div class="modal-head"><h3>Edit Keyword</h3><button class="modal-close" onclick="closeModal('editKeyword')"><i class="fas fa-times"></i></button></div>
     <div class="form-row">
       <div class="form-group"><label>Keyword</label><input type="text" id="edit-kw-word"></div>
-      <div class="form-group"><label>Translation</label><input type="text" id="edit-kw-translation"></div>
+      <div class="form-group"><label>Description</label><input type="text" id="edit-kw-description"></div>
     </div>
     <div class="form-row">
-      <div class="form-group"><label>Severity Level</label><select id="edit-kw-severity"><option>Critical</option><option>High</option><option>Medium</option><option>Low</option></select></div>
-      <div class="form-group"><label>Weight Score (1–10)</label><input type="number" id="edit-kw-weight" min="1" max="10"></div>
+      <div class="form-group"><label>Severity Level</label><select id="edit-kw-severity"><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option></select></div>
+      <div class="form-group"><label>Category</label><input type="text" id="edit-kw-category"></div>
     </div>
-    <input type="hidden" id="edit-kw-row-ref">
+    <input type="hidden" id="edit-kw-id">
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="closeModal('editKeyword')">Cancel</button>
-      <button class="btn btn-primary" onclick="saveKeywordEdit()"><i class="fas fa-save"></i> Save Changes</button>
+      <button class="btn btn-primary" onclick="AdminDashboard.saveKeywordEdit()"><i class="fas fa-save"></i> Save Changes</button>
     </div>
   </div>
 </div>
@@ -771,7 +651,7 @@
     <input type="hidden" id="rename-role-id">
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="closeModal('renameRole')">Cancel</button>
-      <button class="btn btn-primary" onclick="saveRoleRename()"><i class="fas fa-save"></i> Save</button>
+      <button class="btn btn-primary" onclick="AdminDashboard.saveRoleRename()"><i class="fas fa-save"></i> Save</button>
     </div>
   </div>
 </div>

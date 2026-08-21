@@ -34,15 +34,8 @@ function formatDate(str) {
 /* ── STATE ── */
 let INCIDENTS   = [];
 let MAP_ITEMS   = [];
-let EVENTS_DATA = [
-  {id:'ev-1', title:'BOD Gate Pass Review',     date:'2026-02-19', time:'10:00', location:'Admin Office',  cat:'Governance'},
-  {id:'ev-2', title:'Community Clean-up Drive',  date:'2026-02-25', time:'07:00', location:'All Blocks',    cat:'Community'},
-  {id:'ev-3', title:'Monthly BOD Meeting',       date:'2026-03-01', time:'18:00', location:'Function Room', cat:'Governance'},
-  {id:'ev-p1', title:'Fiesta sa Subdivision',    date:'2026-01-15', time:'14:00', location:'Clubhouse',     cat:'Social'},
-  {id:'ev-p2', title:'Fire Drill — Phase 1',     date:'2026-01-22', time:'09:00', location:'Gate 1 Area',   cat:'Emergency'},
-  {id:'ev-p3', title:'Q4 2025 BOD Meeting',      date:'2026-01-10', time:'18:00', location:'Function Room', cat:'Governance'}
-];
-let calYear = 2026, calMonth = 1;
+let EVENTS_DATA = [];
+let calYear = new Date().getFullYear(), calMonth = new Date().getMonth();
 
 /* ── MAP INSTANCES ── */
 let cmMap = null, previewMap = null;
@@ -52,9 +45,6 @@ let incLogMap = null, incLogMarker = null;
 
 /* ── TASK AUTO-DELETE TIMERS ── */
 let taskTimers = {};
-
-/* ── TASK ORIGINAL DATA (for restoring when dragged out of Done) ── */
-const taskOriginal = {};
 
 /* ============================================================
    BADGE & NOTIFICATION UPDATES
@@ -137,6 +127,33 @@ function updateStatistics() {
 
   // Update incident distribution
   updateIncidentStats();
+}
+
+function loadReportsStats() {
+  const now = new Date();
+  const inThisMonth = (dateStr) => {
+    if (!dateStr) return false;
+    const d = new Date(dateStr);
+    return !isNaN(d.getTime()) && d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+  };
+
+  const monthIncidents  = (INCIDENTS || []).filter(i => inThisMonth(i.createdAt || i.reportedAt || i.date));
+  const totalIncidents  = monthIncidents.length;
+  const resolvedCount   = monthIncidents.filter(i => (i.status || '') === 'resolved').length;
+  const resolutionRate  = totalIncidents > 0 ? Math.round((resolvedCount / totalIncidents) * 100) : 0;
+
+  const monthExchange   = (ADVERTISEMENTS || []).filter(a => inThisMonth(a.createdAt || a.postedAt || a.date));
+  const verifiedResidents = (REGISTRATIONS || []).filter(r => r.status === 'approved').length;
+
+  const setText = (id, val) => { const e = document.getElementById(id); if (e) e.textContent = val; };
+  setText('rep-total-incidents',     totalIncidents);
+  setText('rep-total-incidents-sub', `${totalIncidents} logged this month`);
+  setText('rep-resolved-incidents',  resolvedCount);
+  setText('rep-resolved-sub',        totalIncidents > 0 ? `${resolutionRate}% resolution rate` : 'No incidents yet');
+  setText('rep-exchange-posts',      monthExchange.length);
+  setText('rep-exchange-sub',        `${monthExchange.length} posted this month`);
+  setText('rep-verified-residents',  verifiedResidents);
+  setText('rep-verified-sub',        `${verifiedResidents} total verified`);
 }
 
 /* ============================================================
@@ -357,6 +374,8 @@ function showPage(id, el) {
   if (id === 'forums')       renderForumsDashboard();
   if (id === 'reservations') loadReservations();
   if (id === 'wordbank')     { loadWordBank(); loadKeywordsData(); checkAiStatus(); }
+  if (id === 'reports')      loadReportsStats();
+  if (id === 'subscribers')  loadSubscribers();
   if (window.innerWidth <= 768) document.getElementById('sidebar').classList.remove('mobile-open');
 }
 
@@ -713,57 +732,131 @@ document.addEventListener('change', function(e) {
 });
 
 /* ============================================================
-   KANBAN — FIXED: restores original style when moved out of Done; Priority removed
+   TASK BOARD — Backed entirely by /api/tasks (no hardcoded data)
 ============================================================ */
+const TAG_CLASS_MAP = { Admin:'tag-orange', Maintenance:'tag-gray', Finance:'tag-orange', Communications:'tag-blue', Environment:'tag-green', Security:'tag-red', Legal:'tag-blue', Events:'tag-green', Other:'tag-gray', General:'tag-gray' };
+const STATUS_TO_COLUMN = { todo:'todo', progress:'progress', review:'review', done:'done' };
+let TASKS = [];
+
+function initialsFromName(name) {
+  if (!name) return '';
+  const parts = name.trim().split(/\s+/);
+  return parts.length === 1 ? parts[0].substring(0,2).toUpperCase() : (parts[0][0] + parts[parts.length-1][0]).toUpperCase();
+}
+
+function formatShortDate(str) {
+  if (!str) return '';
+  const d = new Date(str);
+  if (isNaN(d.getTime())) return '';
+  return d.toLocaleDateString('en-PH', { month:'short', day:'numeric' });
+}
+
+function taskDateClass(task) {
+  if (task.status === 'done') return 'k-card-date';
+  if (!task.dueDate) return 'k-card-date';
+  const today = new Date(); today.setHours(0,0,0,0);
+  const due = new Date(task.dueDate); due.setHours(0,0,0,0);
+  const diff = Math.ceil((due - today) / (1000*60*60*24));
+  if (diff < 0) return 'k-card-date overdue';
+  if (diff <= 2) return 'k-card-date due-soon';
+  return 'k-card-date';
+}
+
+function renderTaskCard(task) {
+  const card = document.createElement('div');
+  const colorClass = task.status === 'done' ? 'kc-green' : (task.priority === 'high' ? 'kc-orange' : task.priority === 'medium' ? 'kc-yellow' : '');
+  card.className = `k-card${colorClass ? ' ' + colorClass : ''}`;
+  card.draggable = true;
+  card.dataset.taskId = task.id;
+  card.dataset.priority = task.priority || 'medium';
+  if (task.dueDate) card.dataset.due = task.dueDate.substring(0,10);
+  if (task.autoDeleteAfterDays) card.dataset.autodel = task.autoDeleteAfterDays;
+
+  const tagClass = task.status === 'done' ? 'tag tag-green' : `tag ${TAG_CLASS_MAP[task.category] || 'tag-gray'}`;
+  const tagHtml  = task.status === 'done' ? '<i class="fas fa-check"></i> Done' : escHtml(task.category || 'General');
+  const dateIcon = task.status === 'done' ? 'fa-check-circle' : (task.dueDate ? 'fa-calendar' : 'fa-clock');
+  const dateText = task.status === 'done'
+    ? (formatShortDate(task.completedAt) || 'Done')
+    : (task.dueDate ? formatShortDate(task.dueDate) : 'No due date');
+  const initials = initialsFromName(task.assignedTo);
+
+  card.innerHTML = `
+    <div class="k-card-header-row">
+      <span class="${tagClass}">${tagHtml}</span>
+      <button class="k-card-del" onclick="deleteTask(this)"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="k-card-title">${escHtml(task.title || '')}</div>
+    <div class="k-card-meta">
+      <div class="${taskDateClass(task)}"><i class="fas ${dateIcon}"></i> ${escHtml(dateText)}</div>
+      ${initials ? `<div class="mini-avs"><div class="mini-av ma-g">${escHtml(initials)}</div></div>` : ''}
+    </div>`;
+  return card;
+}
+
+function renderTaskBoard() {
+  ['todo','progress','review','done'].forEach(col => {
+    const body = document.getElementById('k-body-' + col);
+    if (!body) return;
+    body.querySelectorAll('.k-card').forEach(c => c.remove());
+    const addBtn = body.querySelector('.k-add-btn');
+    TASKS.filter(t => (STATUS_TO_COLUMN[t.status] || 'todo') === col)
+      .forEach(t => body.insertBefore(renderTaskCard(t), addBtn || null));
+  });
+  if (window._bindKanbanCards) window._bindKanbanCards();
+  updateKanbanCounts();
+  checkDeadlines();
+}
+
+async function loadTasks() {
+  try {
+    const res = await StaffAPI.tasks.getAll();
+    TASKS = (res && res.data) || [];
+    renderTaskBoard();
+  } catch (e) {
+    console.warn('Could not load tasks', e);
+    TASKS = [];
+    renderTaskBoard();
+  }
+  _updateNotifBadge();
+}
+
 function initKanban() {
   let dragCard = null;
-
-  /* Save original state of every default card */
-  document.querySelectorAll('.k-card').forEach(card => {
-    if (card.dataset.taskId && !taskOriginal[card.dataset.taskId]) {
-      const tg = card.querySelector('.k-card-header-row .tag');
-      taskOriginal[card.dataset.taskId] = {
-        colorClass: ['kc-red','kc-orange','kc-yellow','kc-green'].find(c => card.classList.contains(c)) || '',
-        tagClass:   tg ? tg.className : '',
-        tagHTML:    tg ? tg.innerHTML : ''
-      };
-    }
-  });
 
   function onDragStart(e) { dragCard = this; e.dataTransfer.effectAllowed = 'move'; setTimeout(() => this.classList.add('dragging'), 0); }
   function onDragEnd()    { this.classList.remove('dragging'); dragCard = null; }
   function onDragOver(e)  { e.preventDefault(); this.classList.add('drag-over'); }
   function onDragLeave()  { this.classList.remove('drag-over'); }
 
-  function onDrop(e) {
+  async function onDrop(e) {
     e.preventDefault();
     this.classList.remove('drag-over');
     if (!dragCard || dragCard.parentNode === this) return;
 
-    const ab = this.querySelector('.k-add-btn');
-    this.insertBefore(dragCard, ab || null);
+    const tid = dragCard.dataset.taskId;
+    const newStatus = Object.keys(STATUS_TO_COLUMN).find(k => 'k-body-' + STATUS_TO_COLUMN[k] === this.id) || 'todo';
 
-    if (this.id === 'k-body-done') {
-      /* Moving INTO Done — mark as done */
-      dragCard.classList.remove('kc-red','kc-orange','kc-yellow');
-      dragCard.classList.add('kc-green');
-      const tg = dragCard.querySelector('.k-card-header-row .tag');
-      if (tg) { tg.className = 'tag tag-green'; tg.innerHTML = '<i class="fas fa-check"></i> Done'; }
-      const ad = dragCard.dataset.autodel; const tid = dragCard.dataset.taskId;
-      if (ad && parseInt(ad) > 0 && tid) scheduleTaskDelete(tid, parseInt(ad));
-    } else {
-      /* Moving OUT of Done (or between non-done columns) — restore original */
-      const tid = dragCard.dataset.taskId;
-      if (tid && taskTimers[tid]) { clearTimeout(taskTimers[tid]); delete taskTimers[tid]; }
-      const orig = tid ? taskOriginal[tid] : null;
-      if (orig) {
-        dragCard.classList.remove('kc-green','kc-red','kc-orange','kc-yellow');
-        if (orig.colorClass) dragCard.classList.add(orig.colorClass);
-        const tg = dragCard.querySelector('.k-card-header-row .tag');
-        if (tg && orig.tagClass) { tg.className = orig.tagClass; tg.innerHTML = orig.tagHTML; }
+    try {
+      await StaffAPI.tasks.updateStatus(tid, newStatus);
+      const t = TASKS.find(x => String(x.id) === String(tid));
+      if (t) {
+        t.status = newStatus;
+        if (newStatus === 'done') t.completedAt = new Date().toISOString();
       }
+      const ab = this.querySelector('.k-add-btn');
+      this.insertBefore(dragCard, ab || null);
+      renderTaskBoard();
+
+      if (newStatus === 'done') {
+        const ad = dragCard.dataset.autodel;
+        if (ad && parseInt(ad) > 0) scheduleTaskDelete(tid, parseInt(ad));
+      } else if (taskTimers[tid]) {
+        clearTimeout(taskTimers[tid]); delete taskTimers[tid];
+      }
+      showToast('Task moved ✓');
+    } catch (err) {
+      showToast('Failed to move task', 'error');
     }
-    updateKanbanCounts(); showToast('Task moved ✓');
   }
 
   function bindCards() {
@@ -782,7 +875,7 @@ function initKanban() {
   });
   bindCards();
   window._bindKanbanCards = bindCards;
-  checkDeadlines();
+  loadTasks();
 }
 
 function scheduleTaskDelete(tid, days) {
@@ -829,57 +922,50 @@ function filterTasks(type, btn) {
   document.querySelectorAll('.k-card').forEach(card => { card.style.display = type === 'all' ? '' : 'none'; });
 }
 
-function deleteTask(btn) {
+async function deleteTask(btn) {
   const card = btn.closest('.k-card'); if (!card) return;
   const title = card.querySelector('.k-card-title')?.textContent || 'this task';
+  const tid = card.dataset.taskId;
   if (!confirm(`Delete "${title.substring(0,50)}"?`)) return;
-  card.style.transition = 'opacity .3s'; card.style.opacity = '0';
-  setTimeout(() => { card.remove(); updateKanbanCounts(); }, 320);
-  showToast('Task deleted', 'error');
+  try {
+    await StaffAPI.tasks.delete(tid);
+    TASKS = TASKS.filter(t => String(t.id) !== String(tid));
+    if (taskTimers[tid]) { clearTimeout(taskTimers[tid]); delete taskTimers[tid]; }
+    card.style.transition = 'opacity .3s'; card.style.opacity = '0';
+    setTimeout(() => { card.remove(); updateKanbanCounts(); }, 320);
+    showToast('Task deleted', 'error');
+  } catch (e) {
+    showToast('Failed to delete task', 'error');
+  }
 }
 
-function addNewTask() {
+async function addNewTask() {
   const title = (document.getElementById('task-title')?.value || '').trim();
   const cat   = document.getElementById('task-cat')?.value    || 'Admin';
   const due   = document.getElementById('task-due')?.value    || '';
   const ad    = document.getElementById('task-autodel')?.value || '';
   const desc  = (document.getElementById('task-desc')?.value  || '').trim();
   if (!title) { showToast('Task title is required.', 'error'); return; }
-  const tagMap = { Admin:'tag-orange', Maintenance:'tag-gray', Finance:'tag-orange', Communications:'tag-blue', Environment:'tag-green', Security:'tag-red', Legal:'tag-blue', Events:'tag-green', Other:'tag-gray' };
-  const today = new Date(); today.setHours(0,0,0,0);
-  let dateCls = 'k-card-date';
-  let dueTxt  = due ? new Date(due).toLocaleDateString('en-PH',{month:'short',day:'numeric'}) : 'No due date';
-  if (due) {
-    const d = new Date(due); d.setHours(0,0,0,0);
-    const diff = Math.ceil((d-today)/(1000*60*60*24));
-    if (diff < 0) dateCls = 'k-card-date overdue'; else if (diff <= 2) dateCls = 'k-card-date due-soon';
+
+  try {
+    const res = await StaffAPI.tasks.create({
+      title,
+      description: desc || null,
+      category: cat,
+      priority: 'medium',
+      status: 'todo',
+      dueDate: due || null,
+      autoDeleteAfterDays: ad ? parseInt(ad) : null
+    });
+    if (res && res.data) TASKS.push(res.data);
+    renderTaskBoard();
+    closeModal('addTask');
+    ['task-title','task-desc','task-due'].forEach(id => { const e = document.getElementById(id); if (e) e.value = ''; });
+    const ade = document.getElementById('task-autodel'); if (ade) ade.value = '';
+    showToast(`Task "${title}" added`);
+  } catch (e) {
+    showToast('Failed to add task', 'error');
   }
-  const tid = 'task-' + Date.now();
-  const card = document.createElement('div');
-  card.className = 'k-card'; card.draggable = true;
-  card.dataset.taskId = tid;
-  if (due) card.dataset.due = due;
-  if (ad)  card.dataset.autodel = ad;
-  card.innerHTML = `
-    <div class="k-card-header-row">
-      <span class="tag ${tagMap[cat]||'tag-gray'}">${escHtml(cat)}</span>
-      <button class="k-card-del" onclick="deleteTask(this)"><i class="fas fa-times"></i></button>
-    </div>
-    <div class="k-card-title">${escHtml(title)}</div>
-    ${desc?`<div style="font-size:11px;color:var(--gray-400);margin-bottom:4px;line-height:1.4">${escHtml(desc.substring(0,60))}</div>`:''}
-    <div class="k-card-meta">
-      <div class="${dateCls}"><i class="fas fa-calendar"></i> ${dueTxt}</div>
-      <div class="mini-avs"><div class="mini-av ma-g">MS</div></div>
-    </div>`;
-  /* Save original state */
-  taskOriginal[tid] = { colorClass:'', tagClass:`tag ${tagMap[cat]||'tag-gray'}`, tagHTML: escHtml(cat) };
-  const tb = document.getElementById('k-body-todo');
-  if (tb) { const ab = tb.querySelector('.k-add-btn'); tb.insertBefore(card, ab||null); }
-  if (window._bindKanbanCards) window._bindKanbanCards();
-  updateKanbanCounts(); closeModal('addTask');
-  ['task-title','task-desc','task-due'].forEach(id => { const e = document.getElementById(id); if (e) e.value = ''; });
-  const ade = document.getElementById('task-autodel'); if (ade) ade.value = '';
-  showToast(`Task "${title}" added`); checkDeadlines();
 }
 
 /* ============================================================
@@ -1682,6 +1768,57 @@ function _resvStatusPill(status) {
   return '<span class="status-pill sp-pending">Pending</span>';
 }
 
+/* ============================================================
+   NOTIFICATION SUBSCRIBERS
+============================================================ */
+async function loadSubscribers() {
+  const tbody = document.getElementById('subscribers-tbody');
+  if (tbody) tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:24px"><i class="fas fa-spinner fa-spin"></i> Loading subscribers...</td></tr>';
+  try {
+    const res = await fetch('/api/subscribers', { credentials: 'same-origin' });
+    const result = await res.json();
+    const subscribers = (result.success && result.data) ? result.data : [];
+
+    const totalEl = document.getElementById('sub-total-count');
+    const activeEl = document.getElementById('sub-active-count');
+    const sentEl = document.getElementById('sub-sent-count');
+    if (totalEl) totalEl.textContent = subscribers.length;
+    if (activeEl) activeEl.textContent = subscribers.filter(s => s.isActive).length;
+    if (sentEl) sentEl.textContent = subscribers.reduce((sum, s) => sum + (s.notificationsSentCount || 0), 0);
+
+    if (!tbody) return;
+    if (!subscribers.length) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--gray-400)"><i class="fas fa-inbox" style="font-size:24px;display:block;margin-bottom:8px"></i>No subscribers yet.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = subscribers.map(s => `
+      <tr>
+        <td>${escHtml(s.residentName || '-')}</td>
+        <td>${escHtml(s.email)}</td>
+        <td>${s.subscribedAt ? new Date(s.subscribedAt).toLocaleDateString() : '-'}</td>
+        <td>${s.isActive ? '<span class="status-pill sp-approved">Active</span>' : '<span class="status-pill sp-open">Inactive</span>'}</td>
+        <td><button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="deleteSubscriber(${s.id})"><i class="fas fa-trash"></i></button></td>
+      </tr>`).join('');
+  } catch (err) {
+    console.error('Failed to load subscribers:', err);
+    if (tbody) tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--red)"><i class="fas fa-exclamation-triangle"></i> Failed to load subscribers</td></tr>';
+  }
+}
+
+async function deleteSubscriber(id) {
+  if (!confirm('Remove this subscriber?')) return;
+  try {
+    const res = await fetch(`/api/subscribers/${id}`, { method: 'DELETE', credentials: 'same-origin' });
+    const result = await res.json();
+    if (!res.ok || result.success === false) { showToast(result?.error || 'Failed to remove subscriber', 'error'); return; }
+    showToast('Subscriber removed');
+    await loadSubscribers();
+  } catch (err) {
+    console.error('Failed to delete subscriber:', err);
+    showToast('Failed to remove subscriber', 'error');
+  }
+}
+
 function _resvDateTime(r) {
   const d = r.date ? new Date(r.date + 'T00:00:00') : null;
   const dateStr = d ? d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : escHtml(r.date || '');
@@ -1776,57 +1913,134 @@ async function rejectReservation(id) {
 }
 
 /* ============================================================
-   ANNOUNCEMENTS
+   ANNOUNCEMENTS — Backed entirely by /api/announcements
 ============================================================ */
+const ANN_TAG_MAP = { Urgent:'tag-red', Governance:'tag-orange', Event:'tag-green', Newsletter:'tag-blue', General:'tag-gray' };
+let ANNOUNCEMENTS = [];
+
 function toggleSchedule() {
   const v = document.getElementById('ann-post-type')?.value;
   const f = document.getElementById('ann-schedule-field'); if (f) f.style.display = v === 'scheduled' ? '' : 'none';
 }
-function publishAnnouncement() {
+
+function currentStaffName() {
+  return document.getElementById('sb-uname')?.textContent?.trim() || 'Staff Officer';
+}
+
+function announcementRow(a) {
+  const cat = a.category || 'General';
+  const statusHtml = a.status === 'scheduled'
+    ? `<span class="status-pill sp-pending">Scheduled${a.scheduledAt ? ' · ' + new Date(a.scheduledAt).toLocaleDateString('en-PH',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}) : ''}</span>`
+    : `<span class="status-pill sp-approved">Published</span>`;
+  const row = document.createElement('tr');
+  row.id = 'ann-' + a.id;
+  row.innerHTML = `<td><strong>${escHtml(a.title)}</strong></td><td><span class="tag ${ANN_TAG_MAP[cat]||'tag-gray'}">${escHtml(cat)}</span></td><td>${escHtml(a.postedBy||'—')}</td><td>${formatShortDate(a.postedAt)}</td><td>${statusHtml}</td><td><button class="btn btn-outline btn-sm" onclick="editAnnouncement(${a.id})"><i class="fas fa-edit"></i> Edit</button> <button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="deleteAnnouncement(${a.id},'${escHtml(a.title).replace(/'/g,"\\'")}')"><i class="fas fa-trash"></i></button></td>`;
+  return row;
+}
+
+function renderAnnouncements() {
+  const tb = document.getElementById('announcements-tbody');
+  if (!tb) return;
+  tb.innerHTML = '';
+  if (!ANNOUNCEMENTS.length) {
+    tb.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--gray-400)">No announcements yet.</td></tr>';
+    return;
+  }
+  ANNOUNCEMENTS
+    .slice()
+    .sort((a,b) => new Date(b.postedAt) - new Date(a.postedAt))
+    .forEach(a => tb.appendChild(announcementRow(a)));
+}
+
+async function loadAnnouncements() {
+  try {
+    const res = await StaffAPI.announcements.getAll();
+    ANNOUNCEMENTS = (res && res.data) || [];
+  } catch (e) {
+    console.warn('Could not load announcements', e);
+    ANNOUNCEMENTS = [];
+  }
+  renderAnnouncements();
+}
+
+async function publishAnnouncement() {
   const title = (document.getElementById('ann-title')?.value || '').trim();
+  const body  = (document.getElementById('ann-body')?.value || '').trim();
   const cat   = document.getElementById('ann-cat')?.value || 'General';
   const type  = document.getElementById('ann-post-type')?.value || 'now';
   if (!title) { showToast('Title is required.', 'error'); return; }
-  const tagMap = {Urgent:'tag-red', Governance:'tag-orange', Event:'tag-green', Newsletter:'tag-blue', General:'tag-gray'};
-  const today  = new Date().toLocaleDateString('en-PH', {month:'short', day:'numeric'});
   const isScheduled = type === 'scheduled';
   const schedDt = document.getElementById('ann-schedule-dt')?.value;
-  const statusHtml = isScheduled
-    ? `<span class="status-pill sp-pending">Scheduled${schedDt?' · '+new Date(schedDt).toLocaleDateString('en-PH',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}):''}</span>`
-    : '<span class="status-pill sp-approved">Published</span>';
-  const id = 'ann-' + Date.now();
-  const tb = document.getElementById('announcements-tbody');
-  if (tb) {
-    const row = document.createElement('tr'); row.id = id;
-    row.innerHTML = `<td><strong>${escHtml(title)}</strong></td><td><span class="tag ${tagMap[cat]||'tag-gray'}">${escHtml(cat)}</span></td><td>Maria Santos</td><td>${today}</td><td>${statusHtml}</td><td><button class="btn btn-outline btn-sm" onclick="editAnnouncement('${id}','${escHtml(title)}','${escHtml(cat)}')"><i class="fas fa-edit"></i> Edit</button> <button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="deleteAnnouncement('${id}','${escHtml(title)}')"><i class="fas fa-trash"></i></button></td>`;
-    tb.prepend(row);
+
+  try {
+    const res = await StaffAPI.announcements.create({
+      title,
+      body: body || null,
+      category: cat,
+      postedBy: currentStaffName(),
+      status: isScheduled ? 'scheduled' : 'published',
+      scheduledAt: isScheduled && schedDt ? schedDt : null
+    });
+    if (res && res.data) ANNOUNCEMENTS.push(res.data);
+    renderAnnouncements();
+    closeModal('addAnnouncement');
+    const ae = document.getElementById('ann-title');       if (ae) ae.value = '';
+    const ab = document.getElementById('ann-body');        if (ab) ab.value = '';
+    const hp = document.getElementById('ann-header-preview'); if (hp) hp.innerHTML = '';
+    const bi = document.getElementById('ann-body-img-name');  if (bi) bi.textContent = '';
+    const di = document.getElementById('ann-doc-name');       if (di) di.textContent = '';
+    showToast(isScheduled ? `"${title}" scheduled` : `"${title}" published`);
+  } catch (e) {
+    showToast('Failed to save announcement', 'error');
   }
-  closeModal('addAnnouncement');
-  const ae = document.getElementById('ann-title');       if (ae) ae.value = '';
-  const ab = document.getElementById('ann-body');        if (ab) ab.value = '';
-  const hp = document.getElementById('ann-header-preview'); if (hp) hp.innerHTML = '';
-  const bi = document.getElementById('ann-body-img-name');  if (bi) bi.textContent = '';
-  const di = document.getElementById('ann-doc-name');       if (di) di.textContent = '';
-  showToast(isScheduled ? `"${title}" scheduled` : `"${title}" published`);
 }
-function editAnnouncement(id, title, cat) {
-  document.getElementById('edit-ann-id').value    = id;
-  document.getElementById('edit-ann-title').value = title || '';
-  document.getElementById('edit-ann-body').value  = '';
-  document.getElementById('edit-ann-cat').value   = cat   || 'General';
+
+function editAnnouncement(id) {
+  const a = ANNOUNCEMENTS.find(x => String(x.id) === String(id));
+  if (!a) return;
+  document.getElementById('edit-ann-id').value    = a.id;
+  document.getElementById('edit-ann-title').value = a.title || '';
+  document.getElementById('edit-ann-body').value  = a.body || '';
+  document.getElementById('edit-ann-cat').value   = a.category || 'General';
   openModal('editAnnouncement');
 }
-function saveEditAnnouncement() {
+
+async function saveEditAnnouncement() {
   const id    = document.getElementById('edit-ann-id').value;
   const title = (document.getElementById('edit-ann-title').value || '').trim();
+  const body  = (document.getElementById('edit-ann-body').value || '').trim();
+  const cat   = document.getElementById('edit-ann-cat').value || 'General';
   if (!title) { showToast('Title is required.', 'error'); return; }
-  const row = document.getElementById(id);
-  if (row) { const td = row.querySelector('td:first-child'); if (td) td.innerHTML = `<strong>${escHtml(title)}</strong>`; }
-  closeModal('editAnnouncement'); showToast('Announcement updated');
+  const existing = ANNOUNCEMENTS.find(x => String(x.id) === String(id));
+
+  try {
+    await StaffAPI.announcements.update(id, {
+      title,
+      body: body || null,
+      category: cat,
+      postedBy: existing?.postedBy || currentStaffName(),
+      status: existing?.status || 'published',
+      scheduledAt: existing?.scheduledAt || null
+    });
+    if (existing) { existing.title = title; existing.body = body; existing.category = cat; }
+    renderAnnouncements();
+    closeModal('editAnnouncement');
+    showToast('Announcement updated');
+  } catch (e) {
+    showToast('Failed to update announcement', 'error');
+  }
 }
-function deleteAnnouncement(id, name) {
+
+async function deleteAnnouncement(id, name) {
   if (!confirm(`Delete "${name}"?`)) return;
-  const r = document.getElementById(id); if (r) r.remove(); showToast(`"${name}" deleted`, 'error');
+  try {
+    await StaffAPI.announcements.delete(id);
+    ANNOUNCEMENTS = ANNOUNCEMENTS.filter(x => String(x.id) !== String(id));
+    renderAnnouncements();
+    showToast(`"${name}" deleted`, 'error');
+  } catch (e) {
+    showToast('Failed to delete announcement', 'error');
+  }
 }
 
 /* ============================================================
@@ -1902,22 +2116,45 @@ function renderEventsList() {
   }
 }
 
-function addEvent() {
+async function loadEvents() {
+  try {
+    const result = await StaffAPI.events.getAll();
+    if (result.success && result.data) {
+      EVENTS_DATA = result.data.map(e => ({ id: e.id, title: e.title, description: e.description, date: e.date, time: e.time, location: e.location, cat: e.category }));
+    }
+  } catch (error) {
+    console.error('Error loading events:', error);
+  }
+  renderCalendar(); renderEventsList();
+}
+
+async function addEvent() {
   const title = (document.getElementById('ev-title')?.value || '').trim();
+  const desc  = (document.getElementById('ev-desc')?.value  || '').trim();
   const date  = document.getElementById('ev-date')?.value  || '';
   const time  = document.getElementById('ev-time')?.value  || '';
   const loc   = (document.getElementById('ev-loc')?.value  || '').trim() || 'TBD';
   const cat   = document.getElementById('ev-cat')?.value   || 'Community';
   if (!title) { showToast('Title is required.', 'error'); return; }
   if (!date)  { showToast('Date is required.',  'error'); return; }
-  EVENTS_DATA.push({id:'ev-'+Date.now(), title, date, time, location:loc, cat});
-  renderCalendar(); renderEventsList(); closeModal('addEvent');
-  ['ev-title','ev-desc','ev-date','ev-time','ev-loc'].forEach(id => { const e = document.getElementById(id); if (e) e.value = ''; });
-  showToast(`"${title}" added to calendar`);
+  try {
+    const result = await StaffAPI.events.create({ title, description: desc, date, time, location: loc, category: cat });
+    if (result.success) {
+      closeModal('addEvent');
+      ['ev-title','ev-desc','ev-date','ev-time','ev-loc'].forEach(id => { const e = document.getElementById(id); if (e) e.value = ''; });
+      showToast(`"${title}" added to calendar`);
+      await loadEvents();
+    } else {
+      showToast(result.error || 'Failed to add event', 'error');
+    }
+  } catch (error) {
+    console.error('Error adding event:', error);
+    showToast('Failed to add event', 'error');
+  }
 }
 
 function editEvent(id) {
-  const ev = EVENTS_DATA.find(e => e.id === id); if (!ev) return;
+  const ev = EVENTS_DATA.find(e => String(e.id) === String(id)); if (!ev) return;
   document.getElementById('edit-ev-id').value    = id;
   document.getElementById('edit-ev-title').value = ev.title    || '';
   document.getElementById('edit-ev-date').value  = ev.date     || '';
@@ -1926,203 +2163,389 @@ function editEvent(id) {
   document.getElementById('edit-ev-cat').value   = ev.cat      || 'Community';
   openModal('editEvent');
 }
-function saveEditEvent() {
+async function saveEditEvent() {
   const id = document.getElementById('edit-ev-id').value;
-  const ev = EVENTS_DATA.find(e => e.id === id); if (!ev) return;
-  ev.title    = document.getElementById('edit-ev-title').value || ev.title;
-  ev.date     = document.getElementById('edit-ev-date').value  || ev.date;
-  ev.time     = document.getElementById('edit-ev-time').value  || ev.time;
-  ev.location = document.getElementById('edit-ev-loc').value   || ev.location;
-  ev.cat      = document.getElementById('edit-ev-cat').value   || ev.cat;
-  closeModal('editEvent'); renderCalendar(); renderEventsList(); showToast('Event updated');
+  const ev = EVENTS_DATA.find(e => String(e.id) === String(id)); if (!ev) return;
+  const title = document.getElementById('edit-ev-title').value || ev.title;
+  const date  = document.getElementById('edit-ev-date').value  || ev.date;
+  const time  = document.getElementById('edit-ev-time').value  || ev.time;
+  const loc   = document.getElementById('edit-ev-loc').value   || ev.location;
+  const cat   = document.getElementById('edit-ev-cat').value   || ev.cat;
+  try {
+    const result = await StaffAPI.events.update(id, { title, description: ev.description, date, time, location: loc, category: cat });
+    if (result.success) {
+      closeModal('editEvent'); showToast('Event updated');
+      await loadEvents();
+    } else {
+      showToast(result.error || 'Failed to update event', 'error');
+    }
+  } catch (error) {
+    console.error('Error updating event:', error);
+    showToast('Failed to update event', 'error');
+  }
 }
-function deleteEvent(id) {
-  const ev = EVENTS_DATA.find(e => e.id === id);
+async function deleteEvent(id) {
+  const ev = EVENTS_DATA.find(e => String(e.id) === String(id));
   if (!ev || !confirm(`Delete "${ev.title}"?`)) return;
-  EVENTS_DATA = EVENTS_DATA.filter(e => e.id !== id);
-  renderCalendar(); renderEventsList(); showToast(`"${ev.title}" deleted`, 'error');
+  try {
+    const result = await StaffAPI.events.delete(id);
+    if (result.success) {
+      showToast(`"${ev.title}" deleted`, 'error');
+      await loadEvents();
+    } else {
+      showToast(result.error || 'Failed to delete event', 'error');
+    }
+  } catch (error) {
+    console.error('Error deleting event:', error);
+    showToast('Failed to delete event', 'error');
+  }
 }
 
 /* ============================================================
    BOD MEMBERS — Committee field removed
 ============================================================ */
+let BOD_MEMBERS = [];
+
+function bodCardHtml(m) {
+  const ini = (m.name || '').split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
+  return `<div class="bod-card" id="bod-${m.id}" data-name="${escHtml(m.name)}" data-pos="${escHtml(m.position||'')}" data-term="${escHtml(m.term||'')}" data-phone="${escHtml(m.phone||'')}">
+      <div class="bod-avatar">${ini}</div><div class="bod-name">${escHtml(m.name)}</div><div class="bod-pos">${escHtml(m.position||'')}</div>
+      <div class="bod-term">Term: ${escHtml(m.term||'')}</div>
+      <div class="bod-contact"><i class="fas fa-phone"></i> ${escHtml(m.phone||'—')}</div>
+      <div class="bod-actions"><button class="btn btn-outline btn-sm" onclick="viewBodMember(${m.id})"><i class="fas fa-eye"></i> View</button><button class="btn btn-outline btn-sm" onclick="editBodMember(${m.id})"><i class="fas fa-edit"></i> Edit</button><button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="deleteBodMember(${m.id},'${escHtml(m.name)}')"><i class="fas fa-trash"></i></button></div>
+    </div>`;
+}
+
+async function loadBodMembers() {
+  const grid = document.getElementById('bods-grid'); if (!grid) return;
+  try {
+    const result = await StaffAPI.bodMembers.getAll();
+    BOD_MEMBERS = (result.success && result.data) ? result.data : [];
+    grid.innerHTML = BOD_MEMBERS.length
+      ? BOD_MEMBERS.map(bodCardHtml).join('')
+      : '<div class="empty-state-inline" style="padding:32px"><i class="fas fa-users"></i><span>No board members yet.</span></div>';
+  } catch (error) {
+    console.error('Error loading BOD members:', error);
+    grid.innerHTML = '<div class="empty-state-inline" style="padding:32px"><i class="fas fa-triangle-exclamation"></i><span>Failed to load board members.</span></div>';
+  }
+}
+
 function viewBodMember(id) {
-  const card = document.getElementById(id); if (!card) return;
-  const name  = card.dataset.name  || card.querySelector('.bod-name')?.textContent  || '';
-  const pos   = card.dataset.pos   || card.querySelector('.bod-pos')?.textContent   || '';
-  const term  = card.dataset.term  || card.querySelector('.bod-term')?.textContent  || '';
-  const phone = card.dataset.phone || '';
-  const ct    = document.getElementById('view-member-content'); if (!ct) return;
-  const ini   = name.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
+  const m = BOD_MEMBERS.find(x => String(x.id) === String(id)); if (!m) return;
+  const ct = document.getElementById('view-member-content'); if (!ct) return;
+  const ini = (m.name || '').split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
   ct.innerHTML = `
     <div style="display:flex;align-items:center;gap:16px;padding-bottom:16px;border-bottom:1px solid var(--gray-100);margin-bottom:16px">
       <div style="width:60px;height:60px;border-radius:50%;background:linear-gradient(135deg,var(--green),var(--green-mid));display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:white;flex-shrink:0">${ini}</div>
-      <div><div style="font-size:18px;font-weight:800;color:var(--green)">${escHtml(name)}</div><div style="font-size:13px;color:var(--accent-dark);font-weight:700">${escHtml(pos)}</div></div>
+      <div><div style="font-size:18px;font-weight:800;color:var(--green)">${escHtml(m.name)}</div><div style="font-size:13px;color:var(--accent-dark);font-weight:700">${escHtml(m.position||'')}</div></div>
     </div>
-    <div class="form-group"><label>Term</label><div class="text-display">${escHtml(term)}</div></div>
-    <div class="form-group"><label>Contact</label><div class="text-display">${escHtml(phone||'—')}</div></div>`;
+    <div class="form-group"><label>Term</label><div class="text-display">${escHtml(m.term||'')}</div></div>
+    <div class="form-group"><label>Contact</label><div class="text-display">${escHtml(m.phone||'—')}</div></div>`;
   openModal('viewMember');
 }
 
 function editBodMember(id) {
-  const card = document.getElementById(id); if (!card) return;
+  const m = BOD_MEMBERS.find(x => String(x.id) === String(id)); if (!m) return;
   document.getElementById('edit-bod-id').value    = id;
-  document.getElementById('edit-bod-name').value  = card.dataset.name  || card.querySelector('.bod-name')?.textContent || '';
-  document.getElementById('edit-bod-pos').value   = card.dataset.pos   || card.querySelector('.bod-pos')?.textContent  || '';
-  document.getElementById('edit-bod-term').value  = card.dataset.term  || card.querySelector('.bod-term')?.textContent?.replace('Term: ','') || '';
-  document.getElementById('edit-bod-phone').value = card.dataset.phone || '';
+  document.getElementById('edit-bod-name').value  = m.name     || '';
+  document.getElementById('edit-bod-pos').value   = m.position || '';
+  document.getElementById('edit-bod-term').value  = m.term     || '';
+  document.getElementById('edit-bod-phone').value = m.phone    || '';
   openModal('editMember');
 }
-function saveEditBodMember() {
+async function saveEditBodMember() {
   const id    = document.getElementById('edit-bod-id').value;
-  const card  = document.getElementById(id); if (!card) return;
+  const m     = BOD_MEMBERS.find(x => String(x.id) === String(id)); if (!m) return;
   const name  = (document.getElementById('edit-bod-name').value  || '').trim();
   const pos   = (document.getElementById('edit-bod-pos').value   || '').trim();
   const term  = (document.getElementById('edit-bod-term').value  || '').trim();
   const phone = (document.getElementById('edit-bod-phone').value || '').trim();
   if (!name) { showToast('Name is required.', 'error'); return; }
-  const ini = name.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
-  card.dataset.name = name; card.dataset.pos = pos; card.dataset.term = term; card.dataset.phone = phone;
-  const av = card.querySelector('.bod-avatar'); if (av) av.textContent = ini;
-  const nm = card.querySelector('.bod-name');   if (nm) nm.textContent = name;
-  const ps = card.querySelector('.bod-pos');    if (ps) ps.textContent = pos;
-  const tr = card.querySelector('.bod-term');   if (tr) tr.textContent = `Term: ${term}`;
-  const ph = card.querySelector('.bod-contact'); if (ph) ph.innerHTML = `<i class="fas fa-phone"></i> ${escHtml(phone||'—')}`;
-  closeModal('editMember'); showToast(`${name} updated`);
+  try {
+    const result = await StaffAPI.bodMembers.update(id, { name, position: pos, term, phone, email: m.email });
+    if (result.success) {
+      closeModal('editMember'); showToast(`${name} updated`);
+      await loadBodMembers();
+    } else {
+      showToast(result.error || 'Failed to update member', 'error');
+    }
+  } catch (error) {
+    console.error('Error updating BOD member:', error);
+    showToast('Failed to update member', 'error');
+  }
 }
-function addBodMember() {
+async function addBodMember() {
   const name  = (document.getElementById('bod-name')?.value  || '').trim();
   const pos   = (document.getElementById('bod-pos')?.value   || '').trim();
   const term  = (document.getElementById('bod-term')?.value  || '').trim();
   const phone = (document.getElementById('bod-phone')?.value || '').trim();
   if (!name) { showToast('Name is required.', 'error'); return; }
-  const ini = name.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
-  const id  = 'bod-' + Date.now();
-  const grid = document.getElementById('bods-grid');
-  if (grid) {
-    const card = document.createElement('div');
-    card.className = 'bod-card'; card.id = id;
-    card.dataset.name = name; card.dataset.pos = pos; card.dataset.term = term; card.dataset.phone = phone;
-    card.innerHTML = `<div class="bod-avatar">${ini}</div><div class="bod-name">${escHtml(name)}</div><div class="bod-pos">${escHtml(pos)}</div><div class="bod-term">Term: ${escHtml(term)}</div><div class="bod-contact"><i class="fas fa-phone"></i> ${escHtml(phone||'—')}</div><div class="bod-actions"><button class="btn btn-outline btn-sm" onclick="viewBodMember('${id}')"><i class="fas fa-eye"></i> View</button><button class="btn btn-outline btn-sm" onclick="editBodMember('${id}')"><i class="fas fa-edit"></i> Edit</button><button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="deleteBodMember('${id}','${escHtml(name)}')"><i class="fas fa-trash"></i></button></div>`;
-    grid.appendChild(card);
+  try {
+    const result = await StaffAPI.bodMembers.create({ name, position: pos, term, phone });
+    if (result.success) {
+      closeModal('addMember');
+      ['bod-name','bod-pos','bod-term','bod-phone'].forEach(id => { const e = document.getElementById(id); if (e) e.value = ''; });
+      showToast(`${name} added`);
+      await loadBodMembers();
+    } else {
+      showToast(result.error || 'Failed to add member', 'error');
+    }
+  } catch (error) {
+    console.error('Error adding BOD member:', error);
+    showToast('Failed to add member', 'error');
   }
-  closeModal('addMember');
-  ['bod-name','bod-pos','bod-term','bod-phone'].forEach(id => { const e = document.getElementById(id); if (e) e.value = ''; });
-  showToast(`${name} added`);
 }
-function deleteBodMember(id, name) {
+async function deleteBodMember(id, name) {
   if (!confirm(`Remove ${name}?`)) return;
-  const card = document.getElementById(id); if (card) card.remove(); showToast(`${name} removed`, 'error');
+  try {
+    const result = await StaffAPI.bodMembers.delete(id);
+    if (result.success) {
+      showToast(`${name} removed`, 'error');
+      await loadBodMembers();
+    } else {
+      showToast(result.error || 'Failed to remove member', 'error');
+    }
+  } catch (error) {
+    console.error('Error deleting BOD member:', error);
+    showToast('Failed to remove member', 'error');
+  }
 }
+
 
 /* ============================================================
    MEETING RECORDS
 ============================================================ */
-function addMeetingRecord() {
+let MEETING_RECORDS = [];
+
+function meetingRowHtml(r) {
+  const tagMap = { BOD:'tag-orange', AGM:'tag-blue' };
+  return `<tr id="meet-${r.id}"><td><strong>${escHtml(r.title)}</strong></td><td>${escHtml(r.date||'—')}</td><td><span class="tag ${tagMap[r.type]||'tag-gray'}">${escHtml(r.type||'')}</span></td><td><span class="tag tag-gray"><i class="fas fa-file-pdf"></i> PDF</span></td><td><button class="btn btn-outline btn-sm" onclick="showToast('Download started')"><i class="fas fa-download"></i></button> <button class="btn btn-outline btn-sm" onclick="editMeeting(${r.id})"><i class="fas fa-edit"></i></button> <button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="deleteMeeting(${r.id},'${escHtml(r.title)}')"><i class="fas fa-trash"></i></button></td></tr>`;
+}
+
+async function loadMeetings() {
+  const tb = document.getElementById('meetings-tbody'); if (!tb) return;
+  try {
+    const result = await StaffAPI.meetings.getAll();
+    MEETING_RECORDS = (result.success && result.data) ? result.data : [];
+    tb.innerHTML = MEETING_RECORDS.length
+      ? MEETING_RECORDS.map(meetingRowHtml).join('')
+      : '<tr><td colspan="5" style="text-align:center;padding:24px">No meeting records yet.</td></tr>';
+  } catch (error) {
+    console.error('Error loading meeting records:', error);
+    tb.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:24px">Failed to load meeting records.</td></tr>';
+  }
+}
+
+async function addMeetingRecord() {
   const title = (document.getElementById('meet-title')?.value || '').trim();
-  const date  = document.getElementById('meet-date')?.value || '—';
+  const date  = document.getElementById('meet-date')?.value || '';
   const type  = document.getElementById('meet-type')?.value || 'BOD';
   if (!title) { showToast('Title is required.', 'error'); return; }
-  const id = 'meet-' + Date.now(); const tb = document.getElementById('meetings-tbody');
-  if (tb) {
-    const row = document.createElement('tr'); row.id = id;
-    row.innerHTML = `<td><strong>${escHtml(title)}</strong></td><td>${escHtml(date)}</td><td><span class="tag tag-orange">${escHtml(type)}</span></td><td><span class="tag tag-gray"><i class="fas fa-file-pdf"></i> PDF</span></td><td><button class="btn btn-outline btn-sm" onclick="showToast('Download started')"><i class="fas fa-download"></i></button> <button class="btn btn-outline btn-sm" onclick="editMeeting('${id}','${escHtml(title)}','${escHtml(type)}','${escHtml(date)}')"><i class="fas fa-edit"></i></button> <button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="deleteMeeting('${id}','${escHtml(title)}')"><i class="fas fa-trash"></i></button></td>`;
-    tb.prepend(row);
+  try {
+    const result = await StaffAPI.meetings.create({ title, date, type, uploadedBy: null });
+    if (result.success) {
+      closeModal('addMeeting');
+      ['meet-title','meet-date'].forEach(id => { const e = document.getElementById(id); if (e) e.value = ''; });
+      showToast('Meeting record uploaded');
+      await loadMeetings();
+    } else {
+      showToast(result.error || 'Failed to upload meeting record', 'error');
+    }
+  } catch (error) {
+    console.error('Error adding meeting record:', error);
+    showToast('Failed to upload meeting record', 'error');
   }
-  closeModal('addMeeting');
-  ['meet-title','meet-date'].forEach(id => { const e = document.getElementById(id); if (e) e.value = ''; });
-  showToast('Meeting record uploaded');
 }
-function editMeeting(id, title, type, date) {
+function editMeeting(id) {
+  const r = MEETING_RECORDS.find(x => String(x.id) === String(id)); if (!r) return;
   document.getElementById('edit-meet-id').value    = id;
-  document.getElementById('edit-meet-title').value = title || '';
-  document.getElementById('edit-meet-date').value  = date  || '';
-  document.getElementById('edit-meet-type').value  = type  || 'BOD';
+  document.getElementById('edit-meet-title').value = r.title || '';
+  document.getElementById('edit-meet-date').value  = r.date  || '';
+  document.getElementById('edit-meet-type').value  = r.type  || 'BOD';
   openModal('editMeeting');
 }
-function saveEditMeeting() {
+async function saveEditMeeting() {
   const id    = document.getElementById('edit-meet-id').value;
   const title = (document.getElementById('edit-meet-title').value || '').trim();
   const date  = document.getElementById('edit-meet-date').value || '';
   const type  = document.getElementById('edit-meet-type').value || 'BOD';
   if (!title) { showToast('Title is required.', 'error'); return; }
-  const row = document.getElementById(id);
-  if (row) {
-    const cells = row.querySelectorAll('td');
-    if (cells[0]) cells[0].innerHTML = `<strong>${escHtml(title)}</strong>`;
-    if (cells[1]) cells[1].textContent = date;
-    if (cells[2]) cells[2].innerHTML   = `<span class="tag tag-orange">${escHtml(type)}</span>`;
+  try {
+    const result = await StaffAPI.meetings.update(id, { title, date, type });
+    if (result.success) {
+      closeModal('editMeeting'); showToast('Meeting record updated');
+      await loadMeetings();
+    } else {
+      showToast(result.error || 'Failed to update meeting record', 'error');
+    }
+  } catch (error) {
+    console.error('Error updating meeting record:', error);
+    showToast('Failed to update meeting record', 'error');
   }
-  closeModal('editMeeting'); showToast('Meeting record updated');
 }
-function deleteMeeting(id, name) { if (!confirm(`Delete "${name}"?`)) return; const r = document.getElementById(id); if (r) r.remove(); showToast(`"${name}" deleted`, 'error'); }
+async function deleteMeeting(id, name) {
+  if (!confirm(`Delete "${name}"?`)) return;
+  try {
+    const result = await StaffAPI.meetings.delete(id);
+    if (result.success) {
+      showToast(`"${name}" deleted`, 'error');
+      await loadMeetings();
+    } else {
+      showToast(result.error || 'Failed to delete meeting record', 'error');
+    }
+  } catch (error) {
+    console.error('Error deleting meeting record:', error);
+    showToast('Failed to delete meeting record', 'error');
+  }
+}
 
 /* ============================================================
    FORMS & DOCUMENTS
 ============================================================ */
-function addDocument() {
+let HOA_DOCUMENTS = [];
+
+function documentRowHtml(d) {
+  const tagMap = {Form:'tag-orange', Policy:'tag-green', Guide:'tag-blue', Certificate:'tag-yellow'};
+  return `<tr id="doc-${d.id}"><td><strong>${escHtml(d.name)}</strong></td><td><span class="tag ${tagMap[d.category]||'tag-gray'}">${escHtml(d.category||'')}</span></td><td><button class="btn btn-outline btn-sm" onclick="viewDocument('${escHtml(d.name)}')"><i class="fas fa-eye"></i> View</button> <button class="btn btn-outline btn-sm" onclick="showToast('Download started')"><i class="fas fa-download"></i> Download</button> <button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="deleteDocument(${d.id},'${escHtml(d.name)}')"><i class="fas fa-trash"></i> Delete</button></td></tr>`;
+}
+
+async function loadDocuments() {
+  const tb = document.getElementById('documents-tbody'); if (!tb) return;
+  try {
+    const result = await StaffAPI.documents.getAll();
+    HOA_DOCUMENTS = (result.success && result.data) ? result.data : [];
+    tb.innerHTML = HOA_DOCUMENTS.length
+      ? HOA_DOCUMENTS.map(documentRowHtml).join('')
+      : '<tr><td colspan="3" style="text-align:center;padding:24px">No documents yet.</td></tr>';
+  } catch (error) {
+    console.error('Error loading documents:', error);
+    tb.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:24px">Failed to load documents.</td></tr>';
+  }
+}
+
+async function addDocument() {
   const name = (document.getElementById('doc-name')?.value || '').trim();
   const cat  = document.getElementById('doc-cat')?.value   || 'Form';
   if (!name) { showToast('Document name is required.', 'error'); return; }
-  const tagMap = {Form:'tag-orange', Policy:'tag-green', Guide:'tag-blue', Certificate:'tag-yellow'};
-  const id = 'doc-' + Date.now(); const tb = document.getElementById('documents-tbody');
-  if (tb) {
-    const row = document.createElement('tr'); row.id = id;
-    row.innerHTML = `<td><strong>${escHtml(name)}</strong></td><td><span class="tag ${tagMap[cat]||'tag-gray'}">${escHtml(cat)}</span></td><td><button class="btn btn-outline btn-sm" onclick="viewDocument('${escHtml(name)}')"><i class="fas fa-eye"></i> View</button> <button class="btn btn-outline btn-sm" onclick="showToast('Download started')"><i class="fas fa-download"></i> Download</button> <button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="deleteDocument('${id}','${escHtml(name)}')"><i class="fas fa-trash"></i> Delete</button></td>`;
-    tb.prepend(row);
+  try {
+    const result = await StaffAPI.documents.create({ name, category: cat, uploadedBy: null });
+    if (result.success) {
+      closeModal('addDocument'); const ne = document.getElementById('doc-name'); if (ne) ne.value = '';
+      showToast('Document uploaded');
+      await loadDocuments();
+    } else {
+      showToast(result.error || 'Failed to upload document', 'error');
+    }
+  } catch (error) {
+    console.error('Error adding document:', error);
+    showToast('Failed to upload document', 'error');
   }
-  closeModal('addDocument'); const ne = document.getElementById('doc-name'); if (ne) ne.value = '';
-  showToast('Document uploaded');
 }
-function viewDocument(name)       { showToast(`Opening "${name}"…`, 'info'); }
-function deleteDocument(id, name) { if (!confirm(`Delete "${name}"?`)) return; const r = document.getElementById(id); if (r) r.remove(); showToast(`"${name}" deleted`, 'error'); }
+function viewDocument(name) { showToast(`Opening "${name}"…`, 'info'); }
+async function deleteDocument(id, name) {
+  if (!confirm(`Delete "${name}"?`)) return;
+  try {
+    const result = await StaffAPI.documents.delete(id);
+    if (result.success) {
+      showToast(`"${name}" deleted`, 'error');
+      await loadDocuments();
+    } else {
+      showToast(result.error || 'Failed to delete document', 'error');
+    }
+  } catch (error) {
+    console.error('Error deleting document:', error);
+    showToast('Failed to delete document', 'error');
+  }
+}
 
 /* ============================================================
    CONTACTS
 ============================================================ */
-function addContact() {
+let CONTACTS_DATA = [];
+
+function contactRowHtml(c) {
+  return `<tr id="con-${c.id}"><td><strong>${escHtml(c.name)}</strong></td><td>${escHtml(c.role||'—')}</td><td>${escHtml(c.phone||'—')}</td><td>${escHtml(c.email||'—')}</td><td><button class="btn btn-outline btn-sm" onclick="editContact(${c.id})"><i class="fas fa-edit"></i> Edit</button> <button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="deleteContact(${c.id},'${escHtml(c.name)}')"><i class="fas fa-trash"></i></button></td></tr>`;
+}
+
+async function loadContacts() {
+  const tb = document.getElementById('contacts-tbody'); if (!tb) return;
+  try {
+    const result = await StaffAPI.contacts.getAll();
+    CONTACTS_DATA = (result.success && result.data) ? result.data : [];
+    tb.innerHTML = CONTACTS_DATA.length
+      ? CONTACTS_DATA.map(contactRowHtml).join('')
+      : '<tr><td colspan="5" style="text-align:center;padding:24px">No contacts yet.</td></tr>';
+  } catch (error) {
+    console.error('Error loading contacts:', error);
+    tb.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:24px">Failed to load contacts.</td></tr>';
+  }
+}
+
+async function addContact() {
   const name  = (document.getElementById('con-name')?.value  || '').trim();
   const role  = (document.getElementById('con-role')?.value  || '').trim();
   const phone = (document.getElementById('con-phone')?.value || '').trim();
   const email = (document.getElementById('con-email')?.value || '').trim();
   if (!name) { showToast('Name is required.', 'error'); return; }
-  const id = 'con-' + Date.now(); const tb = document.getElementById('contacts-tbody');
-  if (tb) {
-    const row = document.createElement('tr'); row.id = id;
-    row.innerHTML = `<td><strong>${escHtml(name)}</strong></td><td>${escHtml(role||'—')}</td><td>${escHtml(phone||'—')}</td><td>${escHtml(email||'—')}</td><td><button class="btn btn-outline btn-sm" onclick="editContact('${id}','${escHtml(name)}','${escHtml(role)}','${escHtml(phone)}','${escHtml(email)}')"><i class="fas fa-edit"></i> Edit</button> <button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="deleteContact('${id}','${escHtml(name)}')"><i class="fas fa-trash"></i></button></td>`;
-    tb.prepend(row);
+  try {
+    const result = await StaffAPI.contacts.create({ name, role, phone, email });
+    if (result.success) {
+      closeModal('addContact');
+      ['con-name','con-role','con-phone','con-email'].forEach(id => { const e = document.getElementById(id); if (e) e.value = ''; });
+      showToast('Contact saved');
+      await loadContacts();
+    } else {
+      showToast(result.error || 'Failed to save contact', 'error');
+    }
+  } catch (error) {
+    console.error('Error adding contact:', error);
+    showToast('Failed to save contact', 'error');
   }
-  closeModal('addContact');
-  ['con-name','con-role','con-phone','con-email'].forEach(id => { const e = document.getElementById(id); if (e) e.value = ''; });
-  showToast('Contact saved');
 }
-function editContact(id, name, role, phone, email) {
+function editContact(id) {
+  const c = CONTACTS_DATA.find(x => String(x.id) === String(id)); if (!c) return;
   document.getElementById('edit-con-id').value    = id;
-  document.getElementById('edit-con-name').value  = name  || '';
-  document.getElementById('edit-con-role').value  = role  || '';
-  document.getElementById('edit-con-phone').value = phone || '';
-  document.getElementById('edit-con-email').value = email || '';
+  document.getElementById('edit-con-name').value  = c.name  || '';
+  document.getElementById('edit-con-role').value  = c.role  || '';
+  document.getElementById('edit-con-phone').value = c.phone || '';
+  document.getElementById('edit-con-email').value = c.email || '';
   openModal('editContact');
 }
-function saveEditContact() {
+async function saveEditContact() {
   const id    = document.getElementById('edit-con-id').value;
   const name  = (document.getElementById('edit-con-name').value  || '').trim();
   const role  = (document.getElementById('edit-con-role').value  || '').trim();
   const phone = (document.getElementById('edit-con-phone').value || '').trim();
   const email = (document.getElementById('edit-con-email').value || '').trim();
   if (!name) { showToast('Name is required.', 'error'); return; }
-  const row = document.getElementById(id);
-  if (row) {
-    const cells = row.querySelectorAll('td');
-    if (cells[0]) cells[0].innerHTML  = `<strong>${escHtml(name)}</strong>`;
-    if (cells[1]) cells[1].textContent = role  || '—';
-    if (cells[2]) cells[2].textContent = phone || '—';
-    if (cells[3]) cells[3].textContent = email || '—';
-    if (cells[4]) cells[4].innerHTML  = `<button class="btn btn-outline btn-sm" onclick="editContact('${id}','${escHtml(name)}','${escHtml(role)}','${escHtml(phone)}','${escHtml(email)}')"><i class="fas fa-edit"></i> Edit</button> <button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="deleteContact('${id}','${escHtml(name)}')"><i class="fas fa-trash"></i></button>`;
+  try {
+    const result = await StaffAPI.contacts.update(id, { name, role, phone, email });
+    if (result.success) {
+      closeModal('editContact'); showToast('Contact updated');
+      await loadContacts();
+    } else {
+      showToast(result.error || 'Failed to update contact', 'error');
+    }
+  } catch (error) {
+    console.error('Error updating contact:', error);
+    showToast('Failed to update contact', 'error');
   }
-  closeModal('editContact'); showToast('Contact updated');
 }
-function deleteContact(id, name) { if (!confirm(`Delete "${name}"?`)) return; const r = document.getElementById(id); if (r) r.remove(); showToast(`"${name}" deleted`, 'error'); }
+async function deleteContact(id, name) {
+  if (!confirm(`Delete "${name}"?`)) return;
+  try {
+    const result = await StaffAPI.contacts.delete(id);
+    if (result.success) {
+      showToast(`"${name}" deleted`, 'error');
+      await loadContacts();
+    } else {
+      showToast(result.error || 'Failed to delete contact', 'error');
+    }
+  } catch (error) {
+    console.error('Error deleting contact:', error);
+    showToast('Failed to delete contact', 'error');
+  }
+}
 
 /* ============================================================
    WORD BANK
@@ -2453,13 +2876,18 @@ document.addEventListener('DOMContentLoaded', function() {
   loadStaffStats();
   loadActivityFeed();
   loadExchangeData();
-  renderCalendar(); renderEventsList();
+  loadEvents();
+  loadBodMembers();
+  loadMeetings();
+  loadDocuments();
+  loadContacts();
   initKanban();
   loadPendingRegistrations();
   loadRecentlyVerified();
   loadIncidentReportsWithAnalysis();
   loadForumPosts();
   loadReservations();
+  loadAnnouncements();
   document.querySelector('.icon-btn[title="Notifications"]')?.addEventListener('click', openNotifModal);
   document.querySelector('.icon-btn[title="Settings"]')?.addEventListener('click', () => openModal('settings'));
   _updateNotifBadge();

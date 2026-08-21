@@ -44,6 +44,7 @@ public partial class SqBelAir4Context : DbContext
     public virtual DbSet<StaffInvitation> StaffInvitations { get; set; }
     public virtual DbSet<BanRecord> BanRecords { get; set; }
     public virtual DbSet<BackupRecord> BackupRecords { get; set; }
+    public virtual DbSet<NotificationSubscriber> NotificationSubscribers { get; set; }
 
     // Staff Dashboard Entities
     public virtual DbSet<Task> Tasks { get; set; }
@@ -313,6 +314,8 @@ public partial class SqBelAir4Context : DbContext
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.Title).HasMaxLength(300).IsUnicode(false).HasColumnName("title");
             entity.Property(e => e.Date).HasMaxLength(20).IsUnicode(false).HasColumnName("date");
+            entity.Property(e => e.Time).HasMaxLength(20).IsUnicode(false).HasColumnName("time");
+            entity.Property(e => e.Location).HasMaxLength(200).IsUnicode(false).HasColumnName("location");
             entity.Property(e => e.Type).HasMaxLength(50).IsUnicode(false).HasColumnName("type");
             entity.Property(e => e.FilePath).HasColumnName("file_path");
             entity.Property(e => e.UploadedBy).HasMaxLength(100).IsUnicode(false).HasColumnName("uploaded_by");
@@ -579,6 +582,23 @@ public partial class SqBelAir4Context : DbContext
                   .IsRequired(false);
 
             entity.HasIndex(e => e.BackupId).IsUnique().HasDatabaseName("UX_BackupRecords_BackupId");
+        });
+
+        modelBuilder.Entity<NotificationSubscriber>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK_NotificationSubscribers");
+            entity.ToTable("notification_subscribers");
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.ResidentName).HasMaxLength(200).IsUnicode(false).HasColumnName("resident_name");
+            entity.Property(e => e.Email).HasMaxLength(200).IsUnicode(false).HasColumnName("email").IsRequired();
+            entity.Property(e => e.DeviceInfo).HasMaxLength(300).IsUnicode(false).HasColumnName("device_info");
+            entity.Property(e => e.SubscribedAt).HasColumnName("subscribed_at").HasDefaultValueSql("GETUTCDATE()");
+            entity.Property(e => e.IsActive).HasColumnName("is_active").HasDefaultValue(true);
+            entity.Property(e => e.UnsubscribedAt).HasColumnName("unsubscribed_at");
+            entity.Property(e => e.LastNotifiedAt).HasColumnName("last_notified_at");
+            entity.Property(e => e.NotificationsSentCount).HasColumnName("notifications_sent_count").HasDefaultValue(0);
+
+            entity.HasIndex(e => e.Email).IsUnique().HasDatabaseName("UX_NotificationSubscribers_Email");
         });
 
         // Staff Dashboard - Tasks

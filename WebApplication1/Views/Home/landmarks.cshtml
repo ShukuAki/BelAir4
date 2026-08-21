@@ -79,12 +79,12 @@
                             <a asp-controller="Home" asp-action="reportConcerns">Report Concerns/Incidents</a>
                         </div>
                     </div>
-                    @* <div class="dropdown">
-                                <a href="#" class="dropdown-toggle">Others <i class="fas fa-chevron-down"></i></a>
-                                <div class="dropdown-menu">
-                                    <a asp-controller="Home" asp-action="formsDocuments">Downloadable Forms and Documents</a>
-                                </div>
-                            </div> *@
+                    <div class="dropdown">
+                        <a href="#" class="dropdown-toggle">Others <i class="fas fa-chevron-down"></i></a>
+                        <div class="dropdown-menu">
+                            <a asp-controller="Home" asp-action="formsDocuments">Downloadable Forms and Documents</a>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -107,21 +107,21 @@
   <!-- Slideshow Section -->
   <section class="slideshow-section">
     <div class="slideshow-container">
-     @*  <div class="slideshow-image">
-        <img src="sample.jpg" alt="Landmark Image" id="landmark-image">
-      </div> *@
+     <div class="slideshow-image">
+       <img src="sample.jpg" alt="Landmark Image" id="landmark-image">
+     </div>
       <div class="slideshow-text">
         <h2 id="landmark-title">Landmark Title</h2>
         <p id="landmark-description">Landmark description will appear here.</p>
       </div>
-      @* <div class="slideshow-controls">
+      <div class="slideshow-controls">
         <button class="slideshow-btn prev-btn" id="prev-btn">
           <i class="fas fa-chevron-left"></i> Previous
         </button>
         <button class="slideshow-btn next-btn" id="next-btn">
           Next <i class="fas fa-chevron-right"></i>
         </button>
-      </div> *@
+      </div>
     </div>
   </section>
 
@@ -159,7 +159,7 @@
         <footer class="footer">
             <div class="footer-content">
                 <div class="footer-section footer-logo-section">
-                    <a href="index.html" class="footer-logo-link">
+                    <a asp-controller="Home" asp-action="Index" class="footer-logo-link">
                         <img src="@(Url.Content("~/assets/LBAlogo.png"))" alt="Bel-Air Village Logo" class="footer-logo">
                     </a>
                 </div>
@@ -174,21 +174,21 @@
                 <div class="footer-section">
                     <h3>Quick Links</h3>
                     <ul class="footer-links">
-                        <li><a href="about-laguna-belair.html">About Us</a></li>
-                        <li><a href="contacts.html">Contact Us</a></li>
-                        <li><a href="faq.html">FAQs</a></li>
-                        <li><a href="privacy-policy.html">Privacy Policy</a></li>
+                        <li><a asp-controller="Home" asp-action="aboutLagunaBelAir">About Us</a></li>
+                        <li><a asp-controller="Home" asp-action="contacts">Contact Us</a></li>
+                        <li><a href="#">FAQs</a></li>
+                        <li><a href="#">Privacy Policy</a></li>
                     </ul>
                 </div>
-                @*   <div class="footer-section">
+                <div class="footer-section">
                             <h3>Site Links</h3>
                             <ul class="footer-links">
-                                <li><a href="announcement.html">Announcements</a></li>
-                                <li><a href="calendars.html">Community Calendar</a></li>
-                                <li><a href="forms-documents.html">Forms &amp; Documents</a></li>
-                                <li><a href="report-concerns.html">Report a Concern</a></li>
+                                <li><a asp-controller="Home" asp-action="announcement">Announcements</a></li>
+                                <li><a asp-controller="Home" asp-action="calendars">Community Calendar</a></li>
+                                <li><a asp-controller="Home" asp-action="formsDocuments">Forms &amp; Documents</a></li>
+                                <li><a asp-controller="Home" asp-action="reportConcerns">Report a Concern</a></li>
                             </ul>
-                        </div> *@
+                        </div>
             </div>
             <div class="footer-bottom">
                 <p>&copy; <span id="current-year"></span> Laguna BelAir 4. All rights reserved.</p>

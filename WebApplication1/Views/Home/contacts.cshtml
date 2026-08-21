@@ -79,12 +79,12 @@
                             <a asp-controller="Home" asp-action="reportConcerns">Report Concerns/Incidents</a>
                         </div>
                     </div>
-                    @* <div class="dropdown">
-                                <a href="#" class="dropdown-toggle">Others <i class="fas fa-chevron-down"></i></a>
-                                <div class="dropdown-menu">
-                                    <a asp-controller="Home" asp-action="formsDocuments">Downloadable Forms and Documents</a>
-                                </div>
-                            </div> *@
+                    <div class="dropdown">
+                        <a href="#" class="dropdown-toggle">Others <i class="fas fa-chevron-down"></i></a>
+                        <div class="dropdown-menu">
+                            <a asp-controller="Home" asp-action="formsDocuments">Downloadable Forms and Documents</a>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -129,7 +129,7 @@
   <!-- Form and Map Section -->
   <section class="form-map-section">
     <!-- Left: Contact Form -->
-    @* <div class="contact-form-container">
+    <div class="contact-form-container">
       <h3><i class="fas fa-envelope"></i> Send Us a Message</h3>
       <form class="contact-form" id="contactForm">
         <div class="form-row">
@@ -165,7 +165,7 @@
         <i class="fas fa-check-circle"></i>
         <p><strong>Thank you for contacting us!</strong> Your message has been sent successfully. We'll get back to you within 24-48 business hours.</p>
       </div>
-    </div> *@
+    </div>
 
     <!-- Right: Map -->
     <div class="map-container">
@@ -201,7 +201,7 @@
         <footer class="footer">
             <div class="footer-content">
                 <div class="footer-section footer-logo-section">
-                    <a href="index.html" class="footer-logo-link">
+                    <a asp-controller="Home" asp-action="Index" class="footer-logo-link">
                         <img src="@(Url.Content("~/assets/LBAlogo.png"))" alt="Bel-Air Village Logo" class="footer-logo">
                     </a>
                 </div>
@@ -216,28 +216,28 @@
                 <div class="footer-section">
                     <h3>Quick Links</h3>
                     <ul class="footer-links">
-                        <li><a href="about-laguna-belair.html">About Us</a></li>
-                        <li><a href="contacts.html">Contact Us</a></li>
-                        <li><a href="faq.html">FAQs</a></li>
-                        <li><a href="privacy-policy.html">Privacy Policy</a></li>
+                        <li><a asp-controller="Home" asp-action="aboutLagunaBelAir">About Us</a></li>
+                        <li><a asp-controller="Home" asp-action="contacts">Contact Us</a></li>
+                        <li><a href="#">FAQs</a></li>
+                        <li><a href="#">Privacy Policy</a></li>
                     </ul>
                 </div>
-               @*  <div class="footer-section">
-                    <h3>Site Links</h3>
-                    <ul class="footer-links">
-                        <li><a href="announcement.html">Announcements</a></li>
-                        <li><a href="calendars.html">Community Calendar</a></li>
-                        <li><a href="forms-documents.html">Forms &amp; Documents</a></li>
-                        <li><a href="report-concerns.html">Report a Concern</a></li>
-                    </ul>
-                </div> *@
+               <div class="footer-section">
+                   <h3>Site Links</h3>
+                   <ul class="footer-links">
+                       <li><a asp-controller="Home" asp-action="announcement">Announcements</a></li>
+                       <li><a asp-controller="Home" asp-action="calendars">Community Calendar</a></li>
+                       <li><a asp-controller="Home" asp-action="formsDocuments">Forms &amp; Documents</a></li>
+                       <li><a asp-controller="Home" asp-action="reportConcerns">Report a Concern</a></li>
+                   </ul>
+               </div>
             </div>
             <div class="footer-bottom">
                 <p>&copy; <span id="current-year"></span> Laguna BelAir 4. All rights reserved.</p>
             </div>
         </footer>
 <!-- JavaScript -->
-<script src="contacts.js"></script>
+<script src="~/js/contacts.js"></script>
 <script>
   // Set current year in footer
   document.getElementById('current-year').textContent = new Date().getFullYear();
