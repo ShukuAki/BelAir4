@@ -713,12 +713,12 @@ namespace WebApplication1.Controllers
         // ═══════════════════════════════════════════════════════════
 
         [HttpGet]
-        [Filters.UserTypeAuthorize(1)]
+        [Filters.UserTypeAuthorize(1, 2, 3)] // Resident, Staff, Admin
         public IActionResult UserDashboard() => View();
 
         // GET /api/user/stats - Get dashboard overview statistics
         [HttpGet("/api/user/stats")]
-        [Filters.UserTypeAuthorize(1)]
+        [Filters.UserTypeAuthorize(1, 2, 3)] // Resident, Staff, Admin
         public async Task<IActionResult> GetUserStats()
         {
             try
@@ -799,7 +799,7 @@ namespace WebApplication1.Controllers
 
         // GET /api/user/reports - Get user's concern reports
         [HttpGet("/api/user/reports")]
-        [Filters.UserTypeAuthorize(1)]
+        [Filters.UserTypeAuthorize(1, 2, 3)] // Resident, Staff, Admin
         public async Task<IActionResult> GetUserReports()
         {
             try
@@ -824,7 +824,7 @@ namespace WebApplication1.Controllers
 
         // GET /api/user/reservations - Get user's reservations
         [HttpGet("/api/user/reservations")]
-        [Filters.UserTypeAuthorize(1)]
+        [Filters.UserTypeAuthorize(1, 2, 3)] // Resident, Staff, Admin
         public async Task<IActionResult> GetUserReservations()
         {
             try
@@ -849,7 +849,7 @@ namespace WebApplication1.Controllers
 
         // GET /api/user/advertisements - Get user's advertisements
         [HttpGet("/api/user/advertisements")]
-        [Filters.UserTypeAuthorize(1)]
+        [Filters.UserTypeAuthorize(1, 2, 3)] // Resident, Staff, Admin
         public async Task<IActionResult> GetUserAdvertisements()
         {
             try
@@ -874,7 +874,7 @@ namespace WebApplication1.Controllers
 
         // GET /api/user/vehicles - Get user's vehicles
         [HttpGet("/api/user/vehicles")]
-        [Filters.UserTypeAuthorize(1)]
+        [Filters.UserTypeAuthorize(1, 2, 3)] // Resident, Staff, Admin
         public async Task<IActionResult> GetUserVehicles()
         {
             try
@@ -898,7 +898,7 @@ namespace WebApplication1.Controllers
 
         // GET /api/user/pets - Get user's pets
         [HttpGet("/api/user/pets")]
-        [Filters.UserTypeAuthorize(1)]
+        [Filters.UserTypeAuthorize(1, 2, 3)] // Resident, Staff, Admin
         public async Task<IActionResult> GetUserPets()
         {
             try
@@ -922,7 +922,7 @@ namespace WebApplication1.Controllers
 
         // GET /api/user/profile - Get user's profile/registration info
         [HttpGet("/api/user/profile")]
-        [Filters.UserTypeAuthorize(1)]
+        [Filters.UserTypeAuthorize(1, 2, 3)] // Resident, Staff, Admin
         public async Task<IActionResult> GetUserProfile()
         {
             try

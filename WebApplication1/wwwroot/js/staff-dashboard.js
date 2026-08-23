@@ -47,6 +47,204 @@ let incLogMap = null, incLogMarker = null;
 let taskTimers = {};
 
 /* ============================================================
+   NOTIFICATION SERVICE — Real-time updates
+============================================================ */
+const NotificationService = {
+  pollInterval: null,
+  pollFrequency: 30000, // 30 seconds
+  lastCounts: {
+    incidents: 0,
+    verifications: 0,
+    exchange: 0,
+    forums: 0,
+    reservations: 0
+  },
+
+  init: function() {
+    console.log('🔔 Notification Service initialized');
+    this.checkForUpdates();
+    this.startPolling();
+
+    // Pause polling when page is hidden, resume when visible
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        this.stopPolling();
+      } else {
+        this.checkForUpdates();
+        this.startPolling();
+      }
+    });
+  },
+
+  startPolling: function() {
+    if (this.pollInterval) clearInterval(this.pollInterval);
+    this.pollInterval = setInterval(() => this.checkForUpdates(), this.pollFrequency);
+  },
+
+  stopPolling: function() {
+    if (this.pollInterval) {
+      clearInterval(this.pollInterval);
+      this.pollInterval = null;
+    }
+  },
+
+  checkForUpdates: async function() {
+    try {
+      // Get current counts
+      const openIncidents = INCIDENTS.filter(i => (i.status || 'open') !== 'resolved').length;
+      const pendingVerif = REGISTRATIONS?.filter(r => r.status === 'pending').length || 0;
+      const pendingExchange = exchangeData?.pending?.length || 0;
+      const unmodForum = FORUM_POSTS?.filter(p => p.status !== 'resolved').length || 0;
+      const pendingReserv = RESERVATIONS?.filter(r => r.status === 'pending').length || 0;
+
+      // Check for new items
+      const hasNewIncidents = openIncidents > this.lastCounts.incidents;
+      const hasNewVerif = pendingVerif > this.lastCounts.verifications;
+      const hasNewExchange = pendingExchange > this.lastCounts.exchange;
+      const hasNewForum = unmodForum > this.lastCounts.forums;
+      const hasNewReserv = pendingReserv > this.lastCounts.reservations;
+
+      // Update last counts
+      this.lastCounts.incidents = openIncidents;
+      this.lastCounts.verifications = pendingVerif;
+      this.lastCounts.exchange = pendingExchange;
+      this.lastCounts.forums = unmodForum;
+      this.lastCounts.reservations = pendingReserv;
+
+      // Calculate total notifications
+      const totalNotifications = openIncidents + pendingVerif + pendingExchange + unmodForum + pendingReserv;
+
+      // Update notification bell
+      this.updateNotificationBell(totalNotifications);
+
+      // Update notification dropdown content
+      this.updateNotificationDropdown({
+        incidents: openIncidents,
+        verifications: pendingVerif,
+        exchange: pendingExchange,
+        forums: unmodForum,
+        reservations: pendingReserv
+      });
+
+      // Show new notification indicator if there are new items
+      if (hasNewIncidents || hasNewVerif || hasNewExchange || hasNewForum || hasNewReserv) {
+        this.showNewNotificationIndicator();
+        console.log('🔔 New notifications detected');
+      }
+
+    } catch (error) {
+      console.error('Notification check failed:', error);
+    }
+  },
+
+  updateNotificationBell: function(count) {
+    const badge = document.getElementById('badge-notifications');
+    if (badge) {
+      if (count > 0) {
+        badge.textContent = count;
+        badge.style.display = 'flex';
+      } else {
+        badge.style.display = 'none';
+      }
+    }
+  },
+
+  showNewNotificationIndicator: function() {
+    const badge = document.getElementById('badge-notifications');
+    if (badge) {
+      badge.style.animation = 'pulse 1s ease-in-out 3';
+    }
+  },
+
+  updateNotificationDropdown: function(counts) {
+    const container = document.getElementById('notification-items-container');
+    if (!container) return;
+
+    const notifications = [];
+
+    // Add incident notifications
+    if (counts.incidents > 0) {
+      notifications.push(`
+        <div class="notif-item" onclick="showPage('incidents',document.querySelector('[onclick*=incidents]'));closeNotifModal()">
+          <div class="notif-icon" style="background:var(--red)"><i class="fas fa-exclamation-circle"></i></div>
+          <div class="notif-body">
+            <div class="notif-title">${counts.incidents} open incident${counts.incidents !== 1 ? 's' : ''}</div>
+            <div class="notif-meta">Requires attention</div>
+          </div>
+        </div>
+      `);
+    }
+
+    // Add verification notifications
+    if (counts.verifications > 0) {
+      notifications.push(`
+        <div class="notif-item" onclick="showPage('residents',document.querySelector('[onclick*=residents]'));closeNotifModal()">
+          <div class="notif-icon" style="background:var(--orange)"><i class="fas fa-user-clock"></i></div>
+          <div class="notif-body">
+            <div class="notif-title">${counts.verifications} pending verification${counts.verifications !== 1 ? 's' : ''}</div>
+            <div class="notif-meta">New resident registrations</div>
+          </div>
+        </div>
+      `);
+    }
+
+    // Add exchange notifications
+    if (counts.exchange > 0) {
+      notifications.push(`
+        <div class="notif-item" onclick="showPage('exchange',document.querySelector('[onclick*=exchange]'));closeNotifModal()">
+          <div class="notif-icon" style="background:var(--gold)"><i class="fas fa-store"></i></div>
+          <div class="notif-body">
+            <div class="notif-title">${counts.exchange} exchange post${counts.exchange !== 1 ? 's' : ''} pending</div>
+            <div class="notif-meta">Awaiting approval</div>
+          </div>
+        </div>
+      `);
+    }
+
+    // Add forum notifications
+    if (counts.forums > 0) {
+      notifications.push(`
+        <div class="notif-item" onclick="showPage('forums',document.querySelector('[onclick*=forums]'));closeNotifModal()">
+          <div class="notif-icon" style="background:var(--blue)"><i class="fas fa-comments"></i></div>
+          <div class="notif-body">
+            <div class="notif-title">${counts.forums} forum post${counts.forums !== 1 ? 's' : ''} need attention</div>
+            <div class="notif-meta">Moderation required</div>
+          </div>
+        </div>
+      `);
+    }
+
+    // Add reservation notifications
+    if (counts.reservations > 0) {
+      notifications.push(`
+        <div class="notif-item" onclick="showPage('reservations',document.querySelector('[onclick*=reservations]'));closeNotifModal()">
+          <div class="notif-icon" style="background:var(--green)"><i class="fas fa-calendar-check"></i></div>
+          <div class="notif-body">
+            <div class="notif-title">${counts.reservations} reservation${counts.reservations !== 1 ? 's' : ''} pending</div>
+            <div class="notif-meta">Needs approval</div>
+          </div>
+        </div>
+      `);
+    }
+
+    // Update container
+    if (notifications.length === 0) {
+      container.innerHTML = `
+        <div class="notif-item" style="justify-content:center;text-align:center;padding:32px">
+          <div style="color:var(--gray-400)">
+            <i class="fas fa-check-circle" style="font-size:32px;margin-bottom:8px"></i>
+            <div>All caught up!</div>
+            <div style="font-size:11px;margin-top:4px">No pending notifications</div>
+          </div>
+        </div>
+      `;
+    } else {
+      container.innerHTML = notifications.join('');
+    }
+  }
+};
+
+/* ============================================================
    BADGE & NOTIFICATION UPDATES
 ============================================================ */
 function _updateNotifBadge() {
@@ -96,6 +294,11 @@ function _updateNotifBadge() {
   if (taskBadge) {
     taskBadge.textContent = incompleteTasks;
     taskBadge.style.display = incompleteTasks > 0 ? '' : 'none';
+  }
+
+  // Update notification service
+  if (typeof NotificationService !== 'undefined' && NotificationService.checkForUpdates) {
+    NotificationService.checkForUpdates();
   }
 
   // Update notifications badge
@@ -3404,5 +3607,15 @@ function initializeWordBankAndAnalysis() {
   if (document.getElementById('page-wordbank')) {
     loadWordBank();
   }
+}
+
+// Initialize notification service on page load
+if (typeof NotificationService !== 'undefined') {
+  document.addEventListener('DOMContentLoaded', function() {
+    // Wait a moment for data to load, then start notifications
+    setTimeout(() => {
+      NotificationService.init();
+    }, 2000);
+  });
 }
 

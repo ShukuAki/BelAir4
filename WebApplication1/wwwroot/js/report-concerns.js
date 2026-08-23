@@ -126,6 +126,9 @@ document.addEventListener('DOMContentLoaded', () => {
   bindConfirmCheckbox();
   bindFormSubmit();
   setActiveNav();
+
+  // Auto-detect location on page load
+  autoDetectLocation();
 });
 
 function setActiveNav() {
@@ -168,13 +171,161 @@ function toggleLocationMethod() {
   } else {
     dom.addressFields.style.display = 'none';
     dom.mapContainer.style.display  = 'block';
-    if (!state.map) initMap();
-    else setTimeout(() => state.map.invalidateSize(), 100);
+    if (!state.map) {
+      initMap();
+      // Auto-detect location when switching to map mode
+      setTimeout(() => autoDetectLocationForMap(), 500);
+    } else {
+      setTimeout(() => state.map.invalidateSize(), 100);
+    }
   }
 }
 
 // expose for inline onchange
 window.toggleLocationMethod = toggleLocationMethod;
+
+/* ═══════════════════════════════════════════
+   AUTO LOCATION DETECTION
+═══════════════════════════════════════════ */
+function autoDetectLocation() {
+  // Check if geolocation is supported
+  if (!navigator.geolocation) {
+    console.log('Geolocation not supported by browser');
+    return;
+  }
+
+  // Show a subtle notification that location is being detected
+  showLocationDetecting();
+
+  // Request location with high accuracy
+  navigator.geolocation.getCurrentPosition(
+    position => {
+      const { latitude: lat, longitude: lng, accuracy } = position.coords;
+
+      // Check if location is within village boundaries
+      if (isInPolygon([lat, lng])) {
+        // Auto-fill coordinates (they'll be used if map mode is active)
+        state.lat = lat;
+        state.lng = lng;
+        dom.latInput.value = lat.toFixed(7);
+        dom.lngInput.value = lng.toFixed(7);
+
+        // Show success message
+        showLocationDetected(lat, lng, accuracy);
+
+        // If map is already initialized, place pin automatically
+        if (state.map) {
+          state.map.setView([lat, lng], 18);
+          placePin(state.map, L.latLng(lat, lng));
+        }
+      } else {
+        // Location is outside village
+        showLocationOutsideBounds();
+      }
+    },
+    error => {
+      // Handle errors gracefully
+      console.log('Location detection error:', error.message);
+      showLocationError(error);
+    },
+    {
+      enableHighAccuracy: true,
+      timeout: 10000,
+      maximumAge: 0
+    }
+  );
+}
+
+function autoDetectLocationForMap() {
+  if (!navigator.geolocation || !state.map) return;
+
+  // If already have coordinates, use them
+  if (state.lat && state.lng) {
+    state.map.setView([state.lat, state.lng], 18);
+    placePin(state.map, L.latLng(state.lat, state.lng));
+    return;
+  }
+
+  // Otherwise detect new location
+  dom.btnLocate.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Auto-detecting...';
+  dom.btnLocate.disabled = true;
+
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      const { latitude: lat, longitude: lng } = pos.coords;
+      if (isInPolygon([lat, lng])) {
+        state.map.setView([lat, lng], 18);
+        placePin(state.map, L.latLng(lat, lng));
+        showToast('📍 Your location has been automatically detected', 'success');
+      } else {
+        state.map.setView([lat, lng], 16);
+        showToast('⚠️ Auto-detected location is outside the village. Please pin manually.', 'warn');
+      }
+      resetLocateBtn();
+    },
+    () => {
+      showToast('Unable to auto-detect location. Click "Use My Location" or pin manually.', 'info');
+      resetLocateBtn();
+    },
+    { enableHighAccuracy: true, timeout: 5000 }
+  );
+}
+
+function showLocationDetecting() {
+  if (dom.locationStatus) {
+    dom.locationStatus.classList.add('detecting');
+    dom.locationText.textContent = 'Detecting your location...';
+    dom.locationStatus.querySelector('i').className = 'fas fa-spinner fa-spin';
+  }
+}
+
+function showLocationDetected(lat, lng, accuracy) {
+  if (dom.locationStatus) {
+    dom.locationStatus.classList.remove('detecting');
+    dom.locationStatus.classList.add('detected');
+    const accuracyText = accuracy ? ` (±${Math.round(accuracy)}m)` : '';
+    dom.locationText.textContent = `📍 Location detected: ${lat.toFixed(5)}, ${lng.toFixed(5)}${accuracyText}`;
+    dom.locationStatus.querySelector('i').className = 'fas fa-check-circle';
+
+    // Show subtle success toast
+    setTimeout(() => {
+      showToast('✓ Location automatically detected within the village', 'success');
+    }, 500);
+  }
+}
+
+function showLocationOutsideBounds() {
+  if (dom.locationStatus) {
+    dom.locationStatus.classList.remove('detecting');
+    dom.locationText.textContent = 'Auto-detected location is outside village boundaries';
+    dom.locationStatus.querySelector('i').className = 'fas fa-exclamation-triangle';
+  }
+  setTimeout(() => {
+    showToast('Your location is outside Laguna BelAir 4. Please enter address or pin on map.', 'warn');
+  }, 500);
+}
+
+function showLocationError(error) {
+  if (dom.locationStatus) {
+    dom.locationStatus.classList.remove('detecting');
+    dom.locationText.textContent = 'Location detection unavailable';
+    dom.locationStatus.querySelector('i').className = 'fas fa-info-circle';
+  }
+
+  // Provide helpful error messages based on error code
+  let message = 'Unable to detect location automatically.';
+  if (error.code === error.PERMISSION_DENIED) {
+    message = 'Location permission denied. Please enable location access or enter manually.';
+  } else if (error.code === error.POSITION_UNAVAILABLE) {
+    message = 'Location information unavailable. Please enter address or pin on map.';
+  } else if (error.code === error.TIMEOUT) {
+    message = 'Location detection timed out. Please enter address or pin on map.';
+  }
+
+  setTimeout(() => {
+    showToast(message, 'info');
+  }, 500);
+}
 
 /* ═══════════════════════════════════════════
    MAP

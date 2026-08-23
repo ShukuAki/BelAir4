@@ -112,7 +112,10 @@ const LBA4Storage = (() => {
         address:          data.address          || '',
         street:           data.street           || '',
         additionalLocation: data.additionalLocation || '',
-        coordinates:      data.coordinates      || null,
+        // Handle both coordinate formats: new (lat/lng separate) and legacy (coordinates object)
+        latitude:         data.latitude         || (data.coordinates?.lat) || null,
+        longitude:        data.longitude        || (data.coordinates?.lng) || null,
+        coordinates:      data.coordinates      || (data.latitude && data.longitude ? { lat: data.latitude, lng: data.longitude } : null),
         locationMethod:   data.locationMethod   || 'address',
         attachments:      data.attachments      || [],
         // Reporter info

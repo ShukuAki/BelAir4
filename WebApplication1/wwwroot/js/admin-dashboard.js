@@ -141,6 +141,180 @@ const KeywordAPI = {
 };
 
 // ────────────────────────────────────────────────────────────
+// Admin Notification Service — Real-time updates
+// ────────────────────────────────────────────────────────────
+
+const AdminNotificationService = {
+    pollInterval: null,
+    pollFrequency: 30000, // 30 seconds
+    lastCounts: {
+        failedLogins: 0,
+        failedBackups: 0,
+        pendingInvites: 0,
+        bannedUsers: 0
+    },
+
+    init: function() {
+        console.log('🔔 Admin Notification Service initialized');
+        this.checkForUpdates();
+        this.startPolling();
+
+        // Pause polling when page is hidden, resume when visible
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                this.stopPolling();
+            } else {
+                this.checkForUpdates();
+                this.startPolling();
+            }
+        });
+    },
+
+    startPolling: function() {
+        if (this.pollInterval) clearInterval(this.pollInterval);
+        this.pollInterval = setInterval(() => this.checkForUpdates(), this.pollFrequency);
+    },
+
+    stopPolling: function() {
+        if (this.pollInterval) {
+            clearInterval(this.pollInterval);
+            this.pollInterval = null;
+        }
+    },
+
+    checkForUpdates: async function() {
+        try {
+            // Get current counts from AdminDashboard data
+            const failedLogins = AdminDashboard.auditLogs?.filter(l => (l.outcome || '').toLowerCase() !== 'success').length || 0;
+            const failedBackups = AdminDashboard.backups?.filter(b => (b.status || '').toLowerCase() === 'failed').length || 0;
+            const pendingInvites = AdminDashboard.invitations?.filter(i => (i.status || '').toLowerCase() === 'pending').length || 0;
+            const bannedUsers = AdminDashboard.residents?.filter(r => r.status === 'Banned').length || 0;
+
+            // Check for new items
+            const hasNewFailedLogins = failedLogins > this.lastCounts.failedLogins;
+            const hasNewFailedBackups = failedBackups > this.lastCounts.failedBackups;
+            const hasNewInvites = pendingInvites > this.lastCounts.pendingInvites;
+
+            // Update last counts
+            this.lastCounts.failedLogins = failedLogins;
+            this.lastCounts.failedBackups = failedBackups;
+            this.lastCounts.pendingInvites = pendingInvites;
+            this.lastCounts.bannedUsers = bannedUsers;
+
+            // Calculate total system alerts
+            const totalAlerts = failedLogins + failedBackups + pendingInvites;
+
+            // Update notification dropdown
+            this.updateNotificationDropdown({
+                failedLogins,
+                failedBackups,
+                pendingInvites,
+                bannedUsers
+            });
+
+            // Show new notification indicator
+            if (hasNewFailedLogins || hasNewFailedBackups || hasNewInvites) {
+                this.showNewNotificationIndicator();
+                console.log('🔔 New admin alerts detected');
+            }
+
+        } catch (error) {
+            console.error('Admin notification check failed:', error);
+        }
+    },
+
+    showNewNotificationIndicator: function() {
+        const notifDot = document.getElementById('notifDot');
+        if (notifDot) {
+            notifDot.style.display = 'block';
+            notifDot.style.animation = 'pulse 1s ease-in-out 3';
+        }
+    },
+
+    updateNotificationDropdown: function(counts) {
+        const container = document.getElementById('notifDropdownBody');
+        if (!container) return;
+
+        const notifications = [];
+
+        // Add failed backup alerts
+        if (counts.failedBackups > 0) {
+            notifications.push(`
+                <div class="notif-item notif-critical" onclick="showPage('backups',document.querySelector('[onclick*=backups]'));closeNotifDropdown()">
+                    <div class="notif-item-icon"><i class="fas fa-database"></i></div>
+                    <div class="notif-item-body">
+                        <div class="notif-item-title">${counts.failedBackups} failed backup${counts.failedBackups !== 1 ? 's' : ''} detected</div>
+                        <div class="notif-item-meta">Check backup history for details</div>
+                    </div>
+                    <button class="notif-item-dismiss" onclick="event.stopPropagation();this.parentElement.remove()"><i class="fas fa-times"></i></button>
+                </div>
+            `);
+        }
+
+        // Add failed login alerts
+        if (counts.failedLogins > 0) {
+            notifications.push(`
+                <div class="notif-item notif-warn" onclick="showPage('auditlog',document.querySelector('[onclick*=auditlog]'));closeNotifDropdown()">
+                    <div class="notif-item-icon"><i class="fas fa-user-times"></i></div>
+                    <div class="notif-item-body">
+                        <div class="notif-item-title">${counts.failedLogins} unsuccessful audit action${counts.failedLogins !== 1 ? 's' : ''} logged</div>
+                        <div class="notif-item-meta">Review the audit log for anomalies</div>
+                    </div>
+                    <button class="notif-item-dismiss" onclick="event.stopPropagation();this.parentElement.remove()"><i class="fas fa-times"></i></button>
+                </div>
+            `);
+        }
+
+        // Add pending invitation alerts
+        if (counts.pendingInvites > 0) {
+            notifications.push(`
+                <div class="notif-item notif-info" onclick="showPage('staffaccounts',document.querySelector('[onclick*=staffaccounts]'));closeNotifDropdown()">
+                    <div class="notif-item-icon"><i class="fas fa-user-plus"></i></div>
+                    <div class="notif-item-body">
+                        <div class="notif-item-title">${counts.pendingInvites} pending staff invitation${counts.pendingInvites !== 1 ? 's' : ''}</div>
+                        <div class="notif-item-meta">Awaiting acceptance</div>
+                    </div>
+                    <button class="notif-item-dismiss" onclick="event.stopPropagation();this.parentElement.remove()"><i class="fas fa-times"></i></button>
+                </div>
+            `);
+        }
+
+        // Add banned user info
+        if (counts.bannedUsers > 0) {
+            notifications.push(`
+                <div class="notif-item notif-info" onclick="showPage('allresidents',document.querySelector('[onclick*=allresidents]'));closeNotifDropdown()">
+                    <div class="notif-item-icon"><i class="fas fa-ban"></i></div>
+                    <div class="notif-item-body">
+                        <div class="notif-item-title">${counts.bannedUsers} banned user${counts.bannedUsers !== 1 ? 's' : ''}</div>
+                        <div class="notif-item-meta">Review ban records</div>
+                    </div>
+                    <button class="notif-item-dismiss" onclick="event.stopPropagation();this.parentElement.remove()"><i class="fas fa-times"></i></button>
+                </div>
+            `);
+        }
+
+        // Update container
+        if (notifications.length === 0) {
+            container.innerHTML = `
+                <div class="notif-item notif-info" style="justify-content:center;text-align:center;padding:32px">
+                    <div style="color:var(--gray-400)">
+                        <i class="fas fa-check-circle" style="font-size:32px;margin-bottom:8px;display:block"></i>
+                        <div>No active system alerts</div>
+                        <div style="font-size:11px;margin-top:4px">Everything looks healthy</div>
+                    </div>
+                </div>
+            `;
+            const notifDot = document.getElementById('notifDot');
+            if (notifDot) notifDot.style.display = 'none';
+        } else {
+            container.innerHTML = notifications.join('');
+            const notifDot = document.getElementById('notifDot');
+            if (notifDot) notifDot.style.display = 'block';
+        }
+    }
+};
+
+// ────────────────────────────────────────────────────────────
 // Admin Dashboard UI Manager
 // ────────────────────────────────────────────────────────────
 
@@ -1037,20 +1211,27 @@ const AdminDashboard = {
 
     saveSettings: async function () {
         try {
+            const btn = document.getElementById('saveSettingsBtn');
+            const originalText = btn?.innerHTML;
+            if (btn) {
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+                btn.disabled = true;
+            }
+
             const settings = [
-                { key: 'village.name', value: document.getElementById('setting-village-name')?.value },
-                { key: 'hoa.email', value: document.getElementById('setting-hoa-email')?.value },
-                { key: 'hoa.phone', value: document.getElementById('setting-hoa-phone')?.value },
-                { key: 'ad.fee', value: document.getElementById('setting-ad-fee')?.value },
-                { key: 'dues.rate', value: document.getElementById('setting-dues-rate')?.value },
-                { key: 'verification.mode', value: document.getElementById('setting-verification-mode')?.value },
-                { key: 'feature.forum.enabled', value: String(!!document.getElementById('setting-forum-enabled')?.checked), category: 'Features' },
-                { key: 'feature.marketplace.enabled', value: String(!!document.getElementById('setting-marketplace-enabled')?.checked), category: 'Features' },
-                { key: 'feature.incidents.enabled', value: String(!!document.getElementById('setting-incidents-enabled')?.checked), category: 'Features' },
-                { key: 'feature.reservations.enabled', value: String(!!document.getElementById('setting-reservations-enabled')?.checked), category: 'Features' },
-                { key: 'feature.push.enabled', value: String(!!document.getElementById('setting-push-enabled')?.checked), category: 'Features' },
-                { key: 'security.maintenance-mode', value: String(!!document.getElementById('setting-maintenance-mode')?.checked), category: 'Security' },
-                { key: 'security.2fa-required', value: String(!!document.getElementById('setting-2fa-required')?.checked), category: 'Security' },
+                { key: 'village.name', value: document.getElementById('setting-village-name')?.value, description: 'Village name' },
+                { key: 'hoa.email', value: document.getElementById('setting-hoa-email')?.value, description: 'HOA contact email' },
+                { key: 'hoa.phone', value: document.getElementById('setting-hoa-phone')?.value, description: 'HOA contact phone' },
+                { key: 'ad.fee', value: document.getElementById('setting-ad-fee')?.value, description: 'Advertisement listing fee' },
+                { key: 'dues.rate', value: document.getElementById('setting-dues-rate')?.value, description: 'Monthly dues rate' },
+                { key: 'verification.mode', value: document.getElementById('setting-verification-mode')?.value, description: 'Resident verification mode' },
+                { key: 'feature.forum.enabled', value: String(!!document.getElementById('setting-forum-enabled')?.checked), category: 'Features', description: 'Community forum feature' },
+                { key: 'feature.marketplace.enabled', value: String(!!document.getElementById('setting-marketplace-enabled')?.checked), category: 'Features', description: 'Marketplace/ads feature' },
+                { key: 'feature.incidents.enabled', value: String(!!document.getElementById('setting-incidents-enabled')?.checked), category: 'Features', description: 'Incident reports feature' },
+                { key: 'feature.reservations.enabled', value: String(!!document.getElementById('setting-reservations-enabled')?.checked), category: 'Features', description: 'Amenity reservations feature' },
+                { key: 'feature.push.enabled', value: String(!!document.getElementById('setting-push-enabled')?.checked), category: 'Features', description: 'Push notifications feature' },
+                { key: 'security.maintenance-mode', value: String(!!document.getElementById('setting-maintenance-mode')?.checked), category: 'Security', description: 'Maintenance mode' },
+                { key: 'security.2fa-required', value: String(!!document.getElementById('setting-2fa-required')?.checked), category: 'Security', description: 'Two-factor authentication requirement' },
             ];
 
             for (const setting of settings) {
@@ -1066,17 +1247,30 @@ const AdminDashboard = {
                     await AdminAPI.settings.create({
                         settingKey: setting.key,
                         settingValue: setting.value,
+                        description: setting.description || setting.key,
                         settingType: typeof setting.value === 'string' && (setting.value === 'true' || setting.value === 'false') ? 'Bool' : 'String',
                         category: setting.category || 'General',
+                        isEditable: true,
+                        isActive: true
                     });
                 }
             }
 
             this.settings = await AdminAPI.settings.getAll();
+
+            if (btn) {
+                btn.innerHTML = originalText || '<i class="fas fa-save"></i> Save Changes';
+                btn.disabled = false;
+            }
             alert('Settings saved successfully');
         } catch (error) {
             console.error('Failed to save settings:', error);
-            alert('Failed to save settings');
+            const btn = document.getElementById('saveSettingsBtn');
+            if (btn) {
+                btn.innerHTML = '<i class="fas fa-save"></i> Save Changes';
+                btn.disabled = false;
+            }
+            alert('Failed to save settings: ' + (error.message || 'Unknown error'));
         }
     },
 
@@ -1411,4 +1605,11 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     });
+
+    // Initialize Admin Notification Service
+    if (typeof AdminNotificationService !== 'undefined') {
+        setTimeout(() => {
+            AdminNotificationService.init();
+        }, 2000);
+    }
 });

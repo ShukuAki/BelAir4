@@ -570,8 +570,31 @@ a.active {
   min-height: 24px;
   transition: color .3s;
 }
-.location-status.pinned { color: var(--green-700); }
+.location-status.pinned { 
+  color: var(--green-700); 
+  font-weight: 500;
+}
+.location-status.detecting { 
+  color: var(--neutral-600); 
+  font-style: italic;
+}
+.location-status.detected { 
+  color: var(--green-700); 
+  font-weight: 500;
+  animation: fadeInScale 0.4s ease-out;
+}
 .location-status i { font-size: 14px; }
+
+@keyframes fadeInScale {
+  0% {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
 
 .btn-locate {
   background: none;
