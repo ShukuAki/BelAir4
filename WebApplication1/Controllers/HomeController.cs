@@ -110,6 +110,75 @@ namespace WebApplication1.Controllers
                 return Unauthorized(new { success = false, message = "You must be logged in to make a reservation." });
             }
 
+            // Check if user is banned - first check modern BanRecord table
+            var banRecord = await _repo.GetActiveBanByEmailOrUsernameAsync(username);
+            if (banRecord != null)
+            {
+                var banMsg = $"You are currently banned and cannot make reservations. Reason: {banRecord.BanReason ?? "Violation of community rules"}";
+                if (banRecord.ExpiresAt.HasValue)
+                {
+                    banMsg = $"You are banned from making reservations until {banRecord.ExpiresAt.Value:MMM d, yyyy}. Reason: {banRecord.BanReason ?? "Violation of community rules"}";
+                }
+                _logger?.LogWarning("Blocked reservation attempt by banned user {User} (BanRecord)", username);
+                return StatusCode(403, new { success = false, message = banMsg });
+            }
+
+            // Also check legacy UserAccount ban system
+            var user = await _repo.GetByUsernameAsync(username);
+            if (user != null && user.IsBanned)
+            {
+                var banMsg = "You are currently banned and cannot make reservations.";
+                if (!string.IsNullOrWhiteSpace(user.BanReason))
+                {
+                    banMsg += $" Reason: {user.BanReason}";
+                }
+
+                if (user.BannedUntil.HasValue && user.BannedUntil.Value > DateTime.Now)
+                {
+                    banMsg = $"You are banned from making reservations until {user.BannedUntil.Value:MMM d, yyyy h:mm tt}.";
+                    if (!string.IsNullOrWhiteSpace(user.BanReason))
+                    {
+                        banMsg += $" Reason: {user.BanReason}";
+                    }
+                }
+                else if (user.BannedUntil == null)
+                {
+                    // Permanent ban
+                    banMsg = "You are permanently banned from making reservations.";
+                    if (!string.IsNullOrWhiteSpace(user.BanReason))
+                    {
+                        banMsg += $" Reason: {user.BanReason}";
+                    }
+                }
+                else
+                {
+                    // Ban has expired, skip the block
+                    _logger?.LogInformation("User {User} has expired ban, allowing reservation", username);
+                    goto AllowReservation;
+                }
+
+                _logger?.LogWarning("Blocked reservation attempt by banned user {User} (UserAccount)", username);
+                return StatusCode(403, new { success = false, message = banMsg });
+            }
+
+        AllowReservation:
+            // Check if the date is already reserved (approved or pending) - server-side validation
+            var allReservations = await _repo.GetReservationsAsync();
+            var activeReservation = allReservations.FirstOrDefault(r => 
+                r.Amenity == reservation.Amenity &&
+                r.Date == reservation.Date &&
+                (r.Status == "approved" || r.Status == "pending"));
+
+            if (activeReservation != null)
+            {
+                var statusText = activeReservation.Status == "approved" ? "approved" : "pending approval";
+                _logger?.LogWarning("Rejected reservation attempt by {User} - date already reserved ({Status})", username, activeReservation.Status);
+                return StatusCode(409, new { 
+                    success = false, 
+                    message = $"This date is already reserved by another member ({statusText}). Please choose a different date." 
+                });
+            }
+
             reservation.UserId = username;
             if (string.IsNullOrWhiteSpace(reservation.ResidentName))
                 reservation.ResidentName = username;
@@ -139,6 +208,43 @@ namespace WebApplication1.Controllers
             if (!ok) return NotFound();
             return Ok(new { success = true });
         }
+
+        // GET /api/reservations/my-status - current user's reservation privileges
+        [HttpGet("/api/reservations/my-status")]
+        public async Task<IActionResult> GetMyReservationStatus()
+        {
+            var username = HttpContext.Session.GetString("Username");
+            if (string.IsNullOrWhiteSpace(username))
+            {
+                return Json(new { authenticated = false, blocked = false, message = (string?)null });
+            }
+
+            var banRecord = await _repo.GetActiveBanByEmailOrUsernameAsync(username);
+            if (banRecord != null)
+            {
+                var reasonSuffix = string.IsNullOrWhiteSpace(banRecord.BanReason) ? string.Empty : $" Reason: {banRecord.BanReason}";
+                string message;
+
+                if (banRecord.ExpiresAt == null)
+                {
+                    message = $"You are banned from making reservations.{reasonSuffix}";
+                }
+                else if (banRecord.ExpiresAt.Value > DateTime.UtcNow)
+                {
+                    message = $"You are banned from making reservations until {banRecord.ExpiresAt.Value:MMM d, yyyy h:mm tt}.{reasonSuffix}";
+                }
+                else
+                {
+                    // Ban has expired
+                    return Json(new { authenticated = true, blocked = false, message = (string?)null });
+                }
+
+                return Json(new { authenticated = true, blocked = true, message });
+            }
+
+            return Json(new { authenticated = true, blocked = false, message = (string?)null });
+        }
+
         public IActionResult reportConcerns () => View();
         public IActionResult reserve () => View();
         [WebApplication1.Filters.UserTypeAuthorize(2,3)]
@@ -360,20 +466,63 @@ namespace WebApplication1.Controllers
             if (string.IsNullOrWhiteSpace(username))
                 return (false, null);
 
+            _logger?.LogWarning("GetForumBlockAsync: Checking ban for username='{Username}'", username);
+
+            // Check modern BanRecord table first by username
+            var banRecord = await _repo.GetActiveBanByEmailOrUsernameAsync(username);
+            _logger?.LogWarning("GetForumBlockAsync: BanRecord lookup result: {Found}", banRecord != null ? "FOUND" : "NOT FOUND");
+
+            if (banRecord != null)
+            {
+                _logger?.LogWarning("GetForumBlockAsync: BanRecord found - Email={Email}, AccountName={AccountName}, ExpiresAt={ExpiresAt}", 
+                    banRecord.Email, banRecord.AccountName, banRecord.ExpiresAt);
+
+                var reasonSuffix = string.IsNullOrWhiteSpace(banRecord.BanReason) ? string.Empty : $" Reason: {banRecord.BanReason}";
+
+                // Permanent ban (no expiry)
+                if (banRecord.ExpiresAt == null)
+                    return (true, $"You are banned from the community forums and cannot post or reply.{reasonSuffix}");
+
+                // Active ban with expiry in the future
+                if (banRecord.ExpiresAt.Value > DateTime.UtcNow)
+                    return (true, $"You are banned from the forums until {banRecord.ExpiresAt.Value:MMM d, yyyy h:mm tt}.{reasonSuffix}");
+            }
+
+            // Fallback to legacy UserAccount ban system
             var user = await _repo.GetByUsernameAsync(username);
+            _logger?.LogWarning("GetForumBlockAsync: UserAccount lookup result: {Found}", user != null ? "FOUND" : "NOT FOUND");
+
             if (user is null)
                 return (false, null);
 
-            var reasonSuffix = string.IsNullOrWhiteSpace(user.BanReason) ? string.Empty : $" Reason: {user.BanReason}";
+            _logger?.LogWarning("GetForumBlockAsync: UserAccount found - Username={Username}, IsBanned={IsBanned}, BannedUntil={BannedUntil}", 
+                user.Username, user.IsBanned, user.BannedUntil);
 
-            // Permanent ban (flag set, no expiry)
-            if (user.IsBanned && user.BannedUntil == null)
-                return (true, $"You are banned from the community forums and cannot post or reply.{reasonSuffix}");
+            var legacyReasonSuffix = string.IsNullOrWhiteSpace(user.BanReason) ? string.Empty : $" Reason: {user.BanReason}";
 
-            // Active timeout (expiry in the future)
-            if (user.BannedUntil.HasValue && user.BannedUntil.Value > DateTime.Now)
-                return (true, $"You are timed out from the forums until {user.BannedUntil.Value:MMM d, yyyy h:mm tt}.{reasonSuffix}");
+            // Check if user is banned
+            if (user.IsBanned)
+            {
+                // Permanent ban (no expiry) OR has expiry in future
+                if (user.BannedUntil == null)
+                {
+                    _logger?.LogWarning("GetForumBlockAsync: BLOCKING - Permanent ban detected (IsBanned=true, BannedUntil=null)");
+                    return (true, $"You are banned from the community forums and cannot post or reply.{legacyReasonSuffix}");
+                }
 
+                // Ban with expiry - check if still active
+                if (user.BannedUntil.Value > DateTime.Now)
+                {
+                    _logger?.LogWarning("GetForumBlockAsync: BLOCKING - Active ban with future expiry detected");
+                    return (true, $"You are banned from the forums until {user.BannedUntil.Value:MMM d, yyyy h:mm tt}.{legacyReasonSuffix}");
+                }
+                else
+                {
+                    _logger?.LogWarning("GetForumBlockAsync: Ban has expired (BannedUntil={BannedUntil} is in the past), allowing post", user.BannedUntil);
+                }
+            }
+
+            _logger?.LogWarning("GetForumBlockAsync: No ban conditions met - allowing post");
             return (false, null);
         }
 
@@ -439,7 +588,15 @@ namespace WebApplication1.Controllers
         {
             if (post == null) return BadRequest();
             var username = HttpContext.Session.GetString("Username") ?? "Anonymous";
+
+            // DEBUG: Log the username being checked
+            _logger?.LogWarning("CreatePost: Checking ban for username='{Username}'", username);
+
             var (blocked, blockMsg) = await GetForumBlockAsync(username);
+
+            // DEBUG: Log the result
+            _logger?.LogWarning("CreatePost: Ban check result - blocked={Blocked}, message='{Message}'", blocked, blockMsg);
+
             if (blocked)
             {
                 _logger?.LogInformation("Blocked post attempt by banned/timed-out user {User}", username);

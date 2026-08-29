@@ -35,6 +35,10 @@ function formatDate(str) {
 let INCIDENTS   = [];
 let MAP_ITEMS   = [];
 let EVENTS_DATA = [];
+let REGISTRATIONS = [];
+let FORUM_POSTS = [];
+let RESERVATIONS = [];
+let exchangeData = { pending: [], published: [] };
 let calYear = new Date().getFullYear(), calMonth = new Date().getMonth();
 
 /* ── MAP INSTANCES ── */
@@ -90,12 +94,12 @@ const NotificationService = {
 
   checkForUpdates: async function() {
     try {
-      // Get current counts
+      // Get current counts - with safety checks
       const openIncidents = INCIDENTS.filter(i => (i.status || 'open') !== 'resolved').length;
-      const pendingVerif = REGISTRATIONS?.filter(r => r.status === 'pending').length || 0;
-      const pendingExchange = exchangeData?.pending?.length || 0;
-      const unmodForum = FORUM_POSTS?.filter(p => p.status !== 'resolved').length || 0;
-      const pendingReserv = RESERVATIONS?.filter(r => r.status === 'pending').length || 0;
+      const pendingVerif = Array.isArray(REGISTRATIONS) ? REGISTRATIONS.filter(r => r.status === 'pending').length : 0;
+      const pendingExchange = Array.isArray(exchangeData?.pending) ? exchangeData.pending.length : 0;
+      const unmodForum = Array.isArray(FORUM_POSTS) ? FORUM_POSTS.filter(p => p.status !== 'resolved').length : 0;
+      const pendingReserv = Array.isArray(RESERVATIONS) ? RESERVATIONS.filter(r => r.status === 'pending').length : 0;
 
       // Check for new items
       const hasNewIncidents = openIncidents > this.lastCounts.incidents;
@@ -1537,7 +1541,6 @@ function searchResidents(q) {
 /* ============================================================
    COMMUNITY EXCHANGE — API-based (pending/approved advertisements)
 ============================================================ */
-let exchangeData = { pending: [], published: [] };
 
 async function loadExchangeData() {
   try {
@@ -1732,7 +1735,6 @@ function updateOverviewExchange() {
 /* ============================================================
    USAP TAYO PARA SA HOA — Forum moderation (live database)
 ============================================================ */
-let FORUM_POSTS = [];
 
 function renderForumsDashboard() {
   loadForumPosts();
@@ -1746,7 +1748,8 @@ async function loadForumPosts() {
   try {
     const res = await fetch('/api/forums/posts', { credentials: 'same-origin' });
     if (!res.ok) throw new Error('Network');
-    FORUM_POSTS = await res.json();
+    const result = await res.json();
+    FORUM_POSTS = result.data || result || [];
     renderForumPosts();
     renderForumStats();
     renderForumCategories();
@@ -1945,7 +1948,6 @@ function renderForumCategories() {
 /* ============================================================
    RESERVATIONS — Amenity reservations (live database)
 ============================================================ */
-let RESERVATIONS = [];
 
 async function loadReservations() {
   const pendingTbody = document.getElementById('resv-pending-tbody');

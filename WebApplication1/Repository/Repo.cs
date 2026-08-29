@@ -158,6 +158,7 @@ namespace WebApplication1.Repository
         Task<bool> UpdateBanRecordAsync(BanRecord banRecord);
         Task<bool> UnbanUserAsync(int banRecordId, int unbannedByAdminUserId, string? reason);
         Task<bool> DeleteBanRecordAsync(int id);
+        Task<BanRecord?> GetActiveBanByEmailOrUsernameAsync(string emailOrUsername);
 
         // Admin Dashboard - Backup Management
         Task<List<BackupRecord>> GetBackupRecordsAsync();
@@ -269,9 +270,61 @@ namespace WebApplication1.Repository
             if (string.IsNullOrWhiteSpace(username))
                 return null;
             var normalized = username.Trim().ToLowerInvariant();
-            return await _db.UserAccounts
+
+            Console.WriteLine($"[GetByUsernameAsync] Looking for username: '{normalized}'");
+
+            // First try direct username match
+            var user = await _db.UserAccounts
                 .AsNoTracking()
                 .FirstOrDefaultAsync(u => u.Username.ToLower() == normalized);
+
+            if (user != null)
+            {
+                Console.WriteLine($"[GetByUsernameAsync] Found by direct match: Username={user.Username}, IsBanned={user.IsBanned}");
+                return user;
+            }
+
+            Console.WriteLine($"[GetByUsernameAsync] No direct match found");
+
+            // If no match and input looks like an email, try to find user via Registration table
+            if (normalized.Contains("@"))
+            {
+                Console.WriteLine($"[GetByUsernameAsync] Input is email, checking Registration table");
+
+                var registration = await _db.Registrations
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(r => r.Email.ToLower() == normalized && r.Status == "approved");
+
+                if (registration != null)
+                {
+                    Console.WriteLine($"[GetByUsernameAsync] Found registration: Email={registration.Email}, FullName={registration.FullName}");
+
+                    // Try to find UserAccount by the registration's full name or other identifier
+                    // Since UserAccount doesn't have email, we need to find by Username
+                    // The username might have been derived from email (e.g., "member" from "member@gmail.com")
+                    var emailPrefix = normalized.Split('@')[0];
+                    Console.WriteLine($"[GetByUsernameAsync] Trying email prefix: '{emailPrefix}'");
+
+                    user = await _db.UserAccounts
+                        .AsNoTracking()
+                        .FirstOrDefaultAsync(u => u.Username.ToLower() == emailPrefix);
+
+                    if (user != null)
+                    {
+                        Console.WriteLine($"[GetByUsernameAsync] Found by email prefix: Username={user.Username}, IsBanned={user.IsBanned}");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"[GetByUsernameAsync] No match for email prefix '{emailPrefix}'");
+                    }
+                }
+                else
+                {
+                    Console.WriteLine($"[GetByUsernameAsync] No approved registration found for email");
+                }
+            }
+
+            return user;
         }
 
         public async Task<bool> SetUserBanAsync(string username, bool isBanned, DateTime? bannedUntil, string? reason)
@@ -1274,6 +1327,37 @@ namespace WebApplication1.Repository
             if (existing is null) return false;
             _db.BanRecords.Remove(existing);
             return await _db.SaveChangesAsync() > 0;
+        }
+
+        public async Task<BanRecord?> GetActiveBanByEmailOrUsernameAsync(string emailOrUsername)
+        {
+            if (string.IsNullOrWhiteSpace(emailOrUsername))
+                return null;
+
+            var normalized = emailOrUsername.Trim().ToLowerInvariant();
+
+            var banRecord = await _db.BanRecords
+                .AsNoTracking()
+                .Where(b => b.Status == "Active" && 
+                           (b.Email.ToLower() == normalized || b.AccountName.ToLower() == normalized) &&
+                           (b.ExpiresAt == null || b.ExpiresAt > DateTime.UtcNow))
+                .OrderByDescending(b => b.BannedAt)
+                .FirstOrDefaultAsync();
+
+            // If not found and input is an email, try checking by email prefix (username part)
+            if (banRecord == null && normalized.Contains("@"))
+            {
+                var emailPrefix = normalized.Split('@')[0];
+                banRecord = await _db.BanRecords
+                    .AsNoTracking()
+                    .Where(b => b.Status == "Active" && 
+                               (b.Email.ToLower() == normalized || b.AccountName.ToLower() == emailPrefix) &&
+                               (b.ExpiresAt == null || b.ExpiresAt > DateTime.UtcNow))
+                    .OrderByDescending(b => b.BannedAt)
+                    .FirstOrDefaultAsync();
+            }
+
+            return banRecord;
         }
 
         // ── ADMIN DASHBOARD - Backup Management ────────────────────

@@ -54,9 +54,9 @@
   </nav>
   <form id="adminLogoutForm" method="post" asp-controller="Home" asp-action="Logout" style="margin:0">
     @Html.AntiForgeryToken()
-    <button type="submit" class="sb-footer" style="background:none;border:none;width:100%;text-align:left;cursor:pointer;padding:0;font:inherit;color:inherit">
+    <div class="sb-footer" onclick="document.getElementById('adminLogoutForm').submit()" style="cursor:pointer">
       <i class="fas fa-sign-out-alt"></i> Sign Out
-    </button>
+    </div>
   </form>
 </aside>
 

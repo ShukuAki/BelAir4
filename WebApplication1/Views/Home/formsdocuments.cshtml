@@ -71,6 +71,10 @@
         <div class="dropdown">
           <a href="#" class="dropdown-toggle">Services <i class="fas fa-chevron-down"></i></a>
           <div class="dropdown-menu">
+            @if (!string.IsNullOrEmpty(username) && userType == 1)
+            {
+                <a asp-controller="Home" asp-action="UserDashboard"><i class="fas fa-tachometer-alt"></i> My Dashboard</a>
+            }
             <a asp-controller="Home" asp-action="reserve">Reserve Amenities</a>
             <a asp-controller="Home" asp-action="reportConcerns">Report an Issue</a>
           </div>

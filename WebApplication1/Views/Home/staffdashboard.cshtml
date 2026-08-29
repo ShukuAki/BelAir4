@@ -58,6 +58,14 @@
     <div class="nav-link" onclick="showPage('wordbank',this)"><i class="fas fa-brain"></i> Word Bank</div>
      <div class="nav-link" onclick="showPage('reports',this)"><i class="fas fa-chart-bar"></i> Reports</div>
     <div class="nav-link" onclick="showPage('subscribers',this)"><i class="fas fa-bell"></i> Subscribers</div>
+    @if (_sessionType >= 3)
+    {
+    <div class="nav-group-label">Navigate</div>
+    <a asp-controller="Home" asp-action="adminDashboard" class="nav-link admin-switch-link" style="text-decoration:none;color:inherit">
+      <i class="fas fa-arrow-left"></i> Admin Dashboard
+      <span class="nav-badge" style="background:var(--accent);color:var(--navy-dark);animation:none">↗</span>
+    </a>
+    }
   </nav>
   <form id="staff-logout-form" action="/Home/Logout" method="post" style="display:none">@Html.AntiForgeryToken()</form>
   <div class="sb-footer" onclick="document.getElementById('staff-logout-form').submit()"><i class="fas fa-sign-out-alt"></i> Sign Out</div>

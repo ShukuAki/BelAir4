@@ -178,18 +178,42 @@ button { font-family: inherit; }
 }
 .nav-badge.yellow { background: var(--gold); color: var(--navy-dark); }
 
-.staff-switch-link { margin-top: 4px; opacity: .7; }
-.staff-switch-link:hover { opacity: 1; }
+.staff-switch-link { 
+  margin-top: 4px; 
+  opacity: 1;
+  background: rgba(255,255,255,.08) !important;
+  border-left-color: rgba(123,201,111,.6) !important;
+}
+.staff-switch-link:hover { 
+  opacity: 1;
+  background: rgba(255,255,255,.15) !important;
+  border-left-color: var(--accent) !important;
+}
 
 .sb-footer {
-  padding: 14px 20px;
-  border-top: 1px solid rgba(255,255,255,.08);
-  display: flex; align-items: center; gap: 8px;
-  color: rgba(255,255,255,.35);
-  font-size: 12.5px; font-weight: 600;
-  cursor: pointer; transition: color .15s; flex-shrink: 0;
+  padding: 16px 20px;
+  border-top: 1px solid rgba(255,255,255,.10);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: rgba(255,255,255,.95);
+  background: rgba(255,255,255,.05);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all .2s;
+  flex-shrink: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
-.sb-footer:hover { color: rgba(255,255,255,.8); }
+.sb-footer:hover {
+  color: white;
+  background: rgba(255,255,255,.12);
+}
+.sb-footer i {
+  font-size: 15px;
+}
 
 /* ============================================================
    TOPBAR

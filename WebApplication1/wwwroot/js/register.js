@@ -49,7 +49,7 @@ document.addEventListener('DOMContentLoaded', function() {
       const targetId = this.getAttribute('data-target');
       const passwordInput = document.getElementById(targetId);
       const icon = this.querySelector('i');
-      
+
       if (passwordInput.type === 'password') {
         passwordInput.type = 'text';
         icon.classList.remove('fa-eye');
@@ -59,6 +59,29 @@ document.addEventListener('DOMContentLoaded', function() {
         icon.classList.remove('fa-eye-slash');
         icon.classList.add('fa-eye');
       }
+    });
+  });
+
+  // Auto-hide password after user stops typing (2 seconds delay)
+  let passwordHideTimeout;
+  document.querySelectorAll('input[type="password"]').forEach(passwordInput => {
+    passwordInput.addEventListener('input', function() {
+      clearTimeout(passwordHideTimeout);
+
+      // Show password temporarily while typing
+      if (this.type === 'text') return; // Already visible via toggle
+
+      passwordHideTimeout = setTimeout(() => {
+        if (this.type === 'text') {
+          const toggleBtn = document.querySelector(`.toggle-password[data-target="${this.id}"]`);
+          if (toggleBtn) {
+            this.type = 'password';
+            const icon = toggleBtn.querySelector('i');
+            icon.classList.remove('fa-eye-slash');
+            icon.classList.add('fa-eye');
+          }
+        }
+      }, 2000);
     });
   });
 
@@ -183,21 +206,24 @@ document.addEventListener('DOMContentLoaded', function() {
       // Validate passwords match
       if (password !== confirmPassword) {
         e.preventDefault();
-        alert('Passwords do not match. Please try again.');
+        showValidationError('Passwords do not match. Please try again.');
+        document.getElementById('confirmPassword').focus();
         return;
       }
 
       // Validate password strength (minimum 8 characters)
       if (password.length < 8) {
         e.preventDefault();
-        alert('Password must be at least 8 characters long.');
+        showValidationError('Password must be at least 8 characters long.');
+        document.getElementById('password').focus();
         return;
       }
 
       // Validate terms agreement
       if (!termsAgreement) {
         e.preventDefault();
-        alert('Please confirm that the information provided is true and accurate.');
+        showValidationError('Please confirm that the information provided is true and accurate.');
+        document.getElementById('termsAgreement').focus();
         return;
       }
 
@@ -208,14 +234,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
       if (!proofOfResidency) {
         e.preventDefault();
-        alert('Please upload proof of residency.');
+        showValidationError('Please upload proof of residency.');
+        document.getElementById('proofOfResidency').focus();
         return;
       }
 
       // Validate file size (max 5MB)
       if (proofOfResidency.size > 5 * 1024 * 1024) {
         e.preventDefault();
-        alert('File size must be less than 5MB.');
+        showValidationError('File size must be less than 5MB.');
+        document.getElementById('proofOfResidency').focus();
         return;
       }
 
@@ -223,7 +251,8 @@ document.addEventListener('DOMContentLoaded', function() {
       const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
       if (!allowedTypes.includes(proofOfResidency.type)) {
         e.preventDefault();
-        alert('Only JPG, PNG, and PDF files are allowed.');
+        showValidationError('Only JPG, PNG, and PDF files are allowed.');
+        document.getElementById('proofOfResidency').focus();
         return;
       }
 
@@ -232,7 +261,7 @@ document.addEventListener('DOMContentLoaded', function() {
       for (let input of addressInputs) {
         if (!input.value.trim()) {
           e.preventDefault();
-          alert('Please fill in all address fields, or remove empty ones.');
+          showValidationError('Please fill in all address fields, or remove empty ones.');
           input.focus();
           return;
         }
@@ -240,6 +269,47 @@ document.addEventListener('DOMContentLoaded', function() {
 
       // Let the form submit normally to the server
     });
+  }
+
+  // Validation error notification function
+  function showValidationError(message) {
+    const existing = document.querySelector('.validation-toast');
+    if (existing) existing.remove();
+
+    const toast = document.createElement('div');
+    toast.className = 'validation-toast';
+    toast.style.cssText = `
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #dc3545;
+      color: white;
+      padding: 14px 24px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+      z-index: 10000;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      animation: slideDown 0.3s ease-out;
+    `;
+    toast.innerHTML = `<i class="fas fa-exclamation-circle"></i><span>${escapeHtml(message)}</span>`;
+
+    document.body.appendChild(toast);
+
+    setTimeout(() => {
+      toast.style.animation = 'slideUp 0.3s ease-out';
+      setTimeout(() => toast.remove(), 300);
+    }, 4000);
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
   }
 
   // Mobile number formatting (optional enhancement)

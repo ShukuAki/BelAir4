@@ -26,6 +26,8 @@ for (let hour = 8; hour <= 20; hour++) {
 let currentAmenity = 'Basketball Court';
 let selectedDate = null;
 let flatpickrInstance = null;
+let reservationBlocked = false;
+let reservationBlockMsg = '';
 
 // ========================================
 // INITIALIZATION
@@ -34,6 +36,7 @@ document.addEventListener('DOMContentLoaded', function() {
   initializeDatePicker();
   setupEventListeners();
   loadReservations();
+  checkReservationStatus();
 });
 
 // ========================================
@@ -82,26 +85,28 @@ function getUserReservationStatusForDate(date, amenity) {
 function isDateAvailable(date, amenity) {
   const dateStr = formatDate(date);
   const reservations = getReservations();
-  
-  // Check if user already has max reservations on this date
+
+  // Check if user already has max reservations on this date (any amenity)
   const userReservationsCount = reservations.filter(r => 
     r.userId === CURRENT_USER && 
     r.date === dateStr &&
     (r.status === 'pending' || r.status === 'approved')
   ).length;
-  
+
   if (userReservationsCount >= MAX_RESERVATIONS_PER_DAY) {
     return false;
   }
-  
-  // Check if date is fully booked by others (3 reservations max per date)
-  const otherReservations = reservations.filter(r => 
+
+  // NEW LOGIC: Check if this specific amenity has ANY approved or pending reservation on this date
+  // Date becomes unavailable if there's any active reservation (not rejected)
+  const hasActiveReservation = reservations.some(r => 
     r.amenity === amenity && 
     r.date === dateStr &&
     (r.status === 'pending' || r.status === 'approved')
   );
-  
-  return otherReservations.length < 3;
+
+  // Date is available only if NO active reservations exist
+  return !hasActiveReservation;
 }
 
 function getAvailableTimeSlots(date, amenity, currentStartTime = null) {
@@ -306,7 +311,7 @@ function styleCalendarDates(instance) {
         day.setAttribute('title', 'Available for booking');
       } else {
         day.classList.add('disabled');
-        day.setAttribute('title', 'This date is fully booked');
+        day.setAttribute('title', 'This date is already reserved by another member');
       }
     }
   });
@@ -456,7 +461,31 @@ async function handleFormSubmit(event) {
   if (submitBtn) submitBtn.disabled = true;
 
   try {
-    const response = await PageCoordinator.api.post('/api/reservations', reservation);
+    const response = await fetch('/api/reservations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(reservation)
+    });
+
+    if (response.status === 403) {
+      let msg = 'You are restricted from making reservations.';
+      try {
+        const json = await response.json();
+        if (json.message) msg = json.message;
+      } catch (_) {}
+      reservationBlocked = true;
+      reservationBlockMsg = msg;
+      renderReservationNotice();
+      applyBlockToControls();
+      showToast(msg, 'error');
+      return;
+    }
+
+    if (!response.ok) {
+      throw new Error('Failed to submit reservation');
+    }
+
+    const data = await response.json();
 
     showToast(`Reservation request for ${amenity} on ${new Date(date).toLocaleDateString()} has been submitted!`, 'success');
 
@@ -557,4 +586,79 @@ function showToast(message, type = 'info') {
       setTimeout(() => toast.remove(), 300);
     }
   }, 5000);
+}
+
+// ========================================
+// BAN STATUS CHECKING
+// ========================================
+async function checkReservationStatus() {
+  try {
+    const response = await fetch('/api/reservations/my-status');
+    if (!response.ok) {
+      reservationBlocked = false;
+      reservationBlockMsg = '';
+      return;
+    }
+    const json = await response.json();
+    reservationBlocked = !!json.blocked;
+    reservationBlockMsg = json.message || '';
+  } catch (e) {
+    reservationBlocked = false;
+    reservationBlockMsg = '';
+  }
+  renderReservationNotice();
+  applyBlockToControls();
+}
+
+function renderReservationNotice() {
+  let banner = document.getElementById('reservationNoticeBanner');
+  if (!reservationBlocked) { 
+    if (banner) banner.remove(); 
+    return; 
+  }
+
+  if (!banner) {
+    banner = document.createElement('div');
+    banner.id = 'reservationNoticeBanner';
+    banner.style.cssText = 'max-width:1100px;margin:16px auto;padding:14px 18px;border-radius:10px;background:#fef2f2;border:1px solid #fca5a5;color:#991b1b;display:flex;align-items:center;gap:12px;font-size:14px;font-weight:500';
+    const mainContent = document.querySelector('.main-content') || document.querySelector('main') || document.body;
+    mainContent.insertBefore(banner, mainContent.firstChild);
+  }
+  banner.innerHTML = `<i class="fas fa-ban" style="font-size:20px"></i><span>${escapeHtml(reservationBlockMsg || 'You are currently restricted from making reservations.')}</span>`;
+}
+
+function applyBlockToControls() {
+  const submitBtn = document.querySelector('.submit-btn');
+  const datePicker = document.getElementById('datePicker');
+  const startTime = document.getElementById('startTime');
+  const endTime = document.getElementById('endTime');
+  const purpose = document.getElementById('purpose');
+  const notes = document.getElementById('notes');
+  const agreeTerms = document.getElementById('agreeTerms');
+
+  if (submitBtn) {
+    submitBtn.disabled = reservationBlocked;
+    submitBtn.style.opacity = reservationBlocked ? '0.5' : '';
+    submitBtn.style.cursor = reservationBlocked ? 'not-allowed' : '';
+    submitBtn.title = reservationBlocked ? (reservationBlockMsg || 'You are restricted from making reservations') : '';
+  }
+
+  if (reservationBlocked) {
+    [datePicker, startTime, endTime, purpose, notes, agreeTerms].forEach(el => {
+      if (el) {
+        el.disabled = true;
+        el.style.opacity = '0.5';
+      }
+    });
+  }
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
