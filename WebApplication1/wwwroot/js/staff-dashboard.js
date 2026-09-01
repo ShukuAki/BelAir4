@@ -2824,10 +2824,36 @@ function initPreviewMap() {
   refreshPreviewMap();
 }
 
+function makePreviewIncidentHeatCircle(inc) {
+  const status = (inc.status || 'open').toLowerCase();
+  if (status === 'resolved') return null;
+
+  const lat = inc.latitude || inc.lat;
+  const lng = inc.longitude || inc.lng;
+  const color = status === 'in-progress' ? '#1a5fa8' : '#c0392b';
+
+  return L.circle([lat, lng], {
+    radius: 55,
+    stroke: true,
+    color,
+    weight: 1,
+    opacity: 0.35,
+    fillColor: color,
+    fillOpacity: 0.18,
+    interactive: false
+  });
+}
+
 function refreshPreviewMap() {
   if (!previewMap) return;
-  previewMap.eachLayer(layer => { if (layer instanceof L.Marker || layer instanceof L.CircleMarker) previewMap.removeLayer(layer); });
-  INCIDENTS.filter(i => i.isPublic && (i.latitude || i.lat) && (i.longitude || i.lng)).forEach(inc => {
+  previewMap.eachLayer(layer => { if (layer instanceof L.Marker || layer instanceof L.CircleMarker || layer instanceof L.Circle) previewMap.removeLayer(layer); });
+  const visibleIncidents = INCIDENTS.filter(i => i.isPublic && (i.latitude || i.lat) && (i.longitude || i.lng));
+  visibleIncidents.forEach(inc => {
+    const heatCircle = makePreviewIncidentHeatCircle(inc);
+    if (heatCircle) heatCircle.addTo(previewMap);
+  });
+
+  visibleIncidents.forEach(inc => {
     const lat   = inc.latitude  || inc.lat;
     const lng   = inc.longitude || inc.lng;
     const color = {high:'#c0392b', medium:'#c0621a', low:'#5aaa4f'}[inc.priority] || '#c0392b';

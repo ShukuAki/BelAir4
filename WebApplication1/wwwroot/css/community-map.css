@@ -432,6 +432,13 @@ a.active {
   border-radius: 50%;
   flex-shrink: 0;
 }
+.layers-key-circle {
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  border: 1px solid rgba(192,57,43,.45);
+  background: rgba(192,57,43,.18);
+  flex-shrink: 0;
+}
 
 /* Live badge in panel */
 .map-live-badge-panel {

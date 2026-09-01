@@ -87,6 +87,7 @@ document.addEventListener('DOMContentLoaded', function () {
   setTimeout(() => map.fitBounds(BOUNDS, { padding:[30,30] }), 100);
 
   /* ── Layer groups per category ── */
+  const incidentHeatLayer = L.layerGroup().addTo(map);
   const layers = {
     Incident: L.layerGroup().addTo(map),
     Concern:  L.layerGroup().addTo(map),
@@ -102,9 +103,34 @@ document.addEventListener('DOMContentLoaded', function () {
     ['toggleLandmarks', 'Landmark']
   ].forEach(([id, cat]) => {
     document.getElementById(id)?.addEventListener('change', function () {
-      this.checked ? map.addLayer(layers[cat]) : map.removeLayer(layers[cat]);
+      if (this.checked) {
+        map.addLayer(layers[cat]);
+        if (cat === 'Incident') map.addLayer(incidentHeatLayer);
+      } else {
+        map.removeLayer(layers[cat]);
+        if (cat === 'Incident') map.removeLayer(incidentHeatLayer);
+      }
     });
   });
+
+  function makeIncidentHeatCircle(report) {
+    const status = (report.status || '').toLowerCase();
+    if (status === 'resolved') return null;
+
+    const color = status === 'in-progress' ? STATUS_COLOUR['in-progress']
+      : CAT.Incident.color;
+
+    return L.circle([report.lat, report.lng], {
+      radius: 55,
+      stroke: true,
+      color,
+      weight: 1,
+      opacity: 0.35,
+      fillColor: color,
+      fillOpacity: 0.18,
+      interactive: false
+    });
+  }
 
   /* ── Icon builder ── */
   function makeIcon(item) {
@@ -228,6 +254,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   /* ── Render all markers ── */
   async function renderMap() {
+    incidentHeatLayer.clearLayers();
     Object.values(layers).forEach(l => l.clearLayers());
     const items   = (await readMapItems()).filter(r => r.active !== false && r.lat && r.lng);
     const reports = await readResidentReports();
@@ -245,6 +272,8 @@ document.addEventListener('DOMContentLoaded', function () {
     });
     /* Resident-submitted reports */
     reports.forEach(report => {
+      const heatCircle = makeIncidentHeatCircle(report);
+      if (heatCircle) incidentHeatLayer.addLayer(heatCircle);
       const m = L.circleMarker([report.lat, report.lng], {
         radius:8, fillColor: CAT.Incident.color,
         color:'white', weight:2, fillOpacity:0.9

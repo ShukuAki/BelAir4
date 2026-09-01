@@ -28,6 +28,35 @@ namespace WebApplication1.Controllers
             _logger = logger;
         }
 
+        private async Task<(bool blocked, string? message)> GetCommunityExchangeBlockAsync(string? username)
+        {
+            if (string.IsNullOrWhiteSpace(username))
+                return (false, null);
+
+            var banRecord = await _repo.GetActiveBanByEmailOrUsernameAsync(username);
+            if (banRecord != null)
+            {
+                var reasonSuffix = string.IsNullOrWhiteSpace(banRecord.BanReason) ? string.Empty : $" Reason: {banRecord.BanReason}";
+                if (banRecord.ExpiresAt == null)
+                    return (true, $"You are banned and cannot request Community Exchange posts.{reasonSuffix}");
+
+                return (true, $"You are banned from requesting Community Exchange posts until {banRecord.ExpiresAt.Value:MMM d, yyyy h:mm tt}.{reasonSuffix}");
+            }
+
+            var user = await _repo.GetByUsernameAsync(username);
+            if (user is null || !user.IsBanned)
+                return (false, null);
+
+            var legacyReasonSuffix = string.IsNullOrWhiteSpace(user.BanReason) ? string.Empty : $" Reason: {user.BanReason}";
+            if (user.BannedUntil == null)
+                return (true, $"You are banned and cannot request Community Exchange posts.{legacyReasonSuffix}");
+
+            if (user.BannedUntil.Value > DateTime.Now)
+                return (true, $"You are banned from requesting Community Exchange posts until {user.BannedUntil.Value:MMM d, yyyy h:mm tt}.{legacyReasonSuffix}");
+
+            return (false, null);
+        }
+
         // GET /api/keywords - Get all keywords
         [HttpGet("keywords")]
         public async Task<IActionResult> GetKeywords()
@@ -695,10 +724,27 @@ namespace WebApplication1.Controllers
 
         // POST /api/advertisements - Create new advertisement (pending status)
         [HttpPost("advertisements")]
+        [WebApplication1.Filters.UserTypeAuthorize(1, 2, 3)]
         public async Task<IActionResult> CreateAdvertisement([FromBody] Advertisement ad)
         {
             try
             {
+                if (ad is null)
+                    return BadRequest(new { success = false, error = "Advertisement is required" });
+
+                var username = HttpContext.Session.GetString("Username");
+                if (string.IsNullOrWhiteSpace(username))
+                    return Unauthorized(new { success = false, error = "You must be logged in to request a Community Exchange post." });
+
+                var (blocked, blockMsg) = await GetCommunityExchangeBlockAsync(username);
+                if (blocked)
+                {
+                    _logger.LogInformation("Blocked Community Exchange post request by banned/timed-out user {User}", username);
+                    return StatusCode(403, new { success = false, error = blockMsg });
+                }
+
+                ad.Author = username;
+                ad.Status = "pending";
                 var created = await _repo.CreateAdvertisementAsync(ad);
                 return Ok(new { success = true, data = created });
             }
