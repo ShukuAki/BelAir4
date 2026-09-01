@@ -19,6 +19,16 @@ namespace WebApplication1.Controllers
             _aiService = aiService;
             _logger = logger;
         }
+
+        private static bool IsWithinReservationHours(string startTime, string endTime)
+        {
+            if (!TimeSpan.TryParse(startTime, out var start) || !TimeSpan.TryParse(endTime, out var end))
+                return false;
+
+            var earliestStart = new TimeSpan(10, 30, 0);
+            return start >= earliestStart && end > start;
+        }
+
         public IActionResult aboutLagunaBelAir() => View();
         [WebApplication1.Filters.UserTypeAuthorize(3)]
         public IActionResult adminDashboard() => View();
@@ -102,6 +112,11 @@ namespace WebApplication1.Controllers
                 || string.IsNullOrWhiteSpace(reservation.EndTime))
             {
                 return BadRequest(new { success = false, message = "Missing required reservation fields." });
+            }
+
+            if (!IsWithinReservationHours(reservation.StartTime, reservation.EndTime))
+            {
+                return BadRequest(new { success = false, message = "Reservations are only available from 10:30 AM onward." });
             }
 
             var username = HttpContext.Session.GetString("Username");

@@ -8,14 +8,16 @@
 const MAX_BOOKING_DAYS = 14;
 const MAX_RESERVATIONS_PER_DAY = 2;
 const CURRENT_USER = window.CURRENT_USER || '';
+const EARLIEST_BOOKING_TIME = '10:30';
 
 // In-memory cache of reservations loaded from the server
 let RESERVATIONS = [];
 
-// Time slots (30-minute increments from 8 AM to 8 PM)
+// Time slots (30-minute increments from 10:30 AM to 8 PM)
 const TIME_SLOTS = [];
-for (let hour = 8; hour <= 20; hour++) {
+for (let hour = 10; hour <= 20; hour++) {
   for (let minute = 0; minute < 60; minute += 30) {
+    if (hour === 10 && minute < 30) continue;
     if (hour === 20 && minute > 0) continue;
     const timeStr = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
     TIME_SLOTS.push(timeStr);
@@ -336,6 +338,11 @@ function validateDailyLimit(date) {
 }
 
 function isTimeSlotAvailableForSubmit(amenity, date, startTime, endTime) {
+  if (startTime < EARLIEST_BOOKING_TIME) {
+    showToast('Reservations are only available from 10:30 AM onward.', 'error');
+    return false;
+  }
+
   const reservations = getReservations();
   
   return !reservations.some(res => {
