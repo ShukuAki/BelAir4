@@ -16,32 +16,6 @@ document.querySelector('.toggle-password').addEventListener('click', function() 
 });
 
 /* ========================================
-USER DATABASE
-Email-based detection for auto-redirect
-======================================== */
-const userDatabase = {
-    // MEMBERS - redirect to index.html (public homepage)
-    "member0@gmail.com": { password: "member123", type: "member", redirect: "index.html" },
-    "resident@example.com": { password: "resident123", type: "member", redirect: "index.html" },
-    "juan.dela.cruz@example.com": { password: "juan123", type: "member", redirect: "index.html" },
-    "maria.santos@example.com": { password: "maria123", type: "member", redirect: "index.html" },
-    "pedro.reyes@example.com": { password: "pedro123", type: "member", redirect: "index.html" },
-    
-    // STAFF - redirect to staff-dashboard.html
-    "staff0@gmail.com": { password: "staff123", type: "staff", redirect: "staff-dashboard.html" },
-    "staff@lba4.com": { password: "staff123", type: "staff", redirect: "staff-dashboard.html" },
-    "hoa.staff@lba4.com": { password: "staff123", type: "staff", redirect: "staff-dashboard.html" },
-    "security@lba4.com": { password: "staff123", type: "staff", redirect: "staff-dashboard.html" },
-    "maintenance@lba4.com": { password: "staff123", type: "staff", redirect: "staff-dashboard.html" },
-    
-    // ADMIN - redirect to admin-dashboard.html
-    "admin0@gmail.com": { password: "admin", type: "admin", redirect: "admin-dashboard.html" },
-    "admin@lba4.com": { password: "admin123", type: "admin", redirect: "admin-dashboard.html" },
-    "president@lba4.com": { password: "president123", type: "admin", redirect: "admin-dashboard.html" },
-    "hoa.admin@lba4.com": { password: "admin123", type: "admin", redirect: "admin-dashboard.html" }
-};
-
-/* ========================================
 LOGIN VALIDATION AND AUTO-DETECT REDIRECT
 ======================================== */
 document.getElementById('loginForm').addEventListener('submit', async function(e) {

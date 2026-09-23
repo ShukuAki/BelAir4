@@ -39,6 +39,35 @@ namespace WebApplication1.Controllers
         public IActionResult communityMap() => View();
         public IActionResult contacts() => View();
         public IActionResult forgotPassword() => View();
+
+        // Server-side password reset. Credentials are received in the request body (never the query string).
+        [HttpPost("forgotpassword")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ForgotPassword([FromForm] string email, [FromForm] string newPassword, [FromForm] string confirmPassword)
+        {
+            if (string.IsNullOrWhiteSpace(email))
+                return BadRequest(new { success = false, message = "Email address is required." });
+
+            if (string.IsNullOrWhiteSpace(newPassword) || newPassword.Length < 8)
+                return BadRequest(new { success = false, message = "Password must be at least 8 characters long." });
+
+            if (newPassword.Length > 128)
+                return BadRequest(new { success = false, message = "Password is too long." });
+
+            if (newPassword != confirmPassword)
+                return BadRequest(new { success = false, message = "Passwords do not match." });
+
+            var user = await _repo.GetByUsernameAsync(email.Trim());
+            if (user == null)
+                return NotFound(new { success = false, message = "Email address not found. Please check your email or register for an account." });
+
+            var updated = await _repo.UpdatePasswordAsync(email.Trim(), newPassword);
+            if (!updated)
+                return StatusCode(500, new { success = false, message = "Unable to reset password. Please try again later." });
+
+            _logger?.LogInformation("Password reset completed for {Email}", email);
+            return Ok(new { success = true, message = "Your password has been reset successfully." });
+        }
         public IActionResult formsDocuments() => View();
         public IActionResult forums() => View();
         public IActionResult Index() => View();
@@ -405,6 +434,18 @@ namespace WebApplication1.Controllers
                 return View("register");
             }
 
+            if (fullName.Length > 200 || email.Length > 100 || mobile.Length > 20 || address.Length > 500)
+            {
+                ModelState.AddModelError(string.Empty, "One or more fields exceed the maximum allowed length.");
+                return View("register");
+            }
+
+            if (password.Length > 128)
+            {
+                ModelState.AddModelError(string.Empty, "Password is too long.");
+                return View("register");
+            }
+
             if (string.IsNullOrWhiteSpace(termsAgreement))
             {
                 ModelState.AddModelError(string.Empty, "You must agree to the terms.");
@@ -431,6 +472,22 @@ namespace WebApplication1.Controllers
 
             if (file != null && file.Length > 0)
             {
+                const long maxFileSize = 5 * 1024 * 1024; // 5 MB cap
+                if (file.Length > maxFileSize)
+                {
+                    _logger?.LogWarning("Rejected oversized proof-of-residency upload: {Length} bytes", file.Length);
+                    ModelState.AddModelError(string.Empty, "Proof of residency file must be 5 MB or smaller.");
+                    return View("register");
+                }
+
+                var permittedExtensions = new[] { ".jpg", ".jpeg", ".png", ".pdf" };
+                var uploadExtension = System.IO.Path.GetExtension(file.FileName).ToLowerInvariant();
+                if (string.IsNullOrEmpty(uploadExtension) || !permittedExtensions.Contains(uploadExtension))
+                {
+                    ModelState.AddModelError(string.Empty, "Proof of residency must be a JPG, PNG, or PDF file.");
+                    return View("register");
+                }
+
                 var uploads = System.IO.Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "registrations");
                 if (!Directory.Exists(uploads)) Directory.CreateDirectory(uploads);
                 var fileName = System.Guid.NewGuid().ToString() + System.IO.Path.GetExtension(file.FileName);

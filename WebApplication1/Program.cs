@@ -69,6 +69,25 @@ if (!app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 
+// Attach security headers to every response.
+app.Use(async (context, next) =>
+{
+    var headers = context.Response.Headers;
+    headers["X-Content-Type-Options"] = "nosniff";
+    headers["X-Frame-Options"] = "DENY";
+    headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
+    headers["Permissions-Policy"] = "geolocation=(self), camera=(), microphone=()";
+    headers["Content-Security-Policy"] =
+        "default-src 'self'; " +
+        "script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; " +
+        "style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; " +
+        "font-src 'self' https://cdnjs.cloudflare.com https://fonts.gstatic.com; " +
+        "img-src 'self' data: https:; " +
+        "connect-src 'self'; " +
+        "frame-ancestors 'none'";
+    await next();
+});
+
 app.UseRouting();
 
 // enable session before auth

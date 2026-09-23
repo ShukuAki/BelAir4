@@ -17,6 +17,7 @@ namespace WebApplication1.Repository
         Task<bool> DeleteAsync(int id);
         Task<UserAccount?> AuthenticateAsync(string username, string password);
         Task<UserAccount?> GetByUsernameAsync(string username);
+        Task<bool> UpdatePasswordAsync(string emailOrUsername, string newPassword);
         Task<bool> SetUserBanAsync(string username, bool isBanned, DateTime? bannedUntil, string? reason);
         System.Threading.Tasks.Task SeedAsync();
         // Forum
@@ -325,6 +326,34 @@ namespace WebApplication1.Repository
             }
 
             return user;
+        }
+
+        // Updates the stored password for a user resolved by username or email.
+        // Passwords remain plain-text in this scaffold — replace with hashing for production.
+        public async Task<bool> UpdatePasswordAsync(string emailOrUsername, string newPassword)
+        {
+            if (string.IsNullOrWhiteSpace(emailOrUsername) || string.IsNullOrWhiteSpace(newPassword))
+                return false;
+
+            var normalized = emailOrUsername.Trim().ToLowerInvariant();
+
+            var user = await _db.UserAccounts
+                .FirstOrDefaultAsync(u => u.Username.ToLower() == normalized);
+
+            // If not found directly and the input is an email, resolve via the email prefix.
+            if (user is null && normalized.Contains("@"))
+            {
+                var emailPrefix = normalized.Split('@')[0];
+                user = await _db.UserAccounts
+                    .FirstOrDefaultAsync(u => u.Username.ToLower() == emailPrefix);
+            }
+
+            if (user is null)
+                return false;
+
+            user.Password = newPassword;
+            await _db.SaveChangesAsync();
+            return true;
         }
 
         public async Task<bool> SetUserBanAsync(string username, bool isBanned, DateTime? bannedUntil, string? reason)
