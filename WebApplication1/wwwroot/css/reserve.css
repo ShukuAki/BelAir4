@@ -235,7 +235,7 @@ a.active {
    HERO SECTION
 ═══════════════════════════════════════════════════════ */
 .hero-section {
-  background-image: url('BG.png');
+  background-image: url('../assets/BG.png');
   background-size: cover;
   background-position: center;
   position: relative;

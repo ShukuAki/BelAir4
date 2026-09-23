@@ -77,13 +77,20 @@ app.Use(async (context, next) =>
     headers["X-Frame-Options"] = "DENY";
     headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
     headers["Permissions-Policy"] = "geolocation=(self), camera=(), microphone=()";
+
+    // In development, allow Visual Studio Browser Link / Hot Reload websockets and endpoints.
+    var connectSrc = app.Environment.IsDevelopment()
+        ? "connect-src 'self' ws: wss: http://localhost:* https://localhost:*; "
+        : "connect-src 'self'; ";
+
     headers["Content-Security-Policy"] =
         "default-src 'self'; " +
-        "script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; " +
-        "style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; " +
+        "script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://unpkg.com https://cdn.jsdelivr.net; " +
+        "style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://unpkg.com https://cdn.jsdelivr.net https://fonts.googleapis.com; " +
         "font-src 'self' https://cdnjs.cloudflare.com https://fonts.gstatic.com; " +
-        "img-src 'self' data: https:; " +
-        "connect-src 'self'; " +
+        "img-src 'self' data: blob: https:; " +
+        connectSrc +
+        "frame-src 'self' https://www.google.com; " +
         "frame-ancestors 'none'";
     await next();
 });
