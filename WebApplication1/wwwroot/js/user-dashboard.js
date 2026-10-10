@@ -555,6 +555,9 @@ function renderProfile(data) {
                     <h2>${escapeHtml(data.username || 'User')}</h2>
                     <p>${registration ? escapeHtml(registration.email || '') : 'No email on file'}</p>
                 </div>
+                <div style="margin-left:auto">
+                    <button class="btn btn-outline btn-sm" id="editProfileBtn">Edit Profile</button>
+                </div>
             </div>
     `;
 
@@ -582,19 +585,19 @@ function renderProfile(data) {
                     <tbody>
                         <tr>
                             <td><strong>Full Name</strong></td>
-                            <td>${escapeHtml(registration.fullName || 'N/A')}</td>
+                            <td id="reg-fullName">${escapeHtml(registration.fullName || 'N/A')}</td>
                         </tr>
                         <tr>
                             <td><strong>Email</strong></td>
-                            <td>${escapeHtml(registration.email || 'N/A')}</td>
+                            <td id="reg-email">${escapeHtml(registration.email || 'N/A')}</td>
                         </tr>
                         <tr>
                             <td><strong>Mobile</strong></td>
-                            <td>${escapeHtml(registration.mobile || 'N/A')}</td>
+                            <td id="reg-mobile">${escapeHtml(registration.mobile || 'N/A')}</td>
                         </tr>
                         <tr>
                             <td><strong>Address</strong></td>
-                            <td>${escapeHtml(registration.address || 'N/A')}</td>
+                            <td id="reg-address">${escapeHtml(registration.address || 'N/A')}</td>
                         </tr>
                         <tr>
                             <td><strong>Resident Type</strong></td>
@@ -631,7 +634,106 @@ function renderProfile(data) {
     }
 
     container.innerHTML = profileHTML;
+
+    // Attach Edit button handler
+    const editBtn = document.getElementById('editProfileBtn');
+    if (editBtn) {
+        editBtn.addEventListener('click', () => openEditProfile(data));
+    }
 }
+
+// Open edit profile modal
+function openEditProfile(data) {
+    // Ensure modal container exists
+    let modal = document.getElementById('editProfileModal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'editProfileModal';
+        modal.style = 'position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.45);z-index:9999;';
+        modal.innerHTML = `
+            <div style="background:white;border-radius:8px;max-width:640px;width:100%;padding:20px;box-shadow:0 8px 30px rgba(0,0,0,0.2);">
+                <h3 style="margin-top:0">Edit Profile</h3>
+                <form id="editProfileForm">
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                        <div>
+                            <label>Full Name</label>
+                            <input type="text" id="inputFullName" class="input" />
+                        </div>
+                        <div>
+                            <label>Email</label>
+                            <input type="email" id="inputEmail" class="input" />
+                        </div>
+                        <div style="grid-column:1/3;">
+                            <label>Mobile</label>
+                            <input type="text" id="inputMobile" class="input" />
+                        </div>
+                        <div style="grid-column:1/3;">
+                            <label>Address</label>
+                            <input type="text" id="inputAddress" class="input" />
+                        </div>
+                    </div>
+                    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px;">
+                        <button type="button" id="cancelEditProfile" class="btn btn-outline">Cancel</button>
+                        <button type="submit" id="saveEditProfile" class="btn btn-primary">Save</button>
+                    </div>
+                </form>
+            </div>
+        `;
+        document.body.appendChild(modal);
+
+        // Bind cancel
+        document.getElementById('cancelEditProfile').addEventListener('click', closeEditProfile);
+
+        // Bind submit
+        document.getElementById('editProfileForm').addEventListener('submit', function(e){
+            e.preventDefault();
+            saveProfile();
+        });
+    }
+
+    // Prefill values
+    const reg = data.registration || {};
+    document.getElementById('inputFullName').value = reg.fullName || '';
+    document.getElementById('inputEmail').value = reg.email || '';
+    document.getElementById('inputMobile').value = reg.mobile || '';
+    document.getElementById('inputAddress').value = reg.address || '';
+
+    modal.style.display = 'flex';
+}
+
+function closeEditProfile() {
+    const modal = document.getElementById('editProfileModal');
+    if (modal) modal.style.display = 'none';
+}
+
+// Save profile via API
+async function saveProfile() {
+    const fullName = document.getElementById('inputFullName')?.value || '';
+    const email = document.getElementById('inputEmail')?.value || '';
+    const mobile = document.getElementById('inputMobile')?.value || '';
+    const address = document.getElementById('inputAddress')?.value || '';
+
+    try {
+        const res = await fetch('/api/user/profile', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ fullName, email, mobile, address })
+        });
+        const json = await res.json();
+        if (!res.ok || json?.success === false) {
+            alert(json?.error || 'Failed to save profile');
+            return;
+        }
+        // Success: reload profile and close modal
+        await loadProfile();
+        closeEditProfile();
+        alert('Profile updated');
+    } catch (err) {
+        console.error('saveProfile error', err);
+        alert('Failed to save profile');
+    }
+}
+
 
 // Page Navigation
 function showPage(pageName) {

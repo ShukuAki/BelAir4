@@ -13,7 +13,7 @@
 <title>Staff Dashboard — Laguna BelAir 4</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer">
 <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Nunito:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" integrity="sha512-xwE/Az9zrjBIphAcBb3F6JVqxf46+CDLwfLMHloNu6KEQCAWi6HcDUbeOfBIptF7tcCzusKFjFw2yuvEpDL9wQ==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
 <link rel="stylesheet" href="~/css/staff-dashboard.css">
 </head>
 <body>
@@ -57,7 +57,7 @@
     <div class="nav-group-label">Tools</div>
     <div class="nav-link" onclick="showPage('communitymap',this)"><i class="fas fa-map-marked-alt"></i> Community Map</div> 
     <div class="nav-link" onclick="showPage('wordbank',this)"><i class="fas fa-brain"></i> Word Bank</div>
-     <div class="nav-link" onclick="showPage('reports',this)"><i class="fas fa-chart-bar"></i> Reports</div>
+@*      <div class="nav-link" onclick="showPage('reports',this)"><i class="fas fa-chart-bar"></i> Reports</div> *@
     @* <div class="nav-link" onclick="showPage('subscribers',this)"><i class="fas fa-bell"></i> Subscribers</div> *@
     @if (_sessionType >= 3)
     {
@@ -928,7 +928,7 @@ function closeNotifModal() {
 }
 </script>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script src="~/js/staff-dashboard.js?v=5"></script>
 </body>
 </html>

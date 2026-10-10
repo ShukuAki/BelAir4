@@ -33,6 +33,12 @@ const VILLAGE = {
   ]
 };
 
+// Slightly padded bounds used to lock panning/zooming to the village area only.
+const VILLAGE_MAX_BOUNDS = L.latLngBounds(
+  [14.26350, 121.06400],
+  [14.27450, 121.07300]
+);
+
 /* ═══════════════════════════════════════════
    STATE
 ═══════════════════════════════════════════ */
@@ -336,6 +342,8 @@ function initMap() {
     zoom: 17,
     minZoom: 15,
     maxZoom: 19,
+    maxBounds: VILLAGE_MAX_BOUNDS,
+    maxBoundsViscosity: 1.0,
   });
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {

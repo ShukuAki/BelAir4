@@ -674,5 +674,36 @@
     });
   });
 </script>
+
+<script>
+  // Prevent anonymous submissions: server-side session drives this guard
+  (function(){
+    // Razor emits 'true' or 'false' depending on session Username presence
+    var isLoggedIn = @((string.IsNullOrEmpty(username) ? "false" : "true"));
+    if (!isLoggedIn) {
+      document.addEventListener('DOMContentLoaded', function(){
+        // Replace registration UI with a login prompt
+        var regContainer = document.querySelector('.register-container');
+        if (regContainer) {
+          regContainer.innerHTML = `
+            <div class="register-box">
+              <div class="register-header">
+                <i class="fas fa-user-lock"></i>
+                <h1>Login required</h1>
+                <p>Please <a href="@Url.Action("Login","Home")">login</a> or <a href="@Url.Action("Register","Home")">register</a> to access Vehicle &amp; Pet Registration.</p>
+              </div>
+              <div style="padding:18px;color:var(--gray-600)">
+                If you already have an account, use the login link above. New users can register to create an account.
+              </div>
+            </div>
+          `;
+        }
+        // Also disable any standalone submit buttons as a safety net
+        var vf = document.getElementById('vehicleForm'); if (vf) vf.addEventListener('submit', function(e){ e.preventDefault(); window.location.href='@Url.Action("Login","Home")'; });
+        var pf = document.getElementById('petForm'); if (pf) pf.addEventListener('submit', function(e){ e.preventDefault(); window.location.href='@Url.Action("Login","Home")'; });
+      });
+    }
+  })();
+</script>
 </body>
 </html>

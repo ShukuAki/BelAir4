@@ -33,6 +33,7 @@ function formatDate(str) {
 
 // ── Documents (Staff) ───────────────────────────────────────
 let DOCUMENTS = [];
+let ADVERTISEMENTS = [];
 
 async function loadDocuments() {
   const tb = document.getElementById('documents-tbody');
@@ -988,11 +989,7 @@ function saveIncidentUpdate() {
   inc.notes    = document.getElementById('vi-notes').value;
   inc.isPublic = document.getElementById('vi-visibility').value === 'public';
   persistIncidents();
-  const idx = MAP_ITEMS.findIndex(m => m.incidentId === id);
-  if (inc.isPublic && inc.lat && inc.lng) {
-    if (idx >= 0) { MAP_ITEMS[idx].status = inc.status; }
-    else { MAP_ITEMS.push({ id:'mi-inc-'+id, title:`${inc.type||'Incident'}: ${inc.description.substring(0,40)}`, description:inc.description, category:inc.type||'Incident', status:inc.status, lat:inc.lat, lng:inc.lng, fromIncident:true, incidentId:id }); }
-  } else if (!inc.isPublic && idx >= 0) { MAP_ITEMS.splice(idx,1); }
+  syncIncidentsToMapItems();
   if (cmMap) renderCmItems();
   renderIncidentsTable('all'); renderOverviewIncidents(); updateIncidentStats(); updateDistribution();
   closeModal('viewIncident'); showToast(`${inc.type||'Incident'} ${id} updated`);
@@ -1100,6 +1097,120 @@ function setIncCoords(lat, lng) {
   const lo = document.getElementById('inc-log-lng'); if (lo) lo.value = lng;
   const d  = document.getElementById('inc-log-coords-display'); if (d) d.textContent = `${lat}, ${lng}`;
 }
+
+/* ============================================================
+   COMMUNITY MAP (staff dashboard) — lightweight preview/map
+   Renders MAP_ITEMS and INCIDENTS into the staff dashboard maps
+============================================================ */
+
+function _cmColor(cat) {
+  return cat === 'Incident' ? '#c0392b' : cat === 'Concern' ? '#7c3aed' : cat === 'Project' ? '#c0621a' : '#1a5fa8';
+}
+function _makeCmIcon(cat, icon) {
+  const color = _cmColor(cat);
+  return L.divIcon({
+    className: '',
+    html: `<div style="width:34px;height:34px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:${color};border:2.5px solid white;box-shadow:0 3px 10px rgba(0,0,0,.28);display:flex;align-items:center;justify-content:center"><i class="fas ${icon||'fa-map-marker-alt'}" style="transform:rotate(45deg);color:white;font-size:12px"></i></div>`,
+    iconSize: [34,34], iconAnchor: [17,34]
+  });
+}
+
+function initCmMaps() {
+  const mainEl = document.getElementById('cm-main-map');
+  const prevEl = document.getElementById('cm-preview');
+  if (mainEl && !cmMap) {
+    cmMap = L.map('cm-main-map', {center: LBA4.center, zoom: LBA4.zoom, minZoom:15, maxZoom:19});
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(cmMap);
+    L.polygon(LBA4.boundary, {color:'#0a4d3c', fillOpacity:.05, weight:2}).addTo(cmMap);
+    cmMapMarkers = [];
+    renderCmItems();
+  }
+  if (prevEl && !previewMap) {
+    previewMap = L.map('cm-preview', {center: LBA4.center, zoom: LBA4.zoom-1, minZoom:14, maxZoom:19, attributionControl:false});
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(previewMap);
+    L.polygon(LBA4.boundary, {color:'#0a4d3c', fillOpacity:.05, weight:2}).addTo(previewMap);
+    refreshPreviewMap();
+  }
+}
+
+function clearCmMarkers() {
+  if (Array.isArray(cmMapMarkers)) {
+    cmMapMarkers.forEach(m => { try { cmMap.removeLayer(m); } catch(e){} });
+  }
+  cmMapMarkers = [];
+}
+
+function renderCmItems() {
+  if (!cmMap) return;
+  clearCmMarkers();
+  const items = Array.isArray(MAP_ITEMS) ? MAP_ITEMS.slice() : [];
+  // include incidents as markers if they have coords
+  const incs = (Array.isArray(INCIDENTS) ? INCIDENTS.filter(i => i.lat && i.lng) : []);
+  const all = [...items, ...incs];
+  const listEl = document.getElementById('cm-items-list');
+  const countEl = document.getElementById('cm-item-count');
+  if (listEl) listEl.innerHTML = '';
+  if (countEl) countEl.textContent = all.length + ' items';
+
+  all.forEach(it => {
+    const lat = parseFloat(it.lat || it.latitude || it.latitude || it.Latitude);
+    const lng = parseFloat(it.lng || it.longitude || it.longitude || it.Longitude);
+    if (isNaN(lat) || isNaN(lng)) return;
+    const cat = it.category || (it._isReport ? 'Incident' : 'Landmark');
+    const marker = (it._isReport || cat === 'Incident')
+      ? L.circleMarker([lat,lng], { radius:8, fillColor: _cmColor(cat), color:'white', weight:2, fillOpacity:0.9 })
+      : L.marker([lat,lng], { icon: _makeCmIcon(cat, it.icon) });
+    marker.bindPopup(`<strong>${(it.name||it.title||'')}</strong><br><small>${escHtml(cat)}</small>`);
+    marker.on('click', function(e){ if (cmMap) { cmMap.panTo(e.latlng); } });
+    marker.addTo(cmMap);
+    cmMapMarkers.push(marker);
+    // add to list
+    if (listEl) {
+      const name = escHtml(it.name || it.title || (it.description||'').substring(0,60) || 'Item');
+      const row = document.createElement('div'); row.className = 'cm-item-row'; row.style.padding='10px'; row.style.borderBottom='1px solid var(--gray-100)'; row.style.cursor='pointer';
+      row.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center"><div style='font-weight:700;color:var(--green)'>${name}</div><div style='font-size:12px;color:var(--gray-400)'>${escHtml(cat)}</div></div>`;
+      row.addEventListener('click', () => { cmMap.setView([lat,lng], 17); if (marker.openPopup) marker.openPopup(); });
+      listEl.appendChild(row);
+    }
+  });
+}
+
+function refreshPreviewMap() {
+  if (!previewMap) return;
+  try {
+    // clear existing layers except tiles and polygon (simple approach: remove all and re-add tiles)
+    previewMap.eachLayer(layer => { try { previewMap.removeLayer(layer); } catch(e){} });
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(previewMap);
+    L.polygon(LBA4.boundary, {color:'#0a4d3c', fillOpacity:.05, weight:2}).addTo(previewMap);
+    // add up to 6 items
+    const items = (Array.isArray(MAP_ITEMS) ? MAP_ITEMS : []).slice(0,6);
+    const incs = (Array.isArray(INCIDENTS) ? INCIDENTS.filter(i=>i.lat&&i.lng).slice(0,6) : []);
+    const all = [...items, ...incs].slice(0,6);
+    all.forEach(it => {
+      const lat = parseFloat(it.lat || it.latitude); const lng = parseFloat(it.lng || it.longitude);
+      if (isNaN(lat) || isNaN(lng)) return;
+      const cat = it.category || (it._isReport ? 'Incident' : 'Landmark');
+      const m = (it._isReport || cat === 'Incident')
+        ? L.circleMarker([lat,lng], { radius:6, fillColor: _cmColor(cat), color:'white', weight:2, fillOpacity:0.9 })
+        : L.marker([lat,lng], { icon: _makeCmIcon(cat, it.icon) });
+      m.addTo(previewMap);
+    });
+    if (all.length) {
+      const bounds = L.latLngBounds(all.map(it => [parseFloat(it.lat||it.latitude), parseFloat(it.lng||it.longitude)]));
+      previewMap.fitBounds(bounds.pad(0.2));
+    } else {
+      previewMap.setView(LBA4.center, LBA4.zoom-1);
+    }
+  } catch (e) { console.warn('refreshPreviewMap', e); }
+}
+
+function cmSetFilter(filter, el) {
+  cmFilter = filter || 'all';
+  try { document.querySelectorAll('#cm-filter-chips .chip').forEach(c => c.classList.remove('active')); if (el) el.classList.add('active'); } catch(e){}
+  renderCmItems(); refreshPreviewMap();
+}
+
+function cmResetView() { if (cmMap) cmMap.fitBounds(L.latLngBounds(LBA4.boundary), {padding:[30,30]}); }
 
 /* ── File / image upload listeners ── */
 document.addEventListener('change', function(e) {
@@ -2934,8 +3045,29 @@ function makeCatPin(cat) {
   return L.divIcon({ className:'', html:`<div style="position:relative;width:30px;height:42px"><div style="width:30px;height:30px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:${color};border:3px solid white;box-shadow:0 3px 10px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center"><i class="fas ${icon}" style="transform:rotate(45deg);color:white;font-size:12px"></i></div></div>`, iconSize:[30,42], iconAnchor:[15,42] });
 }
 
+function syncIncidentsToMapItems() {
+  // Remove stale incident-derived items, then re-add from current INCIDENTS data
+  MAP_ITEMS = MAP_ITEMS.filter(m => !m.fromIncident);
+  INCIDENTS.forEach(inc => {
+    const lat = inc.latitude || inc.lat;
+    const lng = inc.longitude || inc.lng;
+    if (!inc.isPublic || !lat || !lng) return;
+    MAP_ITEMS.push({
+      id: 'mi-inc-' + inc.id,
+      title: `${inc.category || 'Incident'}: ${(inc.description || '').substring(0,40)}`,
+      description: inc.description,
+      category: 'Incident',
+      status: inc.status || 'open',
+      lat, lng,
+      fromIncident: true,
+      incidentId: inc.id
+    });
+  });
+}
+
 function initCommunityMap() {
   const el = document.getElementById('cm-main-map'); if (!el) return;
+  syncIncidentsToMapItems();
   if (cmMap) { cmMap.invalidateSize(); renderCmItems(); return; }
   cmMap = L.map('cm-main-map', {attributionControl:false}).setView(LBA4.center, 16);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom:19}).addTo(cmMap);
@@ -3273,6 +3405,8 @@ document.addEventListener('DOMContentLoaded', function() {
   loadForumPosts();
   loadReservations();
   loadAnnouncements();
+  // initialize community maps in staff dashboard if present
+  try { initCmMaps(); } catch(e) { console.warn('initCmMaps failed', e); }
   document.querySelector('.icon-btn[title="Notifications"]')?.addEventListener('click', openNotifModal);
   document.querySelector('.icon-btn[title="Settings"]')?.addEventListener('click', () => openModal('settings'));
   _updateNotifBadge();
@@ -3738,6 +3872,8 @@ async function loadIncidentReportsWithAnalysis() {
     updateCommonKeywords();
     renderIncidentsList();
     renderOverviewIncidents();
+    syncIncidentsToMapItems();
+    if (cmMap) renderCmItems();
     refreshPreviewMap();
     _updateNotifBadge();
   } catch (error) {

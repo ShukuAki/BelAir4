@@ -237,27 +237,51 @@
 <script>
   // Pass logged-in username to JavaScript
   window.CURRENT_USER = '@(username ?? "")';
+  // Server-driven guard
+  var isLoggedIn = @((string.IsNullOrEmpty(username) ? "false" : "true"));
 </script>
 <script src="/js/page-coordinator.js"></script>
 <script src="/js/reserve.js"></script>
 <script>
-  document.getElementById('current-year').textContent = new Date().getFullYear();
-  
-  document.querySelectorAll('.dropdown').forEach(dropdown => {
-    const toggle = dropdown.querySelector('.dropdown-toggle');
-    if (!toggle) return;
-    toggle.addEventListener('click', (e) => {
-      e.preventDefault();
-      const isOpen = dropdown.classList.contains('dropdown-open');
-      document.querySelectorAll('.dropdown').forEach(d => d.classList.remove('dropdown-open'));
-      if (!isOpen) dropdown.classList.add('dropdown-open');
-    });
-  });
-  
-  document.addEventListener('click', (e) => {
-    document.querySelectorAll('.dropdown').forEach(d => {
-      if (!d.contains(e.target)) d.classList.remove('dropdown-open');
-    });
+  // Footer year
+  (function(){ const el = document.getElementById('current-year'); if (el) el.textContent = new Date().getFullYear(); })();
+
+  // If not authenticated, replace the reservation UI with a login prompt
+  document.addEventListener('DOMContentLoaded', function(){
+    try {
+      if (!isLoggedIn) {
+        const wrapper = document.querySelector('.form-wrapper');
+        if (wrapper) {
+          wrapper.innerHTML = `
+            <div class="form-card" style="text-align:center;padding:28px">
+              <h3><i class="fas fa-user-lock"></i> Login required</h3>
+              <p>Please <a href="@Url.Action("Login","Home")">login</a> or <a href="@Url.Action("Register","Home")">register</a> to make a reservation.</p>
+            </div>
+          `;
+        }
+        // Disable submit if present
+        const rf = document.getElementById('reservationForm'); if (rf) rf.addEventListener('submit', function(e){ e.preventDefault(); window.location.href='@Url.Action("Login","Home")'; });
+      }
+
+      // Dropdown toggle handling (preserve behavior for logged-in users too)
+      document.querySelectorAll('.dropdown').forEach(dropdown => {
+        const toggle = dropdown.querySelector('.dropdown-toggle');
+        if (!toggle) return;
+        toggle.addEventListener('click', (e) => {
+          e.preventDefault();
+          const isOpen = dropdown.classList.contains('dropdown-open');
+          document.querySelectorAll('.dropdown').forEach(d => d.classList.remove('dropdown-open'));
+          if (!isOpen) dropdown.classList.add('dropdown-open');
+        });
+      });
+      document.addEventListener('click', (e) => {
+        document.querySelectorAll('.dropdown').forEach(d => {
+          if (!d.contains(e.target)) d.classList.remove('dropdown-open');
+        });
+      });
+    } catch (err) {
+      console.warn('Reserve page init error', err);
+    }
   });
 </script>
 </body>

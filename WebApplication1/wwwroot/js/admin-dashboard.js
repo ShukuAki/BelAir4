@@ -17,15 +17,21 @@ const AdminAPI = {
 
         try {
             const response = await fetch(`${this.baseUrl}${endpoint}`, options);
+            const text = await response.text();
             if (!response.ok) {
-                throw new Error(`API Error: ${response.status}`);
+                let details = text;
+                try { details = JSON.parse(text); } catch (e) { /* not JSON */ }
+                console.error('API Error response body:', details);
+                throw new Error(`API Error: ${response.status} - ${typeof details === 'string' ? details : JSON.stringify(details)}`);
             }
-            return await response.json();
+            // attempt to parse JSON, otherwise return raw text
+            try { return text ? JSON.parse(text) : null; } catch (e) { return text; }
         } catch (error) {
             console.error('API Request Failed:', error);
             throw error;
         }
     },
+
 
     // Create staff account via API
     createStaff: async function (payload) {
@@ -594,6 +600,125 @@ const AdminDashboard = {
                     <button class="btn btn-outline btn-sm" onclick="AdminDashboard.restoreBackup(${b.id})"><i class="fas fa-undo"></i> Restore</button>
                 </td>
             </tr>`).join('');
+    },
+
+    // ── Settings population & persistence ──
+    populateSettings: function () {
+        try {
+            const map = {};
+            (this.settings || []).forEach(s => {
+                // normalize key names to be safe
+                const k = (s.settingKey || s.SettingKey || '').toString();
+                map[k] = s;
+            });
+
+            const setInput = (id, key, defaultVal = '') => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                const existing = map[key];
+                const val = existing ? (existing.settingValue ?? existing.SettingValue ?? '') : defaultVal;
+                if (el.type === 'checkbox') {
+                    el.checked = (val === 'true' || val === '1' || val === 'on' || val === true);
+                } else {
+                    el.value = val;
+                }
+            };
+
+            // General
+            setInput('setting-village-name', 'village.name', 'Laguna BelAir 4');
+            setInput('setting-hoa-email', 'hoa.email', '');
+            setInput('setting-hoa-phone', 'hoa.phone', '');
+            setInput('setting-verification-mode', 'resident.verification.mode', 'Manual Review (Default)');
+
+            // Feature toggles (if present in the DOM)
+            setInput('setting-forum-enabled', 'feature.forum.enabled', 'true');
+            setInput('setting-marketplace-enabled', 'feature.marketplace.enabled', 'true');
+            setInput('setting-incidents-enabled', 'feature.incidents.enabled', 'true');
+            setInput('setting-reservations-enabled', 'feature.reservations.enabled', 'true');
+            setInput('setting-push-enabled', 'feature.push.enabled', 'true');
+            setInput('setting-maintenance-mode', 'feature.maintenance.mode', 'false');
+            setInput('setting-2fa-required', 'security.2fa.required', 'false');
+
+            // store map for later saves
+            this._settingsMap = map;
+        } catch (error) {
+            console.error('Failed to populate settings:', error);
+        }
+    },
+
+    saveSettings: async function () {
+        try {
+            const read = (id) => {
+                const el = document.getElementById(id);
+                if (!el) return null;
+                if (el.type === 'checkbox') return el.checked ? 'true' : 'false';
+                return el.value;
+            };
+
+            const items = [
+                { key: 'village.name', id: 'setting-village-name' },
+                { key: 'hoa.email', id: 'setting-hoa-email' },
+                { key: 'hoa.phone', id: 'setting-hoa-phone' },
+                { key: 'resident.verification.mode', id: 'setting-verification-mode' },
+                { key: 'feature.forum.enabled', id: 'setting-forum-enabled' },
+                { key: 'feature.marketplace.enabled', id: 'setting-marketplace-enabled' },
+                { key: 'feature.incidents.enabled', id: 'setting-incidents-enabled' },
+                { key: 'feature.reservations.enabled', id: 'setting-reservations-enabled' },
+                { key: 'feature.push.enabled', id: 'setting-push-enabled' },
+                { key: 'feature.maintenance.mode', id: 'setting-maintenance-mode' },
+                { key: 'security.2fa.required', id: 'setting-2fa-required' }
+            ];
+
+            // Ensure we have the latest settings map
+            this.settings = await AdminAPI.settings.getAll();
+            this._settingsMap = {};
+            (this.settings || []).forEach(s => { this._settingsMap[s.settingKey || s.SettingKey] = s; });
+
+            for (const it of items) {
+                const value = read(it.id);
+                if (value === null) continue; // DOM element not present
+
+                const existing = this._settingsMap[it.key];
+                if (existing) {
+                    // Update existing
+                    // Server expects AdminSetting model with exact properties; include SettingKey and SettingValue
+                    const updateId = existing.id ?? existing.Id ?? existing.ID;
+                    const updatePayload = {
+                        Id: updateId,
+                        SettingKey: existing.settingKey ?? existing.SettingKey ?? it.key,
+                        SettingValue: value,
+                        SettingType: existing.settingType ?? existing.SettingType ?? 'String',
+                        Category: existing.category ?? existing.Category ?? 'General',
+                        Description: existing.description ?? existing.Description ?? it.key,
+                        IsEditable: (typeof existing.isEditable === 'boolean') ? existing.isEditable : (existing.IsEditable ?? true),
+                        IsActive: (typeof existing.isActive === 'boolean') ? existing.isActive : (existing.IsActive ?? true)
+                    };
+                    await AdminAPI.settings.update(updateId, updatePayload);
+                } else {
+                    // Create new setting record
+                    const payload = {
+                        settingKey: it.key,
+                        settingValue: value ?? '',
+                        settingType: 'String',
+                        category: it.key.startsWith('feature') ? 'Features' : it.key.startsWith('security') ? 'Security' : 'General',
+                        description: it.key,
+                        isEditable: true,
+                        isActive: true
+                    };
+
+                    // Server Create endpoint may return validation errors with 400. Include minimal model casing as the server expects.
+                    await AdminAPI.settings.create({ SettingKey: payload.settingKey, SettingValue: payload.settingValue, SettingType: payload.settingType, Category: payload.category, Description: payload.description, IsEditable: payload.isEditable, IsActive: payload.isActive });
+                }
+            }
+
+            // reload and repopulate
+            this.settings = await AdminAPI.settings.getAll();
+            this.populateSettings();
+            alert('Application settings saved successfully.');
+        } catch (error) {
+            console.error('Failed to save settings:', error);
+            alert('Failed to save application settings.');
+        }
     },
 
     runBackup: async function () {
@@ -1317,23 +1442,35 @@ const AdminDashboard = {
 
             for (const setting of settings) {
                 if (setting.value === undefined || setting.value === null) continue;
-                const existing = this.settings.find(s => s.settingKey === setting.key);
+                const existing = this.settings.find(s => s.settingKey === setting.key || s.SettingKey === setting.key);
+
+                const isBool = (typeof setting.value === 'string' && (setting.value === 'true' || setting.value === 'false')) || typeof setting.value === 'boolean';
+                const settingType = isBool ? 'Bool' : 'String';
+
                 if (existing) {
-                    await AdminAPI.settings.update(existing.id, {
-                        id: existing.id,
-                        settingKey: setting.key,
-                        settingValue: setting.value,
-                    });
+                    const updateId = existing.id ?? existing.Id;
+                    const updatePayload = {
+                        Id: updateId,
+                        SettingKey: setting.key,
+                        SettingValue: setting.value,
+                        SettingType: settingType,
+                        Category: setting.category || existing.category || existing.Category || 'General',
+                        Description: setting.description || existing.description || existing.Description || setting.key,
+                        IsEditable: (typeof existing.isEditable === 'boolean') ? existing.isEditable : (existing.IsEditable ?? true),
+                        IsActive: (typeof existing.isActive === 'boolean') ? existing.isActive : (existing.IsActive ?? true)
+                    };
+                    await AdminAPI.settings.update(updateId, updatePayload);
                 } else {
-                    await AdminAPI.settings.create({
-                        settingKey: setting.key,
-                        settingValue: setting.value,
-                        description: setting.description || setting.key,
-                        settingType: typeof setting.value === 'string' && (setting.value === 'true' || setting.value === 'false') ? 'Bool' : 'String',
-                        category: setting.category || 'General',
-                        isEditable: true,
-                        isActive: true
-                    });
+                    const createPayload = {
+                        SettingKey: setting.key,
+                        SettingValue: setting.value,
+                        SettingType: settingType,
+                        Category: setting.category || 'General',
+                        Description: setting.description || setting.key,
+                        IsEditable: true,
+                        IsActive: true
+                    };
+                    await AdminAPI.settings.create(createPayload);
                 }
             }
 

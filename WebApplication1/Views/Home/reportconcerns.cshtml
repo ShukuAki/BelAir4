@@ -422,17 +422,35 @@
       const el = document.getElementById('current-year') || document.getElementById('footerYear');
       if (el) el.textContent = new Date().getFullYear();
     })();
-    // Ensure map initializes when 'Pin on Map' is already selected or toggled.
+
+    // Allow submissions only for authenticated users (server-driven guard)
+    var isLoggedIn = @((string.IsNullOrEmpty(username) ? "false" : "true"));
+
     document.addEventListener('DOMContentLoaded', () => {
       try {
-        const sel = document.querySelector('input[name="search-type"]:checked');
-        if (sel && sel.value === 'map' && typeof toggleLocationMethod === 'function') {
-          toggleLocationMethod(); // will initialize the map from report-concerns.js
+        if (!isLoggedIn) {
+          // Replace the report form with a login prompt
+          const form = document.querySelector('.report-form');
+          if (form) {
+            form.innerHTML = `
+              <div style="padding:24px;text-align:center">
+                <h3><i class="fas fa-user-lock"></i> Login required</h3>
+                <p>Please <a href="@Url.Action("Login","Home")">login</a> or <a href="@Url.Action("Register","Home")">register</a> to submit a report.</p>
+              </div>
+            `;
+          }
+          // Prevent accidental submits if script tries to submit
+          const btn = document.getElementById('btnSubmit'); if (btn) btn.disabled = true;
+        } else {
+          const sel = document.querySelector('input[name="search-type"]:checked');
+          if (sel && sel.value === 'map' && typeof toggleLocationMethod === 'function') {
+            toggleLocationMethod(); // will initialize the map from report-concerns.js
+          }
+          // Also watch for user toggles in case other code didn't bind yet
+          document.querySelectorAll('input[name="search-type"]').forEach(r => r.addEventListener('change', () => {
+            if (r.checked && r.value === 'map' && typeof toggleLocationMethod === 'function') toggleLocationMethod();
+          }));
         }
-        // Also watch for user toggles in case other code didn't bind yet
-        document.querySelectorAll('input[name="search-type"]').forEach(r => r.addEventListener('change', () => {
-          if (r.checked && r.value === 'map' && typeof toggleLocationMethod === 'function') toggleLocationMethod();
-        }));
       } catch (e) {
         console.warn('Map init shim error', e);
       }
