@@ -5,6 +5,7 @@ using WebApplication1.Repository;
 using WebApplication1.Services;
 using WebApplication1.ViewModel;
 using System;
+using System.IO;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -27,6 +28,37 @@ namespace WebApplication1.Controllers
             _aiService = aiService;
             _logger = logger;
         }
+
+    // GET /api/hoa-documents/{id} - metadata + file existence check (debug helper)
+    [HttpGet("hoa-documents/{id}")]
+    public async Task<IActionResult> GetDocumentMetadata(int id)
+    {
+        try
+        {
+            var d = await _repo.GetDocumentByIdAsync(id);
+            if (d == null) return NotFound(new { success = false, error = "Document metadata not found" });
+
+            var fileExists = false;
+            var physical = (string?)null;
+            if (!string.IsNullOrEmpty(d.FilePath))
+            {
+                try
+                {
+                    var relative = d.FilePath.TrimStart('/').Replace('/', Path.DirectorySeparatorChar);
+                    physical = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", relative);
+                    fileExists = System.IO.File.Exists(physical);
+                }
+                catch { }
+            }
+
+            return Ok(new { success = true, data = new { id = d.Id, name = d.Name, category = d.Category, filePath = d.FilePath, uploadedAt = d.UploadedAt, uploadedBy = d.UploadedBy }, fileExists, physicalPath = physical });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "GetDocumentMetadata {Id}", id);
+            return StatusCode(500, new { success = false, error = ex.Message });
+        }
+    }
 
         private async Task<(bool blocked, string? message)> GetCommunityExchangeBlockAsync(string? username)
         {
@@ -1321,7 +1353,35 @@ public class ContentApiController : ControllerBase
     [HttpGet("hoa-documents")]
     public async Task<IActionResult> GetDocuments()
     {
-        try { return Ok(new { success = true, data = await _repo.GetDocumentsAsync() }); }
+        try
+        {
+            var docs = await _repo.GetDocumentsAsync();
+            var enriched = docs.Select(d => {
+                var downloadUrl = (string?)null;
+                try
+                {
+                    if (!string.IsNullOrEmpty(d.FilePath))
+                    {
+                        var relative = d.FilePath.TrimStart('/').Replace('/', Path.DirectorySeparatorChar);
+                        var physical = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", relative);
+                        if (System.IO.File.Exists(physical))
+                            downloadUrl = $"/api/hoa-documents/{d.Id}/download";
+                    }
+                }
+                catch { }
+                return new {
+                    id = d.Id,
+                    name = d.Name,
+                    category = d.Category,
+                    filePath = d.FilePath,
+                    uploadedBy = d.UploadedBy,
+                    uploadedAt = d.UploadedAt,
+                    downloadUrl = downloadUrl
+                };
+            }).ToList();
+
+            return Ok(new { success = true, data = enriched });
+        }
         catch (Exception ex) { _logger.LogError(ex, "GetDocuments"); return StatusCode(500, new { success = false, error = ex.Message }); }
     }
 
@@ -1335,11 +1395,183 @@ public class ContentApiController : ControllerBase
         } catch (Exception ex) { _logger.LogError(ex, "CreateDocument"); return StatusCode(500, new { success = false, error = ex.Message }); }
     }
 
+    // POST /api/hoa-documents/upload - multipart file upload + metadata (staff only)
+    [HttpPost("hoa-documents/upload")]
+    [WebApplication1.Filters.UserTypeAuthorize(2, 3)]
+    public async Task<IActionResult> UploadDocument()
+    {
+        try
+        {
+            _logger.LogInformation("UploadDocument invoked. ContentType={ContentType} HasForm={HasForm}", Request.ContentType, Request.HasFormContentType);
+            var form = Request.Form;
+            var name = (form["name"].ToString() ?? string.Empty).Trim();
+            var category = (form["category"].ToString() ?? string.Empty).Trim();
+
+            var file = Request.Form.Files.FirstOrDefault();
+            if (file == null || file.Length == 0)
+            {
+                var filesCount = Request.Form.Files.Count;
+                _logger.LogWarning("UploadDocument: no file found in request. FilesCount={FilesCount}", filesCount);
+                return BadRequest(new { success = false, error = "No file provided.", details = new { contentType = Request.ContentType, hasForm = Request.HasFormContentType, filesCount = filesCount } });
+            }
+
+            const long maxFileSize = 10 * 1024 * 1024; // 10 MB
+            if (file.Length > maxFileSize)
+                return BadRequest(new { success = false, error = "File too large (max 10MB)." });
+
+            var permitted = new[] { ".pdf", ".doc", ".docx", ".jpg", ".jpeg", ".png" };
+            var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
+            if (string.IsNullOrEmpty(ext) || !permitted.Contains(ext))
+                return BadRequest(new { success = false, error = "Unsupported file type." });
+
+            var uploads = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "documents");
+            if (!Directory.Exists(uploads)) Directory.CreateDirectory(uploads);
+            var savedName = Guid.NewGuid().ToString() + ext;
+            var savedPath = Path.Combine(uploads, savedName);
+            using (var stream = System.IO.File.Create(savedPath))
+            {
+                await file.CopyToAsync(stream);
+            }
+
+            _logger.LogInformation("UploadDocument: saved file to {SavedPath} size={Size} originalName={Original}", savedPath, file.Length, file.FileName);
+
+            var publicPath = $"/uploads/documents/{savedName}";
+
+            var doc = new WebApplication1.Models.HoaDocument
+            {
+                Name = string.IsNullOrEmpty(name) ? Path.GetFileNameWithoutExtension(file.FileName) : name,
+                Category = string.IsNullOrEmpty(category) ? "General" : category,
+                FilePath = publicPath,
+                UploadedBy = HttpContext.Session.GetString("Username") ?? "Staff",
+                UploadedAt = DateTime.UtcNow
+            };
+
+            var created = await _repo.CreateDocumentAsync(doc);
+            // include downloadUrl in response so clients can immediately link to the saved file
+            var downloadUrl = $"/api/hoa-documents/{created.Id}/download";
+            _logger.LogInformation("UploadDocument: document record created Id={Id} FilePath={FilePath} UploadedBy={UploadedBy}", created.Id, created.FilePath, created.UploadedBy);
+            return Ok(new { success = true, data = created, downloadUrl = downloadUrl });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "UploadDocument");
+            return StatusCode(500, new { success = false, error = ex.Message });
+        }
+    }
+
+    // GET /api/hoa-documents/{id}/download - download physical file
+    [HttpGet("hoa-documents/{id}/download")]
+    public async Task<IActionResult> DownloadDocument(int id)
+    {
+        try
+        {
+            var doc = await _repo.GetDocumentByIdAsync(id);
+            if (doc == null)
+            {
+                _logger.LogWarning("DownloadDocument: metadata not found for id {Id}", id);
+                return NotFound(new { success = false, error = "Document metadata not found" });
+            }
+            string physical = null;
+            if (!string.IsNullOrEmpty(doc.FilePath))
+            {
+                var relative = doc.FilePath.TrimStart('/').Replace('/', Path.DirectorySeparatorChar);
+                physical = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", relative);
+                if (!System.IO.File.Exists(physical))
+                {
+                    _logger.LogWarning("DownloadDocument: physical file missing for id {Id} path {Path}", id, physical);
+                    physical = null;
+                }
+            }
+
+            // Fallback: if FilePath is null or the file is missing, attempt to find a matching file
+            if (physical == null)
+            {
+                try
+                {
+                    var uploads = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "documents");
+                    if (Directory.Exists(uploads))
+                    {
+                        // sanitize name for comparison
+                        var nameKey = (doc.Name ?? string.Empty).Trim();
+                        if (!string.IsNullOrEmpty(nameKey))
+                        {
+                            var files = Directory.EnumerateFiles(uploads);
+                            var match = files.FirstOrDefault(f => Path.GetFileNameWithoutExtension(f).IndexOf(nameKey, StringComparison.OrdinalIgnoreCase) >= 0);
+                            if (match == null)
+                            {
+                                // also try slugified comparison (replace spaces)
+                                var slug = nameKey.Replace(" ", "-").ToLowerInvariant();
+                                match = files.FirstOrDefault(f => Path.GetFileNameWithoutExtension(f).ToLowerInvariant().Contains(slug));
+                            }
+                            if (match != null)
+                            {
+                                physical = match;
+                                // update DB record so future requests use FilePath
+                                try
+                                {
+                                    var rel = physical.Substring(Path.Combine(Directory.GetCurrentDirectory(), "wwwroot").Length).Replace(Path.DirectorySeparatorChar, '/');
+                                    if (rel.StartsWith("/")) rel = rel.Substring(1);
+                                    doc.FilePath = "/" + rel;
+                                    await _repo.UpdateDocumentAsync(doc);
+                                    _logger.LogInformation("DownloadDocument: updated document {Id} FilePath to {FilePath}", id, doc.FilePath);
+                                }
+                                catch (Exception uex)
+                                {
+                                    _logger.LogWarning(uex, "DownloadDocument: failed to update FilePath for document {Id}", id);
+                                }
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "DownloadDocument: fallback search failed for id {Id}", id);
+                }
+            }
+
+            if (physical == null)
+            {
+                _logger.LogInformation("DownloadDocument: document {Id} has no FilePath and no fallback file found", id);
+                return NotFound(new { success = false, error = "No file uploaded for this document" });
+            }
+
+            // Try to determine content type
+            var provider = new Microsoft.AspNetCore.StaticFiles.FileExtensionContentTypeProvider();
+            if (!provider.TryGetContentType(physical, out var contentType))
+                contentType = "application/octet-stream";
+
+            var fileName = Path.GetFileNameWithoutExtension(physical);
+            var ext = Path.GetExtension(physical);
+            return PhysicalFile(physical, contentType, fileName + ext);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "DownloadDocument {Id}", id);
+            return StatusCode(500, new { success = false, error = ex.Message });
+        }
+    }
+
     [HttpDelete("hoa-documents/{id}")]
     [WebApplication1.Filters.UserTypeAuthorize(2, 3)]
     public async Task<IActionResult> DeleteDocument(int id)
     {
-        try { return Ok(new { success = await _repo.DeleteDocumentAsync(id) }); }
+        try {
+            var doc = await _repo.GetDocumentByIdAsync(id);
+            if (doc != null && !string.IsNullOrEmpty(doc.FilePath))
+            {
+                try
+                {
+                    var relative = doc.FilePath.TrimStart('/').Replace('/', Path.DirectorySeparatorChar);
+                    var physical = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", relative);
+                    if (System.IO.File.Exists(physical)) System.IO.File.Delete(physical);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to delete physical file for document {Id}", id);
+                }
+            }
+            var ok = await _repo.DeleteDocumentAsync(id);
+            return Ok(new { success = ok }); }
         catch (Exception ex) { _logger.LogError(ex, "DeleteDocument"); return StatusCode(500, new { success = false, error = ex.Message }); }
     }
 

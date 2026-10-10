@@ -4,6 +4,7 @@ using WebApplication1.Services;
 using WebApplication1.Models;
 using Microsoft.AspNetCore.Http;
 using System.Threading.Tasks;
+using System.IO;
 
 namespace WebApplication1.Controllers
 {
@@ -19,6 +20,8 @@ namespace WebApplication1.Controllers
             _aiService = aiService;
             _logger = logger;
         }
+
+        // Documents API moved to ContentApiController (api/hoa-documents) to avoid routing conflicts.
 
         private static bool IsWithinReservationHours(string startTime, string endTime)
         {

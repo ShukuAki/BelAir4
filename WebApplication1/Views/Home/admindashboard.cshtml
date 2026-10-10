@@ -19,6 +19,39 @@
       <span class="site-sub">Admin Control Panel</span>
     </div>
   </div>
+
+<!-- Create Staff Account -->
+<div class="modal-overlay" id="modal-createStaff">
+  <div class="modal">
+    <div class="modal-head"><h3><i class="fas fa-user-shield"></i> Create Staff Account</h3><button class="modal-close" onclick="closeModal('createStaff')"><i class="fas fa-times"></i></button></div>
+    <div class="form-row">
+      <div class="form-group"><label>Full Name</label><input type="text" id="create-name" placeholder="Full name"></div>
+      <div class="form-group"><label>Email Address</label><input type="email" id="create-email" placeholder="staff@lba4.com"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Phone Number</label><input type="tel" id="create-phone" placeholder="09XXXXXXXXX"></div>
+      <div class="form-group"><label>Role</label>
+        <select id="create-role">
+          <option value="1">Admin</option>
+          <option value="2" selected>Staff</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Username</label><input type="text" id="create-username" placeholder="Login username"></div>
+      <div class="form-group"><label>Password</label><input type="password" id="create-password" placeholder="Login password"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Active</label>
+        <label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="create-isactive" checked> Account Active</label>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('createStaff')">Cancel</button>
+      <button class="btn btn-primary" onclick="createStaffAccount()"><i class="fas fa-plus"></i> Create Staff Account</button>
+    </div>
+  </div>
+</div>
   <div class="sb-user">
     <div class="sb-avatar admin-av">A</div>
     <div class="sb-user-info">
@@ -40,12 +73,12 @@
     <div class="nav-group-label">System Configuration</div>
     <div class="nav-link" onclick="showPage('appsettings',this)"><i class="fas fa-sliders-h"></i> App Settings</div>
     <div class="nav-link" onclick="showPage('wordbank',this)"><i class="fas fa-brain"></i> Word Bank Config</div>
-    <div class="nav-link" onclick="showPage('integrations',this)"><i class="fas fa-plug"></i> Integrations</div>
+@*     <div class="nav-link" onclick="showPage('integrations',this)"><i class="fas fa-plug"></i> Integrations</div> *@
 
-    <div class="nav-group-label">Data</div>
+    @* <div class="nav-group-label">Data</div>
     <div class="nav-link" onclick="showPage('dataexport',this)"><i class="fas fa-file-export"></i> Data Export</div>
     <div class="nav-link" onclick="showPage('backups',this)"><i class="fas fa-database"></i> Backups</div>
-
+ *@
     <div class="nav-group-label">Navigate</div>
     <a asp-controller="Home" asp-action="staffDashboard" class="nav-link staff-switch-link" style="text-decoration:none;color:white">
       <i class="fas fa-arrow-left"></i> Staff Dashboard
@@ -177,7 +210,7 @@
           <div class="qa-item" onclick="showPage('backups',document.querySelector('[onclick*=backups]'))"><div class="qa-emoji">💾</div><div class="qa-label">Backup Now</div><div class="qa-sub">Manual backup</div></div>
           <div class="qa-item" onclick="showPage('roles',document.querySelector('[onclick*=roles]'))"><div class="qa-emoji">🔑</div><div class="qa-label">Permissions</div><div class="qa-sub">Role config</div></div>
           <div class="qa-item" onclick="showPage('auditlog',document.querySelector('[onclick*=auditlog]'))"><div class="qa-emoji">📋</div><div class="qa-label">Audit Log</div><div class="qa-sub">Full history</div></div>
-          <div class="qa-item" onclick="showPage('appsettings',document.querySelector('[onclick*=appsettings]'))"><div class="qa-emoji">⚙️</div><div class="qa-label">App Config</div><div class="qa-sub">System settings</div></div>
+          @* <div class="qa-item" onclick="showPage('appsettings',document.querySelector('[onclick*=appsettings]'))"><div class="qa-emoji">⚙️</div><div class="qa-label">App Config</div><div class="qa-sub">System settings</div></div> *@
         </div>
       </div>
     </div>
@@ -214,7 +247,10 @@
   <!-- STAFF ACCOUNTS -->
   <div class="page" id="page-staffaccounts">
     <div class="sec-header"><h2><i class="fas fa-users-cog"></i> Staff Account Management</h2>
-      <button class="btn btn-primary" onclick="openModal('inviteStaff')"><i class="fas fa-user-plus"></i> Invite Staff</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-outline" onclick="openModal('createStaff')"><i class="fas fa-user-shield"></i> Create Staff Account</button>
+        <button class="btn btn-primary" onclick="openModal('inviteStaff')"><i class="fas fa-user-plus"></i> Invite Staff</button>
+      </div>
     </div>
     <div class="card" style="margin-bottom:18px">
       <div class="card-header"><h3><i class="fas fa-user-clock"></i> Pending Invitations <span id="pending-invites-count">(0)</span></h3></div>
@@ -368,7 +404,7 @@
     </div>
   </div>
 
-  <!-- INTEGRATIONS -->
+ @*  <!-- INTEGRATIONS -->
   <div class="page" id="page-integrations">
     <div class="sec-header"><h2><i class="fas fa-plug"></i> Third-Party Integrations</h2></div>
     <div class="info-banner"><i class="fas fa-info-circle"></i> Manage external services connected to the platform.</div>
@@ -390,9 +426,9 @@
         </div>
       </div>
     </div>
-  </div>
+  </div> *@
 
-  <!-- DATA EXPORT -->
+  @* <!-- DATA EXPORT -->
   <div class="page" id="page-dataexport">
     <div class="sec-header"><h2><i class="fas fa-file-export"></i> Data Export</h2></div>
     <div class="info-banner"><i class="fas fa-lock"></i> <strong>Admin Only.</strong> All exports are logged in the audit trail with your account name, timestamp, and IP address.</div>
@@ -439,7 +475,7 @@
         </tbody></table></div>
       </div>
     </div>
-  </div>
+  </div> *@
 
   <!-- BACKUPS -->
   <div class="page" id="page-backups">
@@ -659,6 +695,6 @@
   </div>
 </div>
 
-<script src="~/js/admin-dashboard.js"></script>
+<script src="~/js/admin-dashboard.js" asp-append-version="true"></script>
 </body>
 </html>

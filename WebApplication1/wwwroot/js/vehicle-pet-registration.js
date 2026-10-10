@@ -83,12 +83,19 @@ function loadSampleData() {
         });
         renderVehiclesList();
     }
-
+}
 // Load from server
 async function loadVehiclesFromServer() {
     try {
         const response = await PageCoordinator.api.get('/api/registrations/vehicles');
-        registeredVehicles = (response.data || []).map(adaptVehicle);
+        // API may return an array directly or a wrapper { data: [...] }
+        const payload = (response && response.data) ? response.data : response;
+        if (Array.isArray(payload)) {
+            registeredVehicles = payload.map(adaptVehicle);
+        } else {
+            // If the response is a single object, wrap it
+            registeredVehicles = payload ? [adaptVehicle(payload)] : [];
+        }
     } catch (e) {
         console.warn('Could not load vehicles from server.', e);
     }
@@ -97,7 +104,12 @@ async function loadVehiclesFromServer() {
 async function loadPetsFromServer() {
     try {
         const response = await PageCoordinator.api.get('/api/registrations/pets');
-        registeredPets = (response.data || []).map(adaptPet);
+        const payload = (response && response.data) ? response.data : response;
+        if (Array.isArray(payload)) {
+            registeredPets = payload.map(adaptPet);
+        } else {
+            registeredPets = payload ? [adaptPet(payload)] : [];
+        }
     } catch (e) {
         console.warn('Could not load pets from server.', e);
     }
@@ -123,6 +135,7 @@ function adaptVehicle(s) {
         registeredDate: s.registeredDate || s.RegisteredDate || ''
     };
 
+}
 
 function adaptPet(s) {
     return {
@@ -142,7 +155,7 @@ function adaptPet(s) {
         ownerName: s.ownerName || s.OwnerName || '',
         registeredDate: s.registeredDate || s.RegisteredDate || ''
     };
-
+}
 
 // ========================================
 // MOBILE DROPDOWN TOGGLE SUPPORT (added)
@@ -287,9 +300,9 @@ function setupFormSubmissions() {
     // Vehicle Form
     const vehicleForm = document.getElementById('vehicleForm');
     if (vehicleForm) {
-        vehicleForm.addEventListener('submit', (e) => {
+        vehicleForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            
+
             const vehicleData = {
                 id: Date.now(),
                 type: document.getElementById('vehicleType')?.value || '',
@@ -329,9 +342,10 @@ function setupFormSubmissions() {
                     ownerName: vehicleData.ownerName,
                     registeredDate: vehicleData.registeredDate
                 });
-                // replace local temp entry id with server id
+                // API may return the created object or a wrapper; normalize
+                const created = (response && response.data) ? response.data : response;
                 const idx = registeredVehicles.findIndex(v => v.id === vehicleData.id);
-                if (idx !== -1 && response.id) registeredVehicles[idx].id = response.id;
+                if (idx !== -1 && created && (created.id || created.Id)) registeredVehicles[idx].id = created.id || created.Id;
             } catch (err) {
                 console.error('Save vehicle exception', err);
                 showNotification('Failed to save vehicle to server', 'error');
@@ -362,9 +376,9 @@ function setupFormSubmissions() {
     // Pet Form
     const petForm = document.getElementById('petForm');
     if (petForm) {
-        petForm.addEventListener('submit', (e) => {
+        petForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            
+
             const petData = {
                 id: Date.now(),
                 type: document.getElementById('petType')?.value || '',
@@ -402,8 +416,9 @@ function setupFormSubmissions() {
                     ownerName: petData.ownerName,
                     registeredDate: petData.registeredDate
                 });
+                const created = (response && response.data) ? response.data : response;
                 const idx = registeredPets.findIndex(p => p.id === petData.id);
-                if (idx !== -1 && response.id) registeredPets[idx].id = response.id;
+                if (idx !== -1 && created && (created.id || created.Id)) registeredPets[idx].id = created.id || created.Id;
             } catch (err) {
                 console.error('Save pet exception', err);
                 showNotification('Failed to save pet to server', 'error');

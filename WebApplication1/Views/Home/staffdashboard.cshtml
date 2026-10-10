@@ -43,6 +43,7 @@
     <div class="nav-link" onclick="showPage('exchange',this)"><i class="fas fa-store"></i> Community Exchange<span class="nav-badge yellow" id="badge-exchange">5</span></div>
     <div class="nav-group-label">Approvals</div>
     <div class="nav-link" onclick="showPage('residents',this)"><i class="fas fa-home"></i> Residents &amp; Verification<span class="nav-badge" id="badge-verif">0</span></div>
+    <a asp-controller="Home" asp-action="vehiclePetRegistration" class="nav-link" style="text-decoration:none;color:white"><i class="fas fa-car-side"></i> Vehicle &amp; Pet Registration</a>
 
     <div class="nav-link" onclick="showPage('forums',this)"><i class="fas fa-comments"></i> Usap Tayo sa HOA<span class="nav-badge yellow" id="badge-forums">0</span></div>
     <div class="nav-link" onclick="showPage('reservations',this)"><i class="fas fa-calendar-check"></i> Reservations<span class="nav-badge yellow" id="badge-reservations">0</span></div>
@@ -50,14 +51,14 @@
     <div class="nav-link" onclick="showPage('announcements',this)"><i class="fas fa-bullhorn"></i> Announcements</div>
     <div class="nav-link" onclick="showPage('events',this)"><i class="fas fa-calendar-alt"></i> Events / Calendar</div>
     <div class="nav-link" onclick="showPage('bods',this)"><i class="fas fa-users"></i> Committees &amp; BODs</div>
-    <div class="nav-link" onclick="showPage('meetings',this)"><i class="fas fa-clipboard-list"></i> Meeting Records</div>
+@*     <div class="nav-link" onclick="showPage('meetings',this)"><i class="fas fa-clipboard-list"></i> Meeting Records</div> *@
     <div class="nav-link" onclick="showPage('documents',this)"><i class="fas fa-file-alt"></i> Forms &amp; Documents</div>
-    <div class="nav-link" onclick="showPage('contacts',this)"><i class="fas fa-phone-alt"></i> Contacts</div>
+    @* <div class="nav-link" onclick="showPage('contacts',this)"><i class="fas fa-phone-alt"></i> Contacts</div> *@
     <div class="nav-group-label">Tools</div>
     <div class="nav-link" onclick="showPage('communitymap',this)"><i class="fas fa-map-marked-alt"></i> Community Map</div> 
     <div class="nav-link" onclick="showPage('wordbank',this)"><i class="fas fa-brain"></i> Word Bank</div>
      <div class="nav-link" onclick="showPage('reports',this)"><i class="fas fa-chart-bar"></i> Reports</div>
-    <div class="nav-link" onclick="showPage('subscribers',this)"><i class="fas fa-bell"></i> Subscribers</div>
+    @* <div class="nav-link" onclick="showPage('subscribers',this)"><i class="fas fa-bell"></i> Subscribers</div> *@
     @if (_sessionType >= 3)
     {
     <div class="nav-group-label">Navigate</div>
@@ -102,6 +103,10 @@
       <div class="card-header"><h3><i class="fas fa-exclamation-triangle"></i> Recent Incident Reports</h3><button class="see-all" onclick="showPage('incidents',null)">View All</button></div>
       <div class="scroll-y" id="overview-incidents-list"><div class="empty-state-inline"><i class="fas fa-inbox"></i><span>No incident reports yet</span></div></div>
     </div>
+    <div class="card">
+      <div class="card-header"><h3><i class="fas fa-car"></i> Recent Vehicles</h3><button class="see-all" onclick="showPage('vehicles',null)">Manage</button></div>
+      <div class="scroll-y" id="overview-vehicles-list"><div class="empty-state-inline"><i class="fas fa-car"></i><span>Loading vehicles...</span></div></div>
+    </div>
     <div class="flex-col gap-18">
       <div class="card">
         <div class="card-header"><h3><i class="fas fa-history"></i> Recent Activity</h3></div>
@@ -117,6 +122,12 @@
         </div>
       </div>
     </div>
+  <div class="grid-3" style="margin-top:12px">
+    <div class="card">
+      <div class="card-header"><h3><i class="fas fa-paw"></i> Recent Pets</h3></div>
+      <div class="scroll-y" id="overview-pets-list"><div class="empty-state-inline"><i class="fas fa-paw"></i><span>Loading pets...</span></div></div>
+    </div>
+  </div>
   </div>
   <div class="grid-3">
     <div class="card">
@@ -376,14 +387,14 @@
   </div>
 </div>
 
-<!-- ═══════ MEETING RECORDS ═══════ -->
+@* <!-- ═══════ MEETING RECORDS ═══════ -->
 <div class="page" id="page-meetings">
   <div class="sec-header"><h2><i class="fas fa-clipboard-list"></i> Meeting Records &amp; Governance</h2><button class="btn btn-primary" onclick="openModal('addMeeting')"><i class="fas fa-plus"></i> Upload Record</button></div>
   <div class="card"><div class="card-header"><h3><i class="fas fa-file-alt"></i> Meeting Records</h3></div>
   <div class="tbl-wrap"><table><thead><tr><th>Title</th><th>Date</th><th>Type</th><th>File</th><th>Actions</th></tr></thead><tbody id="meetings-tbody">
     <tr><td colspan="5" style="text-align:center;padding:24px"><i class="fas fa-spinner fa-spin"></i> Loading meeting records...</td></tr>
   </tbody></table></div></div>
-</div>
+</div> *@
 
 <!-- ═══════ FORMS & DOCUMENTS ═══════ -->
 <div class="page" id="page-documents">
@@ -394,14 +405,14 @@
   </tbody></table></div></div>
 </div>
 
-<!-- ═══════ CONTACTS ═══════ -->
+@* <!-- ═══════ CONTACTS ═══════ -->
 <div class="page" id="page-contacts">
   <div class="sec-header"><h2><i class="fas fa-phone-alt"></i> Contacts Management</h2><button class="btn btn-primary" onclick="openModal('addContact')"><i class="fas fa-plus"></i> Add Contact</button></div>
   <div class="card"><div class="card-header"><h3><i class="fas fa-address-book"></i> Directory</h3></div>
   <div class="tbl-wrap"><table><thead><tr><th>Name / Office</th><th>Role</th><th>Phone</th><th>Email</th><th>Actions</th></tr></thead><tbody id="contacts-tbody">
     <tr><td colspan="5" style="text-align:center;padding:24px"><i class="fas fa-spinner fa-spin"></i> Loading contacts...</td></tr>
   </tbody></table></div></div>
-</div>
+</div> *@
 
 <!-- ═══════ COMMUNITY MAP ═══════ -->
 <div class="page" id="page-communitymap">
@@ -481,7 +492,7 @@
   </div>
 </div>
 
-<!-- ═══════ REPORTS ═══════ -->
+@* <!-- ═══════ REPORTS ═══════ -->
 <div class="page" id="page-reports">
   <div class="sec-header"><h2><i class="fas fa-chart-bar"></i> Reports &amp; Analytics</h2><button class="btn btn-primary"><i class="fas fa-download"></i> Export</button></div>
   <div class="stats-row">
@@ -490,9 +501,9 @@
     <div class="stat-card"><div class="stat-icon si-blue"><i class="fas fa-store"></i></div><div class="stat-info"><div class="stat-val" id="rep-exchange-posts">—</div><div class="stat-label">Exchange Posts (This Month)</div><div class="stat-sub" id="rep-exchange-sub"></div></div></div>
     <div class="stat-card"><div class="stat-icon si-yellow"><i class="fas fa-users"></i></div><div class="stat-info"><div class="stat-val" id="rep-verified-residents">—</div><div class="stat-label">Verified Residents</div><div class="stat-sub" id="rep-verified-sub"></div></div></div>
   </div>
-</div>
+</div> *@
 
-<!-- ═══════ SUBSCRIBERS ═══════ -->
+@* <!-- ═══════ SUBSCRIBERS ═══════ -->
 <div class="page" id="page-subscribers">
   <div class="sec-header"><h2><i class="fas fa-bell"></i> Notification Subscribers</h2></div>
   <div class="stats-row">
@@ -506,7 +517,7 @@
       <tr><td colspan="5" style="text-align:center;padding:24px"><i class="fas fa-spinner fa-spin"></i> Loading subscribers...</td></tr>
     </tbody></table></div>
   </div>
-</div>
+</div> *@
 
 
 </main>

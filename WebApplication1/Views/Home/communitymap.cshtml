@@ -71,7 +71,7 @@
             <a asp-controller="Home" asp-action="forums">Forums / Discussions</a>
             <a asp-controller="Home" asp-action="advertisements">Community Exchange</a>
             <a asp-controller="Home" asp-action="calendars">Calendars</a>
-            <a asp-controller="Home" asp-action="meetingAgendas">Meeting Records</a>
+            @*<a asp-controller="Home" asp-action="meetingAgendas">Meeting Records</a>*@
             <a asp-controller="Home" asp-action="communityMap" class="active">Community Map</a>
           </div>
         </div>
@@ -84,6 +84,7 @@
             }
             <a asp-controller="Home" asp-action="reserve">Reserve Amenities</a>
             <a asp-controller="Home" asp-action="reportConcerns">Report an Issue</a>
+            <a asp-controller="Home" asp-action="vehiclePetRegistration">Vehicle &amp; Pet Registration</a>
           </div>
         </div>
         <div class="dropdown">
@@ -154,21 +155,12 @@
               <span>Landmarks</span>
             </span>
           </label>
+          <!-- Status Colors removed for guest view as requested -->
           <div class="layers-divider"></div>
-          <div class="layers-status-key">
-            <div class="layers-key-title">Status Colors</div>
-            <div class="layers-key-row"><span class="layers-key-dot" style="background:#f9a825"></span>Pending</div>
-            <div class="layers-key-row"><span class="layers-key-dot" style="background:#1a5fa8"></span>In Progress</div>
-            <div class="layers-key-row"><span class="layers-key-dot" style="background:#5aaa4f"></span>Resolved</div>
-            <div class="layers-key-row"><span class="layers-key-dot" style="background:#9e9a94"></span>Planned</div>
-            <div class="layers-key-row"><span class="layers-key-dot" style="background:#c0621a"></span>Ongoing</div>
-            <div class="layers-key-row"><span class="layers-key-dot" style="background:#5aaa4f"></span>Completed</div>
-          </div>
-          <div class="layers-divider"></div>
-          <div class="layers-status-key">
+          @* <div class="layers-status-key">
             <div class="layers-key-title">Incident Heat</div>
             <div class="layers-key-row"><span class="layers-key-circle"></span>Reported incident area</div>
-          </div>
+          </div> *@
           <div class="layers-divider"></div>
           <div class="map-live-badge-panel">
             <span class="live-dot"></span> Live Data

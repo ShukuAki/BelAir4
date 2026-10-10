@@ -78,7 +78,7 @@
                             <a asp-controller="Home" asp-action="forums">Forums/Discussions</a>
                             <a asp-controller="Home" asp-action="advertisements">Community Exchange</a>
                             <a asp-controller="Home" asp-action="calendars">Calendars</a>
-                            <a asp-controller="Home" asp-action="meetingagendas">Meeting Record/Governance</a>
+                            @*<a asp-controller="Home" asp-action="meetingagendas">Meeting Record/Governance</a>*@
                             <a asp-controller="Home" asp-action="communitymap">Community Map</a>
                         </div>
                     </div>
@@ -87,6 +87,7 @@
                         <div class="dropdown-menu">
                              <a asp-controller="Home" asp-action="reserve">Reserve Amenities</a>
                             <a asp-controller="Home" asp-action="reportConcerns">Report Concerns/Incidents</a>
+                            <a asp-controller="Home" asp-action="vehiclePetRegistration">Vehicle &amp; Pet Registration</a>
                         </div>
                     </div>
                     <div class="dropdown">
@@ -416,181 +417,26 @@
         </footer>
   <script src="~/js/report-concerns.js"></script>
   <script>
-    // Set current year in footer
-    const footerYearSpan = document.getElementById('footerYear');
-    if (footerYearSpan) footerYearSpan.textContent = new Date().getFullYear();
-    // Mobile dropdown toggle support
-    document.querySelectorAll('.dropdown').forEach(dropdown => {
-      const toggle = dropdown.querySelector('.dropdown-toggle');
-      if (!toggle) return;
-      toggle.addEventListener('click', (e) => {
-        e.preventDefault();
-        const isOpen = dropdown.classList.contains('dropdown-open');
-        document.querySelectorAll('.dropdown').forEach(d => d.classList.remove('dropdown-open'));
-        if (!isOpen) dropdown.classList.add('dropdown-open');
-      });
-    });
-    document.addEventListener('click', (e) => {
-      document.querySelectorAll('.dropdown').forEach(d => {
-        if (!d.contains(e.target)) d.classList.remove('dropdown-open');
-      });
-    });
-
-    // Handle form submission
-    document.getElementById('reportForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const btnSubmit = document.getElementById('btnSubmit');
-      const btnText = btnSubmit.querySelector('.btn-submit-text');
-      const btnLoading = btnSubmit.querySelector('.btn-submit-loading');
-
+    // Small shim: ensure footer year is set (some pages use 'current-year' id)
+    (function(){
+      const el = document.getElementById('current-year') || document.getElementById('footerYear');
+      if (el) el.textContent = new Date().getFullYear();
+    })();
+    // Ensure map initializes when 'Pin on Map' is already selected or toggled.
+    document.addEventListener('DOMContentLoaded', () => {
       try {
-        btnSubmit.disabled = true;
-        btnText.style.display = 'none';
-        btnLoading.style.display = 'block';
-
-        const formData = new FormData(document.getElementById('reportForm'));
-
-        // Include file if present
-        const photoInput = document.getElementById('f-photo');
-        if (photoInput.files.length > 0) {
-          formData.set('photo', photoInput.files[0]);
+        const sel = document.querySelector('input[name="search-type"]:checked');
+        if (sel && sel.value === 'map' && typeof toggleLocationMethod === 'function') {
+          toggleLocationMethod(); // will initialize the map from report-concerns.js
         }
-
-        const response = await fetch('/api/concerns/report', {
-          method: 'POST',
-          body: formData
-        });
-
-        const result = await response.json();
-
-        if (result.success) {
-          // Show success modal with reference
-          document.getElementById('modalRef').textContent = result.reference;
-          document.getElementById('successModal').style.display = 'flex';
-        } else {
-          alert('Error: ' + (result.error || 'Failed to submit report'));
-        }
-      } catch (error) {
-        console.error('Error:', error);
-        alert('Error submitting report: ' + error.message);
-      } finally {
-        btnSubmit.disabled = false;
-        btnText.style.display = 'block';
-        btnLoading.style.display = 'none';
+        // Also watch for user toggles in case other code didn't bind yet
+        document.querySelectorAll('input[name="search-type"]').forEach(r => r.addEventListener('change', () => {
+          if (r.checked && r.value === 'map' && typeof toggleLocationMethod === 'function') toggleLocationMethod();
+        }));
+      } catch (e) {
+        console.warn('Map init shim error', e);
       }
     });
-
-    function closeModal() {
-      document.getElementById('successModal').style.display = 'none';
-      document.getElementById('reportForm').reset();
-      document.getElementById('uploadIdle').style.display = 'block';
-      document.getElementById('uploadPreview').style.display = 'none';
-    }
-
-    // Character counter
-    const descField = document.getElementById('f-description');
-    if (descField) {
-      descField.addEventListener('input', () => {
-        document.getElementById('char-count').textContent = descField.value.length;
-      });
-    }
-
-    // Enable submit button when confirm is checked
-    const confirmCheckbox = document.getElementById('f-confirm');
-    const submitBtn = document.getElementById('btnSubmit');
-    if (confirmCheckbox && submitBtn) {
-      confirmCheckbox.addEventListener('change', () => {
-        submitBtn.disabled = !confirmCheckbox.checked;
-      });
-    }
-
-    // Toggle reporter section based on anonymous checkbox
-    const anonymousCheckbox = document.getElementById('f-anonymous');
-    const reporterSection = document.getElementById('reporterSection');
-    if (anonymousCheckbox && reporterSection) {
-      anonymousCheckbox.addEventListener('change', () => {
-        reporterSection.style.display = anonymousCheckbox.checked ? 'none' : 'block';
-      });
-      // Set initial state
-      reporterSection.style.display = anonymousCheckbox.checked ? 'none' : 'block';
-    }
-
-    // Location method toggle
-    function toggleLocationMethod() {
-      const searchType = document.querySelector('input[name="search-type"]:checked').value;
-      const addressFields = document.getElementById('address-fields');
-      const mapContainer = document.getElementById('map-container');
-
-      if (searchType === 'address') {
-        addressFields.style.display = 'block';
-        mapContainer.style.display = 'none';
-      } else {
-        addressFields.style.display = 'none';
-        mapContainer.style.display = 'block';
-        // Initialize map if not already done
-        if (!window.mapInitialized) {
-          initializeMap();
-        }
-      }
-    }
-
-    // Photo upload handling
-    const uploadZone = document.getElementById('uploadZone');
-    const fileInput = document.getElementById('f-photo');
-    const uploadIdle = document.getElementById('uploadIdle');
-    const uploadPreview = document.getElementById('uploadPreview');
-    const previewImg = document.getElementById('previewImg');
-    const removePhotoBtn = document.getElementById('removePhoto');
-
-    if (uploadZone) {
-      uploadZone.addEventListener('click', () => fileInput.click());
-      uploadZone.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        uploadZone.style.borderColor = '#1a73e8';
-      });
-      uploadZone.addEventListener('dragleave', () => {
-        uploadZone.style.borderColor = '#ddd';
-      });
-      uploadZone.addEventListener('drop', (e) => {
-        e.preventDefault();
-        uploadZone.style.borderColor = '#ddd';
-        if (e.dataTransfer.files.length > 0) {
-          fileInput.files = e.dataTransfer.files;
-          handleFileSelect();
-        }
-      });
-    }
-
-    if (fileInput) {
-      fileInput.addEventListener('change', handleFileSelect);
-    }
-
-    function handleFileSelect() {
-      if (fileInput.files.length > 0) {
-        const file = fileInput.files[0];
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          previewImg.src = e.target.result;
-          uploadIdle.style.display = 'none';
-          uploadPreview.style.display = 'block';
-        };
-        reader.readAsDataURL(file);
-      }
-    }
-
-    if (removePhotoBtn) {
-      removePhotoBtn.addEventListener('click', () => {
-        fileInput.value = '';
-        uploadIdle.style.display = 'block';
-        uploadPreview.style.display = 'none';
-      });
-    }
-
-    // Simple map initialization (stub for Leaflet integration)
-    function initializeMap() {
-      window.mapInitialized = true;
-      // Map will be initialized by the external report-concerns.js if Leaflet is available
-    }
   </script>
 </body>
 </html>

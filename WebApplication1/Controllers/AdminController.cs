@@ -72,7 +72,26 @@ namespace WebApplication1.Controllers
                 var staff = await _repo.GetAdminUserByIdAsync(id);
                 if (staff is null)
                     return NotFound(new { error = "Staff not found" });
-                return Ok(staff);
+
+                var staffDto = new
+                {
+                    staff.Id,
+                    staff.Name,
+                    staff.Email,
+                    staff.PhoneNumber,
+                    staff.RoleId,
+                    RoleName = staff.Role?.Name,
+                    staff.IsActive,
+                    staff.CreatedAt,
+                    staff.LastLoginAt,
+                    staff.IPAddress,
+                    staff.Status,
+                    staff.IsSuspended,
+                    staff.SuspendedUntil,
+                    staff.SuspensionReason
+                };
+
+                return Ok(staffDto);
             }
             catch (Exception ex)
             {
@@ -89,13 +108,118 @@ namespace WebApplication1.Controllers
                 if (!ModelState.IsValid)
                     return BadRequest(ModelState);
 
+                // Basic validation
+                if (string.IsNullOrWhiteSpace(adminUser.Email) || string.IsNullOrWhiteSpace(adminUser.Name))
+                    return BadRequest(new { error = "Name and Email are required." });
+
+                var existing = await _repo.GetAdminUserByEmailAsync(adminUser.Email);
+                if (existing != null)
+                    return Conflict(new { error = "An admin user with that email already exists." });
+
+                adminUser.CreatedAt = DateTime.UtcNow;
                 var created = await _repo.CreateAdminUserAsync(adminUser);
-                return CreatedAtAction(nameof(GetStaffById), new { id = created.Id }, created);
+                return CreatedAtAction(nameof(GetStaffById), new { id = created.Id }, new
+                {
+                    created.Id,
+                    created.Name,
+                    created.Email,
+                    created.PhoneNumber,
+                    created.RoleId,
+                    created.IsActive,
+                    created.CreatedAt,
+                    created.Status
+                });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error creating staff");
                 return BadRequest(new { error = "Failed to create staff" });
+            }
+        }
+
+        public class CreateStaffAccountRequest
+        {
+            public string Name { get; set; } = null!;
+            public string Email { get; set; } = null!;
+            public string? PhoneNumber { get; set; }
+            public int RoleId { get; set; }
+            public bool IsActive { get; set; } = true;
+            public string Username { get; set; } = null!;
+            public string Password { get; set; } = null!;
+        }
+
+        // Creates a full staff account: a login-capable UserAccount plus the
+        // AdminUser management record, so the new staff member can sign in immediately.
+        [HttpPost("staff/register")]
+        public async Task<IActionResult> RegisterStaffAccount([FromBody] CreateStaffAccountRequest request)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(request.Name) || string.IsNullOrWhiteSpace(request.Email))
+                    return BadRequest(new { error = "Name and Email are required." });
+
+                if (string.IsNullOrWhiteSpace(request.Username) || string.IsNullOrWhiteSpace(request.Password))
+                    return BadRequest(new { error = "Username and Password are required." });
+
+                var existingAdmin = await _repo.GetAdminUserByEmailAsync(request.Email);
+                if (existingAdmin != null)
+                    return Conflict(new { error = "An admin user with that email already exists." });
+
+                var existingLogin = await _repo.GetByUsernameAsync(request.Username);
+                if (existingLogin != null)
+                    return Conflict(new { error = "That username is already taken." });
+
+                // RoleId 1 = Admin, anything else = Staff login type 2.
+                var userAccount = new UserAccount
+                {
+                    Username = request.Username,
+                    Password = request.Password,
+                    Type = request.RoleId == 1 ? 3 : 2
+                };
+                var createdAccount = await _repo.CreateAsync(userAccount);
+
+                var adminUser = new AdminUser
+                {
+                    Name = request.Name,
+                    Email = request.Email,
+                    PhoneNumber = request.PhoneNumber,
+                    RoleId = request.RoleId,
+                    IsActive = request.IsActive,
+                    CreatedAt = DateTime.UtcNow
+                };
+                var createdAdmin = await _repo.CreateAdminUserAsync(adminUser);
+
+                await _repo.LogAuditActionAsync(new AuditLog
+                {
+                    AdminUserId = createdAdmin.Id,
+                    Action = "Created Staff Account",
+                    ActionCategory = "System",
+                    TargetEntity = "AdminUser",
+                    TargetEntityId = createdAdmin.Id.ToString(),
+                    IPAddress = GetClientIpAddress(),
+                    Timestamp = DateTime.UtcNow
+                });
+
+                return CreatedAtAction(nameof(GetStaffById), new { id = createdAdmin.Id }, new
+                {
+                    adminUser = new
+                    {
+                        createdAdmin.Id,
+                        createdAdmin.Name,
+                        createdAdmin.Email,
+                        createdAdmin.PhoneNumber,
+                        createdAdmin.RoleId,
+                        createdAdmin.IsActive,
+                        createdAdmin.CreatedAt,
+                        createdAdmin.Status
+                    },
+                    username = createdAccount.Username
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error registering staff account");
+                return BadRequest(new { error = "Failed to register staff account" });
             }
         }
 
@@ -138,6 +262,24 @@ namespace WebApplication1.Controllers
 
         #region Audit Log
 
+        private static object ToAuditLogDto(AuditLog log) => new
+        {
+            log.Id,
+            log.AdminUserId,
+            AdminUserName = log.AdminUser?.Name,
+            log.Action,
+            log.ActionCategory,
+            log.TargetEntity,
+            log.TargetEntityId,
+            log.OldValue,
+            log.NewValue,
+            log.Timestamp,
+            log.IPAddress,
+            log.UserAgent,
+            log.Outcome,
+            log.Notes
+        };
+
         [HttpGet("audit-log")]
         public async Task<IActionResult> GetAuditLog(
             [FromQuery] int? adminUserId = null,
@@ -147,7 +289,7 @@ namespace WebApplication1.Controllers
             try
             {
                 var logs = await _repo.GetAuditLogsAsync(adminUserId, fromDate, toDate);
-                return Ok(logs);
+                return Ok(logs.Select(ToAuditLogDto));
             }
             catch (Exception ex)
             {
@@ -162,7 +304,7 @@ namespace WebApplication1.Controllers
             try
             {
                 var logs = await _repo.GetAuditLogsByCategoryAsync(category);
-                return Ok(logs);
+                return Ok(logs.Select(ToAuditLogDto));
             }
             catch (Exception ex)
             {
@@ -183,7 +325,7 @@ namespace WebApplication1.Controllers
                 auditLog.UserAgent = HttpContext.Request.Headers["User-Agent"].ToString();
 
                 var created = await _repo.LogAuditActionAsync(auditLog);
-                return Ok(created);
+                return Ok(ToAuditLogDto(created));
             }
             catch (Exception ex)
             {

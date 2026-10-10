@@ -94,6 +94,7 @@ namespace WebApplication1.Repository
         Task<bool> DeleteMeetingRecordAsync(int id);
         // Documents
         Task<List<HoaDocument>> GetDocumentsAsync();
+        Task<HoaDocument?> GetDocumentByIdAsync(int id);
         Task<HoaDocument> CreateDocumentAsync(HoaDocument d);
         Task<bool> UpdateDocumentAsync(HoaDocument d);
         Task<bool> DeleteDocumentAsync(int id);
@@ -961,6 +962,9 @@ namespace WebApplication1.Repository
         // ── Documents ─────────────────────────────────────────────
         public async Task<List<HoaDocument>> GetDocumentsAsync() =>
             await _db.HoaDocuments.AsNoTracking().OrderBy(d => d.Name).ToListAsync();
+
+        public async Task<HoaDocument?> GetDocumentByIdAsync(int id) =>
+            await _db.HoaDocuments.FindAsync(id);
 
         public async Task<HoaDocument> CreateDocumentAsync(HoaDocument d)
         { d.UploadedAt = DateTime.UtcNow; _db.HoaDocuments.Add(d); await _db.SaveChangesAsync(); return d; }

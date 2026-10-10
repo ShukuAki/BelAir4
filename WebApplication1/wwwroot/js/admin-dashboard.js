@@ -27,11 +27,26 @@ const AdminAPI = {
         }
     },
 
+    // Create staff account via API
+    createStaff: async function (payload) {
+        try {
+            const created = await AdminAPI.staff.create(payload);
+            // Refresh staff list
+            this.staffData = await AdminAPI.staff.getAll();
+            this.populateStaffTable();
+            return created;
+        } catch (err) {
+            console.error('Failed to create staff:', err);
+            throw err;
+        }
+    },
+
     // ── Staff Management ──
     staff: {
         getAll: () => AdminAPI.request('GET', '/staff'),
         getById: (id) => AdminAPI.request('GET', `/staff/${id}`),
         create: (data) => AdminAPI.request('POST', '/staff', data),
+        register: (data) => AdminAPI.request('POST', '/staff/register', data),
         update: (id, data) => AdminAPI.request('PUT', `/staff/${id}`, data),
         delete: (id) => AdminAPI.request('DELETE', `/staff/${id}`),
     },
@@ -1060,6 +1075,38 @@ const AdminDashboard = {
         document.getElementById('exportLogBtn')?.addEventListener('click', () => this.exportAuditLog());
     },
 
+    // UI helper called by create staff modal
+    createStaffAccount: async function () {
+        const name = document.getElementById('create-name')?.value.trim();
+        const email = document.getElementById('create-email')?.value.trim();
+        const phone = document.getElementById('create-phone')?.value.trim();
+        const roleId = parseInt(document.getElementById('create-role')?.value || '2');
+        const isActive = !!document.getElementById('create-isactive')?.checked;
+
+        if (!name || !email) {
+            alert('Name and email are required');
+            return;
+        }
+
+        const payload = {
+            Name: name,
+            Email: email,
+            PhoneNumber: phone || null,
+            RoleId: roleId,
+            IsActive: isActive
+        };
+
+        try {
+            await AdminAPI.staff.create(payload);
+            alert('Staff account created');
+            closeModal('createStaff');
+            await this.loadInitialData();
+        } catch (error) {
+            console.error('Failed to create staff account:', error);
+            alert('Failed to create staff account');
+        }
+    },
+
     // ── Staff Management Actions ──
     openEditStaff: async function (staffId) {
         try {
@@ -1110,6 +1157,40 @@ const AdminDashboard = {
     },
 
     // ── Invitation Actions ──
+    createStaffAccount: async function () {
+        try {
+            const data = {
+                name: document.getElementById('create-name').value,
+                email: document.getElementById('create-email').value,
+                phoneNumber: document.getElementById('create-phone').value,
+                roleId: parseInt(document.getElementById('create-role').value || 2),
+                isActive: document.getElementById('create-isactive').checked,
+                username: document.getElementById('create-username').value,
+                password: document.getElementById('create-password').value,
+            };
+
+            if (!data.name || !data.email || !data.username || !data.password) {
+                alert('Please fill in all required fields (name, email, username, password)');
+                return;
+            }
+
+            await AdminAPI.staff.register(data);
+            this.staffData = await AdminAPI.staff.getAll();
+            this.populateStaffTable();
+            closeModal('createStaff');
+            alert('Staff account created successfully');
+
+            // Clear form
+            document.getElementById('create-name').value = '';
+            document.getElementById('create-email').value = '';
+            document.getElementById('create-phone').value = '';
+            document.getElementById('create-username').value = '';
+            document.getElementById('create-password').value = '';
+        } catch (error) {
+            alert('Failed to create staff account. The username or email may already be in use.');
+        }
+    },
+
     sendInvite: async function () {
         try {
             const data = {
@@ -1371,6 +1452,10 @@ function openModal(modalName) {
     if (modalElement) {
         modalElement.style.display = 'flex';
     }
+}
+
+function createStaffAccount() {
+    AdminDashboard.createStaffAccount();
 }
 
 function closeModal(modalName) {

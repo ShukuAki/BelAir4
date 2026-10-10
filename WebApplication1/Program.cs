@@ -12,7 +12,13 @@ using Microsoft.Extensions.Hosting;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddControllersWithViews();
+builder.Services.AddControllersWithViews()
+    .AddJsonOptions(options =>
+    {
+        // Safety net: prevent crashes from circular navigation properties (e.g. AdminUser <-> AuditLog)
+        // that aren't explicitly projected to DTOs.
+        options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+    });
 
 // Register DbContext with configuration-based connection string.
 builder.Services.AddDbContext<SqBelAir4Context>(options =>

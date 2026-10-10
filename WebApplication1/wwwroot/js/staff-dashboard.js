@@ -31,11 +31,199 @@ function formatDate(str) {
   return d.toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
+// ── Documents (Staff) ───────────────────────────────────────
+let DOCUMENTS = [];
+
+async function loadDocuments() {
+  const tb = document.getElementById('documents-tbody');
+  if (tb) tb.innerHTML = `<tr><td colspan="3" style="text-align:center;padding:24px;color:var(--gray-400)"><i class="fas fa-spinner fa-spin"></i> Loading documents...</td></tr>`;
+  try {
+    const res = await fetch('/api/hoa-documents');
+    if (!res.ok) throw new Error('Failed to load');
+    const json = await res.json();
+    const docs = (json && (json.data || json)) || [];
+    DOCUMENTS = docs;
+    renderDocumentsTable(docs);
+  } catch (err) {
+    console.error('loadDocuments error', err);
+    if (tb) tb.innerHTML = `<tr><td colspan="3" style="text-align:center;padding:24px;color:var(--red)"><i class="fas fa-exclamation-triangle"></i> Failed to load documents</td></tr>`;
+  }
+}
+
+function renderDocumentsTable(docs) {
+  const tb = document.getElementById('documents-tbody'); if (!tb) return;
+  if (!docs || !docs.length) {
+    tb.innerHTML = `<tr><td colspan="3" style="text-align:center;padding:24px;color:var(--gray-400)"><i class="fas fa-inbox" style="font-size:18px;display:block;margin-bottom:8px"></i>No documents available</td></tr>`;
+    return;
+  }
+  tb.innerHTML = docs.map(d => {
+    const hasFile = !!(d.downloadUrl);
+    const nameHtml = hasFile
+      ? `<a href="${d.downloadUrl}" style="color:var(--navy);font-weight:700">${escHtml(d.name || '')}</a>`
+      : `<span style="color:var(--gray-500);font-weight:700">${escHtml(d.name || '')}</span> <small style="color:var(--red);margin-left:8px">(file missing)</small>`;
+    const downloadBtn = hasFile
+      ? `<a class="btn btn-outline btn-sm" href="${d.downloadUrl}"><i class="fas fa-download"></i></a>`
+      : `<button class="btn btn-outline btn-sm" disabled title="File not available"><i class="fas fa-download"></i></button>`;
+
+    return `
+    <tr data-doc-id="${d.id}">
+      <td>${nameHtml}</td>
+      <td>${escHtml(d.category || '')}</td>
+      <td style="white-space:nowrap">
+        ${downloadBtn}
+        <button class="btn btn-outline btn-sm" style="color:var(--red);margin-left:6px" onclick="deleteDocument(${d.id})"><i class="fas fa-trash"></i></button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+async function addDocument() {
+  const name = (document.getElementById('doc-name')?.value || '').trim();
+  const category = (document.getElementById('doc-cat')?.value || '').trim();
+  const fileInput = document.getElementById('doc-file');
+  const file = fileInput?.files?.[0];
+  if (!file) { showToast('Please choose a file to upload', 'error'); return; }
+  try {
+    const fd = new FormData();
+    fd.append('name', name);
+    fd.append('category', category);
+    fd.append('file', file);
+    const res = await fetch('/api/hoa-documents/upload', { method: 'POST', body: fd });
+    const json = await res.json();
+    if (!res.ok || json?.success === false) {
+      showToast(json?.error || 'Upload failed', 'error');
+      return;
+    }
+    showToast('Document uploaded', 'success');
+    closeModal('addDocument');
+    // reset inputs
+    if (document.getElementById('doc-name')) document.getElementById('doc-name').value = '';
+    if (document.getElementById('doc-cat')) document.getElementById('doc-cat').value = '';
+    if (fileInput) fileInput.value = '';
+    await loadDocuments();
+  } catch (err) {
+    console.error('addDocument error', err);
+    showToast('Upload failed', 'error');
+  }
+}
+
+async function deleteDocument(id) {
+  if (!confirm('Delete this document? This cannot be undone.')) return;
+  try {
+    const res = await fetch(`/api/hoa-documents/${id}`, { method: 'DELETE' });
+    const json = await res.json();
+    if (!res.ok || json?.success === false) { showToast('Delete failed', 'error'); return; }
+    showToast('Document deleted', 'error');
+    // remove row
+    const tr = document.querySelector(`tr[data-doc-id="${id}"]`);
+    if (tr) tr.remove();
+    // refresh list
+    await loadDocuments();
+  } catch (err) {
+    console.error('deleteDocument error', err);
+    showToast('Delete failed', 'error');
+  }
+}
+
+// Auto-load documents when staff dashboard is opened
+document.addEventListener('DOMContentLoaded', function() {
+  try { if (document.getElementById('page-documents')) loadDocuments(); } catch(e){}
+});
+
+// Vehicles & Pets
+async function loadVehiclesPets() {
+  try {
+    const [vehiclesRes, petsRes] = await Promise.all([
+      fetch('/api/registrations/vehicles'),
+      fetch('/api/registrations/pets')
+    ]);
+    const vJson = await vehiclesRes.json();
+    const pJson = await petsRes.json();
+    VEHICLES = (vJson && vJson.data) ? vJson.data : (Array.isArray(vJson) ? vJson : []);
+    PETS     = (pJson && pJson.data) ? pJson.data : (Array.isArray(pJson) ? pJson : []);
+    renderVehiclesWidget();
+    renderPetsWidget();
+    _updateNotifBadge();
+  } catch (err) {
+    console.warn('Failed to load vehicles/pets:', err);
+  }
+}
+
+function renderVehiclesWidget() {
+  const container = document.getElementById('overview-vehicles-list');
+  const badge = document.getElementById('badge-vehicles');
+  if (badge) badge.textContent = VEHICLES.length || 0;
+  if (!container) return;
+  if (!VEHICLES.length) { container.innerHTML = '<div class="empty-state-inline"><i class="fas fa-car"></i><span>No vehicles registered</span></div>'; return; }
+  container.innerHTML = VEHICLES.slice(0,6).map(v => `
+    <div style="display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--gray-100)">
+      <div style="width:44px;height:44px;border-radius:8px;background:#f5f5f5;display:flex;align-items:center;justify-content:center"><i class="fas fa-car"></i></div>
+      <div style="flex:1">
+        <div style="font-weight:700;color:var(--green)">${escHtml(v.plateNumber || v.PlateNumber || v.plate || '')} • ${escHtml(v.brand || v.Brand || '')} ${escHtml(v.model || v.Model || '')}</div>
+        <div style="font-size:12px;color:var(--gray-500)">${escHtml(v.ownerName || v.OwnerName || '')} · ${escHtml(v.category || v.Category || '')}</div>
+      </div>
+      <div style="white-space:nowrap"><button class="btn btn-outline btn-sm" onclick="viewVehicle(${v.id || v.Id})"><i class="fas fa-eye"></i></button></div>
+    </div>
+  `).join('');
+}
+
+function renderPetsWidget() {
+  const container = document.getElementById('overview-pets-list');
+  const badge = document.getElementById('badge-pets');
+  if (badge) badge.textContent = PETS.length || 0;
+  if (!container) return;
+  if (!PETS.length) { container.innerHTML = '<div class="empty-state-inline"><i class="fas fa-paw"></i><span>No pets registered</span></div>'; return; }
+  container.innerHTML = PETS.slice(0,6).map(p => `
+    <div style="display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--gray-100)">
+      <div style="width:44px;height:44px;border-radius:8px;background:#f5f5f5;display:flex;align-items:center;justify-content:center"><i class="fas fa-paw"></i></div>
+      <div style="flex:1">
+        <div style="font-weight:700;color:var(--green)">${escHtml(p.name || p.Name || '')} ${p.breed ? '• ' + escHtml(p.breed || p.Breed) : ''}</div>
+        <div style="font-size:12px;color:var(--gray-500)">${escHtml(p.ownerName || p.OwnerName || '')} · ${escHtml(p.vaccinated || p.Vaccinated || '')}</div>
+      </div>
+      <div style="white-space:nowrap"><button class="btn btn-outline btn-sm" onclick="viewPet(${p.id || p.Id})"><i class="fas fa-eye"></i></button></div>
+    </div>
+  `).join('');
+}
+
+function viewVehicle(id) {
+  const v = VEHICLES.find(x => String(x.id) === String(id) || String(x.Id) === String(id));
+  if (!v) return alert('Vehicle not found');
+  const html = `
+    <div style="display:flex;gap:14px">
+      <div style="width:80px;height:80px;background:#f5f5f5;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:32px"><i class="fas fa-car"></i></div>
+      <div style="flex:1">
+        <h3 style="margin:0">${escHtml(v.plateNumber || v.PlateNumber || '')}</h3>
+        <div style="color:var(--gray-600)">${escHtml(v.brand || v.Brand || '')} ${escHtml(v.model || v.Model || '')} • ${escHtml(v.color || v.Color || '')}</div>
+        <div style="margin-top:8px">Owner: ${escHtml(v.ownerName || v.OwnerName || '')}</div>
+      </div>
+    </div>
+  `;
+  document.getElementById('view-incident-content').innerHTML = html; openModal('viewIncident');
+}
+
+function viewPet(id) {
+  const p = PETS.find(x => String(x.id) === String(id) || String(x.Id) === String(id));
+  if (!p) return alert('Pet not found');
+  const html = `
+    <div style="display:flex;gap:14px">
+      <div style="width:80px;height:80px;background:#f5f5f5;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:32px"><i class="fas fa-paw"></i></div>
+      <div style="flex:1">
+        <h3 style="margin:0">${escHtml(p.name || p.Name || '')}</h3>
+        <div style="color:var(--gray-600)">${escHtml(p.breed || p.Breed || '')} • ${escHtml(p.color || p.Color || '')}</div>
+        <div style="margin-top:8px">Owner: ${escHtml(p.ownerName || p.OwnerName || '')}</div>
+      </div>
+    </div>
+  `;
+  document.getElementById('view-incident-content').innerHTML = html; openModal('viewIncident');
+}
+
 /* ── STATE ── */
 let INCIDENTS   = [];
 let MAP_ITEMS   = [];
 let EVENTS_DATA = [];
 let REGISTRATIONS = [];
+let VEHICLES = [];
+let PETS = [];
 let FORUM_POSTS = [];
 let RESERVATIONS = [];
 let exchangeData = { pending: [], published: [] };
@@ -100,6 +288,8 @@ const NotificationService = {
       const pendingExchange = Array.isArray(exchangeData?.pending) ? exchangeData.pending.length : 0;
       const unmodForum = Array.isArray(FORUM_POSTS) ? FORUM_POSTS.filter(p => p.status !== 'resolved').length : 0;
       const pendingReserv = Array.isArray(RESERVATIONS) ? RESERVATIONS.filter(r => r.status === 'pending').length : 0;
+      const newVehicles = Array.isArray(VEHICLES) ? VEHICLES.length : 0;
+      const newPets = Array.isArray(PETS) ? PETS.length : 0;
 
       // Check for new items
       const hasNewIncidents = openIncidents > this.lastCounts.incidents;
@@ -115,11 +305,8 @@ const NotificationService = {
       this.lastCounts.forums = unmodForum;
       this.lastCounts.reservations = pendingReserv;
 
-      // Calculate total notifications
-      const totalNotifications = openIncidents + pendingVerif + pendingExchange + unmodForum + pendingReserv;
-
-      // Update notification bell
-      this.updateNotificationBell(totalNotifications);
+      // Update notification bell (read-state aware; see _updateNotifBadge)
+      if (typeof _updateNotifBadge === 'function') _updateNotifBadge();
 
       // Update notification dropdown content
       this.updateNotificationDropdown({
@@ -127,7 +314,9 @@ const NotificationService = {
         verifications: pendingVerif,
         exchange: pendingExchange,
         forums: unmodForum,
-        reservations: pendingReserv
+        reservations: pendingReserv,
+        vehicles: newVehicles,
+        pets: newPets
       });
 
       // Show new notification indicator if there are new items
@@ -251,7 +440,7 @@ const NotificationService = {
 /* ============================================================
    BADGE & NOTIFICATION UPDATES
 ============================================================ */
-function _updateNotifBadge() {
+function _updateSidebarBadges() {
   // Update incident badge
   const openIncidents = INCIDENTS.filter(i => (i.status || 'open') !== 'resolved').length;
   const incBadge = document.getElementById('badge-incidents');
@@ -298,19 +487,6 @@ function _updateNotifBadge() {
   if (taskBadge) {
     taskBadge.textContent = incompleteTasks;
     taskBadge.style.display = incompleteTasks > 0 ? '' : 'none';
-  }
-
-  // Update notification service
-  if (typeof NotificationService !== 'undefined' && NotificationService.checkForUpdates) {
-    NotificationService.checkForUpdates();
-  }
-
-  // Update notifications badge
-  const totalNotifs = openIncidents + pendingReservations + pendingExchange + pendingVerif;
-  const notifBadge = document.getElementById('badge-notifications');
-  if (notifBadge) {
-    notifBadge.textContent = totalNotifs;
-    notifBadge.style.display = totalNotifs > 0 ? 'flex' : 'none';
   }
 }
 
@@ -576,6 +752,8 @@ function showPage(id, el) {
   if (tt) tt.textContent = PAGE_LABELS[id] || id;
   if (id === 'communitymap') setTimeout(initCommunityMap, 80);
   if (id === 'incidents')    setTimeout(initPreviewMap, 80);
+  if (id === 'vehicles')     loadVehiclesPets();
+  if (id === 'pets')         loadVehiclesPets();
   if (id === 'events')       { renderCalendar(); renderEventsList(); }
   if (id === 'exchange')     loadExchangeData();
   if (id === 'forums')       renderForumsDashboard();
@@ -2606,62 +2784,12 @@ async function deleteMeeting(id, name) {
 
 /* ============================================================
    FORMS & DOCUMENTS
+   (Real implementation — loadDocuments/addDocument/deleteDocument —
+   lives near the top of this file and handles actual multipart
+   file upload via /api/hoa-documents/upload. The legacy metadata-only
+   duplicate that used to live here has been removed because it
+   shadowed the real functions and created DB rows with no file.)
 ============================================================ */
-let HOA_DOCUMENTS = [];
-
-function documentRowHtml(d) {
-  const tagMap = {Form:'tag-orange', Policy:'tag-green', Guide:'tag-blue', Certificate:'tag-yellow'};
-  return `<tr id="doc-${d.id}"><td><strong>${escHtml(d.name)}</strong></td><td><span class="tag ${tagMap[d.category]||'tag-gray'}">${escHtml(d.category||'')}</span></td><td><button class="btn btn-outline btn-sm" onclick="viewDocument('${escHtml(d.name)}')"><i class="fas fa-eye"></i> View</button> <button class="btn btn-outline btn-sm" onclick="showToast('Download started')"><i class="fas fa-download"></i> Download</button> <button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="deleteDocument(${d.id},'${escHtml(d.name)}')"><i class="fas fa-trash"></i> Delete</button></td></tr>`;
-}
-
-async function loadDocuments() {
-  const tb = document.getElementById('documents-tbody'); if (!tb) return;
-  try {
-    const result = await StaffAPI.documents.getAll();
-    HOA_DOCUMENTS = (result.success && result.data) ? result.data : [];
-    tb.innerHTML = HOA_DOCUMENTS.length
-      ? HOA_DOCUMENTS.map(documentRowHtml).join('')
-      : '<tr><td colspan="3" style="text-align:center;padding:24px">No documents yet.</td></tr>';
-  } catch (error) {
-    console.error('Error loading documents:', error);
-    tb.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:24px">Failed to load documents.</td></tr>';
-  }
-}
-
-async function addDocument() {
-  const name = (document.getElementById('doc-name')?.value || '').trim();
-  const cat  = document.getElementById('doc-cat')?.value   || 'Form';
-  if (!name) { showToast('Document name is required.', 'error'); return; }
-  try {
-    const result = await StaffAPI.documents.create({ name, category: cat, uploadedBy: null });
-    if (result.success) {
-      closeModal('addDocument'); const ne = document.getElementById('doc-name'); if (ne) ne.value = '';
-      showToast('Document uploaded');
-      await loadDocuments();
-    } else {
-      showToast(result.error || 'Failed to upload document', 'error');
-    }
-  } catch (error) {
-    console.error('Error adding document:', error);
-    showToast('Failed to upload document', 'error');
-  }
-}
-function viewDocument(name) { showToast(`Opening "${name}"…`, 'info'); }
-async function deleteDocument(id, name) {
-  if (!confirm(`Delete "${name}"?`)) return;
-  try {
-    const result = await StaffAPI.documents.delete(id);
-    if (result.success) {
-      showToast(`"${name}" deleted`, 'error');
-      await loadDocuments();
-    } else {
-      showToast(result.error || 'Failed to delete document', 'error');
-    }
-  } catch (error) {
-    console.error('Error deleting document:', error);
-    showToast('Failed to delete document', 'error');
-  }
-}
 
 /* ============================================================
    CONTACTS
@@ -3011,24 +3139,50 @@ function saveMapItem() {
 /* ============================================================
    NOTIFICATIONS
 ============================================================ */
+const NOTIF_READ_STORAGE_KEY = 'lba4_staff_read_notif_ids';
+
+function _getReadNotifIds() {
+  try { return new Set(JSON.parse(localStorage.getItem(NOTIF_READ_STORAGE_KEY) || '[]')); }
+  catch (e) { return new Set(); }
+}
+function _saveReadNotifIds(set) {
+  try { localStorage.setItem(NOTIF_READ_STORAGE_KEY, JSON.stringify(Array.from(set))); }
+  catch (e) { /* ignore storage errors */ }
+}
+
 function _updateNotifBadge() {
-  const open  = INCIDENTS.filter(i => i.status === 'open').length;
+  _updateSidebarBadges();
+  const readIds = _getReadNotifIds();
+  const open = INCIDENTS.filter(i => i.status === 'open' && !readIds.has(`incident-${i.id}`)).length;
+  const ex = exchangeData;
+  const exchangeUnread = (ex.pending.length && !readIds.has('exchange-pending')) ? 1 : 0;
+  const total = open + exchangeUnread;
   const badge = document.getElementById('badge-notifications');
-  if (badge) { badge.textContent = open > 9 ? '9+' : open; badge.style.display = open > 0 ? 'flex' : 'none'; }
+  if (badge) { badge.textContent = total > 9 ? '9+' : total; badge.style.display = total > 0 ? 'flex' : 'none'; }
 }
 
 function buildNotifications() {
   const items = [];
+  const readIds = _getReadNotifIds();
   INCIDENTS.filter(i => i.status === 'open').slice(0,5).forEach(inc => {
     const reporter = inc.reporterName || (inc.anonymous ? 'Anonymous' : 'Resident');
     const ini  = reporter.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase() || '??';
     const date = inc.timestamp ? new Date(inc.timestamp).toLocaleDateString('en-PH',{month:'short',day:'numeric'}) : '';
-    items.push({ ini, color:{high:'#c0392b',medium:'#c0621a',low:'#5aaa4f'}[inc.priority]||'#c0621a', name:reporter, action:`Logged a ${inc.priority} priority ${inc.category||'incident'}`, detail:(inc.description||'').substring(0,55), time:date, unread:true, onClick:()=>{ closeNotifModal(); viewIncidentDetail(inc.id); } });
+    items.push({ id:`incident-${inc.id}`, ini, color:{high:'#c0392b',medium:'#c0621a',low:'#5aaa4f'}[inc.priority]||'#c0621a', name:reporter, action:`Logged a ${inc.priority} priority ${inc.category||'incident'}`, detail:(inc.description||'').substring(0,55), time:date, unread:!readIds.has(`incident-${inc.id}`), onClick:()=>{ closeNotifModal(); viewIncidentDetail(inc.id); } });
   });
   const ex = exchangeData;
-  if (ex.pending.length) items.push({ ini:'CE', color:'#c0621a', name:'Community Exchange', action:`${ex.pending.length} post${ex.pending.length>1?'s':''} pending approval`, detail:ex.pending.map(p=>p.title).join(', ').substring(0,55), time:'Now', unread:true, onClick:()=>{ closeNotifModal(); showPage('exchange',null); } });
-  if (!items.length) items.push({ ini:'LB', color:'#0a4d3c', name:'System', action:'All caught up!', detail:'No pending items.', time:'Now', unread:false, onClick:closeNotifModal });
+  if (ex.pending.length) items.push({ id:'exchange-pending', ini:'CE', color:'#c0621a', name:'Community Exchange', action:`${ex.pending.length} post${ex.pending.length>1?'s':''} pending approval`, detail:ex.pending.map(p=>p.title).join(', ').substring(0,55), time:'Now', unread:!readIds.has('exchange-pending'), onClick:()=>{ closeNotifModal(); showPage('exchange',null); } });
+  if (!items.length) items.push({ id:'none', ini:'LB', color:'#0a4d3c', name:'System', action:'All caught up!', detail:'No pending items.', time:'Now', unread:false, onClick:closeNotifModal });
   return items;
+}
+
+function markAllNotificationsRead() {
+  const items = buildNotifications();
+  const readIds = _getReadNotifIds();
+  items.forEach(n => { if (n.id && n.id !== 'none') readIds.add(n.id); });
+  _saveReadNotifIds(readIds);
+  _updateNotifBadge();
+  openNotifModal();
 }
 
 function openNotifModal() {
@@ -3037,7 +3191,7 @@ function openNotifModal() {
   overlay.innerHTML = `<div class="notif-modal-card">
     <div class="notif-modal-header"><div class="notif-modal-bell"><i class="fas fa-bell"></i></div><h2 class="notif-modal-title">Notifications</h2><button class="notif-modal-close" onclick="closeNotifModal()"><i class="fas fa-times"></i></button></div>
     <div class="notif-modal-body">${items.map((n,i)=>`<div class="notif-entry${n.unread?' notif-unread-entry':''}" onclick="_notifClick(${i})">${n.unread?'<div class="notif-unread-bar"></div>':''}<div class="notif-avatar" style="background:${n.color}22;color:${n.color}">${n.ini}</div><div class="notif-content"><div class="notif-name">${escHtml(n.name)}</div><div class="notif-action">${escHtml(n.action)}</div><div class="notif-detail">${escHtml(n.detail)}</div></div><div class="notif-time">${escHtml(n.time)}</div></div>`).join('')}</div>
-    <div class="notif-modal-footer"><button class="notif-footer-btn" onclick="closeNotifModal()">Mark all as read</button><button class="notif-footer-btn notif-footer-link" onclick="closeNotifModal();showPage('incidents',null)">View incidents →</button></div>
+    <div class="notif-modal-footer"><button class="notif-footer-btn" onclick="markAllNotificationsRead()">Mark all as read</button><button class="notif-footer-btn notif-footer-link" onclick="closeNotifModal();showPage('incidents',null)">View incidents →</button></div>
   </div>`;
   overlay._handlers = items.map(n => n.onClick);
   overlay.style.display = 'flex';
