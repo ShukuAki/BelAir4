@@ -22,10 +22,10 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
   <!-- Styles -->
-  <link rel="stylesheet" href="~/css/report-concerns.css">
+  <link rel="stylesheet" href="@Url.Content("~/css/report-concerns.css")">
 
   <!-- localStorage bridge (keep for now; swap with API later) -->
-  <script src="~/js/lba4-storage.js"></script>
+  <script src="@Url.Content("~/js/lba4-storage.js")"></script>
 </head>
 <body>
 
@@ -415,7 +415,7 @@
                 <p>&copy; <span id="current-year"></span> Laguna BelAir 4. All rights reserved.</p>
             </div>
         </footer>
-  <script src="~/js/report-concerns.js"></script>
+  <script src="@Url.Content("~/js/report-concerns.js")"></script>
   <script>
     // Small shim: ensure footer year is set (some pages use 'current-year' id)
     (function(){

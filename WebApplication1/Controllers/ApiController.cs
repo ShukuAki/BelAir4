@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using WebApplication1.Models;
 using WebApplication1.Repository;
 using WebApplication1.Services;
@@ -396,6 +397,98 @@ namespace WebApplication1.Controllers
             {
                 _logger.LogError(ex, "Error commenting on incident {Id}", id);
                 return StatusCode(500, new { success = false, error = "Failed to save comment" });
+            }
+        }
+
+        // POST /api/concerns/create - Submit a new concern report via JSON API
+        [HttpPost("concerns/create")]
+        public async Task<IActionResult> CreateConcernReport([FromBody] ConcernReportRequest request)
+        {
+            if (request is null || string.IsNullOrWhiteSpace(request.Description))
+                return BadRequest(new { success = false, error = "Description is required" });
+
+            try
+            {
+                _logger.LogInformation("Creating concern report: address={Address}, street={Street}, lat={Lat}, lng={Lng}", 
+                    request.Address, request.Street, request.Latitude, request.Longitude);
+
+                var report = new ConcernReport
+                {
+                    Description = request.Description,
+                    Category = request.Category,
+                    Address = request.Address,
+                    Street = request.Street,
+                    AdditionalLocation = request.AdditionalLocation,
+                    Latitude = request.Latitude,
+                    Longitude = request.Longitude,
+                    Anonymous = request.Anonymous,
+                    ReporterName = request.ReporterName,
+                    ReporterContact = request.ReporterContact,
+                    Photo = request.Photo,
+                    Timestamp = DateTime.Now,
+                    Status = "open",
+                    Priority = "medium" // Default; will be updated by AI analysis if available
+                };
+
+                // Generate reference: INC-YYMM-NNN
+                var now = DateTime.Now;
+                var monthlyCount = await _repo.GetMonthlyReportCountAsync(now.Year, now.Month);
+                report.Reference = $"INC-{now:yyMM}-{(monthlyCount + 1):D3}";
+
+                // Create report
+                var createdReport = await _repo.CreateReportAsync(report);
+                _logger.LogInformation("Concern report created: {Reference}", createdReport.Reference);
+
+                // Run AI analysis if available
+                try
+                {
+                    var (keywordsWithSeverity, priority) = await _aiService.AnalyzeWithSeveritiesAsync(report.Description);
+                    if (keywordsWithSeverity.Count > 0 || priority != "medium")
+                    {
+                        createdReport.Priority = priority;
+                        createdReport.DetectedKeywords = string.Join(",", keywordsWithSeverity.Select(k => k.keyword));
+                        await _repo.UpdateReportAsync(createdReport);
+                        _logger.LogInformation("AI analysis complete for report {Reference}: priority={Priority}", 
+                            createdReport.Reference, createdReport.Priority);
+                    }
+
+                    var existingKeywords = await _repo.GetActiveKeywordsAsync();
+                    foreach (var (keyword, severity) in keywordsWithSeverity)
+                    {
+                        var exists = existingKeywords.Any(k => k.Keyword != null &&
+                            k.Keyword.Equals(keyword, StringComparison.OrdinalIgnoreCase));
+                        if (!exists)
+                        {
+                            await _repo.CreateKeywordAsync(new KeywordDictionary
+                            {
+                                Keyword = keyword,
+                                Severity = severity,
+                                Category = "AI-Detected",
+                                Language = "bilingual",
+                                IsActive = true,
+                                CreatedAt = DateTime.UtcNow,
+                                UpdatedAt = DateTime.UtcNow
+                            });
+                        }
+                    }
+                }
+                catch (Exception aiEx)
+                {
+                    _logger.LogWarning(aiEx, "AI analysis failed for report {Reference}, but report was saved", createdReport.Reference);
+                    // Continue - AI analysis failure shouldn't fail the whole request
+                }
+
+                return Ok(new { success = true, reference = createdReport.Reference, id = createdReport.Id, priority = createdReport.Priority, keywords = createdReport.DetectedKeywords });
+            }
+            catch (DbUpdateException dbEx)
+            {
+                _logger.LogError(dbEx, "Database error creating concern report: {Message}", dbEx.Message);
+                return StatusCode(500, new { success = false, error = $"Database error: {dbEx.InnerException?.Message ?? dbEx.Message}" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creating concern report: {Message}", ex.Message);
+                return StatusCode(500, new { success = false, error = ex.Message });
             }
         }
 
@@ -1838,3 +1931,4 @@ public class TaskRequest { public string? Title{get;set;} public string? Descrip
 public class UpdateTaskStatusRequest { public string? Status{get;set;} }
 public class LandmarkRequest { public string? Name{get;set;} public string? Description{get;set;} public string? Category{get;set;} public string? Icon{get;set;} public decimal? Latitude{get;set;} public decimal? Longitude{get;set;} public string? LocationNotes{get;set;} public bool? IsActive{get;set;} }
 public class ProjectRequest { public string? Title{get;set;} public string? Description{get;set;} public string? Status{get;set;} public string? Category{get;set;} public string? Location{get;set;} public decimal? Latitude{get;set;} public decimal? Longitude{get;set;} public DateTime? StartDate{get;set;} public DateTime? EndDate{get;set;} public decimal? Budget{get;set;} public string? ContactPerson{get;set;} public string? ContactPhone{get;set;} public string? BeforePhotoUrl{get;set;} public string? AfterPhotoUrl{get;set;} public int? ProgressPercentage{get;set;} }
+public class ConcernReportRequest { public string? Description{get;set;} public string? Category{get;set;} public string? Address{get;set;} public string? Street{get;set;} public string? AdditionalLocation{get;set;} public double? Latitude{get;set;} public double? Longitude{get;set;} public bool Anonymous{get;set;} public string? ReporterName{get;set;} public string? ReporterContact{get;set;} public string? Photo{get;set;} }

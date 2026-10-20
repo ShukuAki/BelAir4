@@ -86,7 +86,7 @@ app.Use(async (context, next) =>
 
     // In development, allow Visual Studio Browser Link / Hot Reload websockets and endpoints.
     var connectSrc = app.Environment.IsDevelopment()
-        ? "connect-src 'self' ws: wss: http://localhost:* https://localhost:*; "
+        ? "connect-src 'self' ws: wss: http://localhost:* https://localhost:* https://unpkg.com; "
         : "connect-src 'self'; ";
 
     headers["Content-Security-Policy"] =

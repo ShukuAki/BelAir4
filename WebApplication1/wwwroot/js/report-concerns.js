@@ -17,6 +17,47 @@
 'use strict';
 
 /* ═══════════════════════════════════════════
+   PAGE COORDINATOR - API WRAPPER
+═══════════════════════════════════════════ */
+const PageCoordinator = {
+  api: {
+    post: async function(endpoint, payload) {
+      try {
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+          },
+          body: JSON.stringify(payload),
+          credentials: 'include' // Include cookies for session/auth
+        });
+
+        if (!response.ok) {
+          const error = await response.text();
+          console.error(`API Error [${response.status}]:`, error);
+          return {
+            success: false,
+            error: `Server error (${response.status}). Please try again.`,
+            status: response.status
+          };
+        }
+
+        const data = await response.json();
+        return data;
+      } catch (err) {
+        console.error('API Call Error:', err);
+        return {
+          success: false,
+          error: err.message || 'Network error. Please check your connection.',
+          exception: err
+        };
+      }
+    }
+  }
+};
+
+/* ═══════════════════════════════════════════
    VILLAGE GEOGRAPHY
 ═══════════════════════════════════════════ */
 const VILLAGE = {
@@ -595,6 +636,16 @@ function bindFormSubmit() {
       return;
     }
 
+    // Validate location — address mode requires at least some location info
+    if (searchType === 'address') {
+      const hasAddress = (dom.addressInput.value.trim() || dom.streetInput.value.trim());
+      if (!hasAddress) {
+        showToast('Please enter at least a street or address in address mode.', 'error');
+        dom.addressInput.focus();
+        return;
+      }
+    }
+
     // Build FormData for multipart (supports photo upload)
     const payload = {
       description,
@@ -612,7 +663,7 @@ function bindFormSubmit() {
     setSubmitLoading(true);
 
     try {
-      const response = await PageCoordinator.api.post('/api/concerns/report', payload);
+      const response = await PageCoordinator.api.post('/api/concerns/create', payload);
 
       if (!response.success) {
         showToast(response.error || 'Failed to submit report. Please try again.', 'error');
