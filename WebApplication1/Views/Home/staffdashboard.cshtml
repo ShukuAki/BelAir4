@@ -43,7 +43,7 @@
     <div class="nav-link" onclick="showPage('exchange',this)"><i class="fas fa-store"></i> Community Exchange<span class="nav-badge yellow" id="badge-exchange">5</span></div>
     <div class="nav-group-label">Approvals</div>
     <div class="nav-link" onclick="showPage('residents',this)"><i class="fas fa-home"></i> Residents &amp; Verification<span class="nav-badge" id="badge-verif">0</span></div>
-    <a asp-controller="Home" asp-action="vehiclePetRegistration" class="nav-link" style="text-decoration:none;color:white"><i class="fas fa-car-side"></i> Vehicle &amp; Pet Registration</a>
+    <div class="nav-link" onclick="showPage('vehicles',this)"><i class="fas fa-car-side"></i> Vehicle &amp; Pet Registration</div>
 
     <div class="nav-link" onclick="showPage('forums',this)"><i class="fas fa-comments"></i> Usap Tayo sa HOA<span class="nav-badge yellow" id="badge-forums">0</span></div>
     <div class="nav-link" onclick="showPage('reservations',this)"><i class="fas fa-calendar-check"></i> Reservations<span class="nav-badge yellow" id="badge-reservations">0</span></div>
@@ -254,6 +254,28 @@
       </div>
       <div class="tbl-wrap"><table><thead><tr><th>Name</th><th>Unit</th><th>Contact</th><th>Verified</th><th>Status</th><th>Actions</th></tr></thead><tbody id="residents-tbody">
         <tr><td colspan="6" style="padding:32px;text-align:center;color:var(--gray-400)">Loading...</td></tr>
+      </tbody></table></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ VEHICLE & PET REGISTRATION ═══════ -->
+<div class="page" id="page-vehicles">
+  <div class="sec-header"><h2><i class="fas fa-car-side"></i> Vehicle &amp; Pet Registration Management</h2></div>
+  <div class="info-banner" style="margin-bottom:18px">
+    <i class="fas fa-info-circle"></i> <strong>Manage registrations:</strong> Review, approve, and manage all vehicle and pet registrations from residents in your community.
+  </div>
+  <div class="grid-2" style="gap:20px">
+    <div class="card">
+      <div class="card-header"><h3><i class="fas fa-car"></i> Vehicle Registrations <span id="vehicles-count" class="nav-badge" style="position:static;display:inline-flex;margin-left:8px">0</span></h3><button class="btn btn-outline btn-sm" onclick="loadVehiclesPets()"><i class="fas fa-sync"></i> Refresh</button></div>
+      <div class="tbl-wrap"><table><thead><tr><th>Plate Number</th><th>Owner</th><th>Vehicle</th><th>Category</th><th>Status</th><th>Actions</th></tr></thead><tbody id="vehicles-tbody">
+        <tr><td colspan="6" style="text-align:center;padding:24px;color:var(--gray-400)"><i class="fas fa-spinner fa-spin"></i> Loading vehicles...</td></tr>
+      </tbody></table></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><h3><i class="fas fa-paw"></i> Pet Registrations <span id="pets-count" class="nav-badge" style="position:static;display:inline-flex;margin-left:8px">0</span></h3><button class="btn btn-outline btn-sm" onclick="loadVehiclesPets()"><i class="fas fa-sync"></i> Refresh</button></div>
+      <div class="tbl-wrap"><table><thead><tr><th>Pet Name</th><th>Owner</th><th>Type</th><th>Breed</th><th>Status</th><th>Actions</th></tr></thead><tbody id="pets-tbody">
+        <tr><td colspan="6" style="text-align:center;padding:24px;color:var(--gray-400)"><i class="fas fa-spinner fa-spin"></i> Loading pets...</td></tr>
       </tbody></table></div>
     </div>
   </div>
@@ -588,7 +610,7 @@
 <div class="modal-overlay" id="modal-viewIncident"><div class="modal" style="width:580px;max-height:90vh;overflow-y:auto">
 <div class="modal-head"><h3><i class="fas fa-exclamation-circle" style="color:var(--red)"></i> Incident Report</h3><button class="modal-close" onclick="closeModal('viewIncident')"><i class="fas fa-times"></i></button></div>
 <div id="view-incident-content"></div>
-<div class="modal-actions"><button class="btn btn-outline" onclick="closeModal('viewIncident')">Close</button><button class="btn btn-primary" onclick="saveIncidentUpdate()"><i class="fas fa-save"></i> Save Update</button></div>
+<div class="modal-actions"><button class="btn btn-outline" onclick="closeModal('viewIncident')">Close</button><button class="btn btn-outline" style="color:var(--red)" onclick="deleteIncident(document.getElementById('view-incident-content').dataset.incId)"><i class="fas fa-trash"></i> Delete</button><button class="btn btn-primary" onclick="saveIncidentUpdate()"><i class="fas fa-save"></i> Save Update</button></div>
 </div></div>
 
 <!-- ADD ANNOUNCEMENT -->
@@ -929,6 +951,6 @@ function closeNotifModal() {
 </script>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-<script src="~/js/staff-dashboard.js?v=5"></script>
+<script src="~/js/staff-dashboard.js?v=8"></script>
 </body>
 </html>

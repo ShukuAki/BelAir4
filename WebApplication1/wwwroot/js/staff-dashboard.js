@@ -144,6 +144,8 @@ async function loadVehiclesPets() {
     PETS     = (pJson && pJson.data) ? pJson.data : (Array.isArray(pJson) ? pJson : []);
     renderVehiclesWidget();
     renderPetsWidget();
+    renderVehiclesTable();
+    renderPetsTable();
     _updateNotifBadge();
   } catch (err) {
     console.warn('Failed to load vehicles/pets:', err);
@@ -216,6 +218,84 @@ function viewPet(id) {
     </div>
   `;
   document.getElementById('view-incident-content').innerHTML = html; openModal('viewIncident');
+}
+
+function renderVehiclesTable() {
+  const tbody = document.getElementById('vehicles-tbody');
+  if (!tbody) return;
+  if (!VEHICLES.length) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--gray-400)">No vehicles registered</td></tr>';
+    return;
+  }
+  tbody.innerHTML = VEHICLES.map(v => `
+    <tr>
+      <td><strong>${escHtml(v.plateNumber || v.PlateNumber || '')}</strong></td>
+      <td>${escHtml(v.ownerName || v.OwnerName || '')}</td>
+      <td>${escHtml(v.brand || v.Brand || '')} ${escHtml(v.model || v.Model || '')}</td>
+      <td>${escHtml(v.category || v.Category || '')}</td>
+      <td><span class="status-pill" style="background:var(--green-light);color:var(--green)">${v.status || 'Active'}</span></td>
+      <td><button class="btn btn-outline btn-sm" onclick="viewVehicle(${v.id || v.Id})"><i class="fas fa-eye"></i></button>
+        <button class="btn btn-outline btn-sm" style="color:var(--red,#dc2626)" title="Delete" onclick="deleteVehicle(${v.id || v.Id})"><i class="fas fa-trash"></i></button></td>
+    </tr>
+  `).join('');
+  const badge = document.getElementById('vehicles-count');
+  if (badge) badge.textContent = VEHICLES.length;
+}
+
+function deleteVehicle(id) {
+  if (!id) { showToast('No vehicle selected to delete', 'error'); return; }
+  const v = VEHICLES.find(x => String(x.id ?? x.Id) === String(id));
+  const plate = v ? (v.plateNumber || v.PlateNumber || 'this vehicle') : 'this vehicle';
+  if (!confirm(`Delete registration for ${plate}? This cannot be undone.`)) return;
+  fetch(`/api/registrations/vehicles/${id}/delete`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin' })
+    .then(r => r.json().catch(() => ({})).then(j => ({ ok: r.ok, status: r.status, j })))
+    .then(({ ok, status, j }) => {
+      if (!ok || !j.success) { showToast(j.error || `Failed to delete vehicle (${status})`, 'error'); return; }
+      VEHICLES = VEHICLES.filter(x => String(x.id ?? x.Id) !== String(id));
+      renderVehiclesTable();
+      if (typeof renderVehiclesWidget === 'function') renderVehiclesWidget();
+      showToast('Vehicle registration deleted', 'success');
+    })
+    .catch(() => showToast('Failed to delete vehicle', 'error'));
+}
+
+function renderPetsTable() {
+  const tbody = document.getElementById('pets-tbody');
+  if (!tbody) return;
+  if (!PETS.length) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--gray-400)">No pets registered</td></tr>';
+    return;
+  }
+  tbody.innerHTML = PETS.map(p => `
+    <tr>
+      <td><strong>${escHtml(p.name || p.Name || '')}</strong></td>
+      <td>${escHtml(p.ownerName || p.OwnerName || '')}</td>
+      <td>${escHtml(p.type || p.Type || '')}</td>
+      <td>${escHtml(p.breed || p.Breed || '')}</td>
+      <td><span class="status-pill" style="background:var(--green-light);color:var(--green)">${p.status || 'Active'}</span></td>
+      <td><button class="btn btn-outline btn-sm" onclick="viewPet(${p.id || p.Id})"><i class="fas fa-eye"></i></button>
+        <button class="btn btn-outline btn-sm" style="color:var(--red,#dc2626)" title="Delete" onclick="deletePet(${p.id || p.Id})"><i class="fas fa-trash"></i></button></td>
+    </tr>
+  `).join('');
+  const badge = document.getElementById('pets-count');
+  if (badge) badge.textContent = PETS.length;
+}
+
+function deletePet(id) {
+  if (!id) { showToast('No pet selected to delete', 'error'); return; }
+  const pet = PETS.find(p => String(p.id ?? p.Id) === String(id));
+  const name = pet ? (pet.name || pet.Name || 'this pet') : 'this pet';
+  if (!confirm(`Delete registration for ${name}? This cannot be undone.`)) return;
+  fetch(`/api/registrations/pets/${id}/delete`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin' })
+    .then(r => r.json().catch(() => ({})).then(j => ({ ok: r.ok, status: r.status, j })))
+    .then(({ ok, status, j }) => {
+      if (!ok || !j.success) { showToast(j.error || `Failed to delete pet (${status})`, 'error'); return; }
+      PETS = PETS.filter(p => String(p.id ?? p.Id) !== String(id));
+      renderPetsTable();
+      if (typeof renderPetsWidget === 'function') renderPetsWidget();
+      showToast('Pet registration deleted', 'success');
+    })
+    .catch(() => showToast('Failed to delete pet', 'error'));
 }
 
 /* ── STATE ── */
@@ -724,6 +804,7 @@ const PAGE_LABELS = {
   incidents    : 'Incident Reports',
   taskboard    : 'Task Board',
   residents    : 'Residents & Verification',
+  vehicles     : 'Vehicle & Pet Registration',
   exchange     : 'Community Exchange',
   forums       : 'Usap Tayo Para sa HOA',
   reservations : 'Reservations',
@@ -752,9 +833,9 @@ function showPage(id, el) {
   if (bc) bc.textContent = PAGE_LABELS[id] || id;
   if (tt) tt.textContent = PAGE_LABELS[id] || id;
   if (id === 'communitymap') setTimeout(initCommunityMap, 80);
-  if (id === 'incidents')    setTimeout(initPreviewMap, 80);
-  if (id === 'vehicles')     loadVehiclesPets();
-  if (id === 'pets')         loadVehiclesPets();
+  if (id === 'incidents')    { loadIncidentsFromAPI(); setTimeout(initPreviewMap, 80); }
+  if (id === 'vehicles')     { loadVehiclesPets(); renderVehiclesTable(); renderPetsTable(); }
+  if (id === 'pets')         { loadVehiclesPets(); renderVehiclesTable(); renderPetsTable(); }
   if (id === 'events')       { renderCalendar(); renderEventsList(); }
   if (id === 'exchange')     loadExchangeData();
   if (id === 'forums')       renderForumsDashboard();
@@ -996,13 +1077,40 @@ function saveIncidentUpdate() {
 }
 
 function deleteIncident(id) {
+  if (!id || id === 'undefined') { showToast('No report selected to delete', 'error'); return; }
   if (!confirm(`Delete ${id}? This cannot be undone.`)) return;
-  MAP_ITEMS = MAP_ITEMS.filter(m => m.incidentId !== id);
-  INCIDENTS = INCIDENTS.filter(i => i.id !== id);
-  persistIncidents();
-  renderIncidentsTable('all'); renderOverviewIncidents(); updateIncidentStats(); updateDistribution(); updateCommonKeywords();
-  if (cmMap) renderCmItems(); refreshPreviewMap(); _updateNotifBadge();
-  showToast(`${id} removed`, 'error');
+
+  // Call the backend API to delete the incident
+  fetch(`/api/incidents/${id}/delete`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'same-origin'
+  })
+  .then(res => res.json())
+  .then(json => {
+    if (json.success) {
+      // Remove from local arrays
+      MAP_ITEMS = MAP_ITEMS.filter(m => String(m.incidentId) !== String(id));
+      INCIDENTS = INCIDENTS.filter(i => String(i.id) !== String(id));
+      persistIncidents();
+      closeModal('viewIncident');
+      renderIncidentsTable('all'); 
+      renderOverviewIncidents(); 
+      updateIncidentStats(); 
+      updateDistribution(); 
+      updateCommonKeywords();
+      if (cmMap) renderCmItems(); 
+      refreshPreviewMap(); 
+      _updateNotifBadge();
+      showToast(`${id} removed`, 'success');
+    } else {
+      showToast(`Error: ${json.error || 'Failed to delete'}`, 'error');
+    }
+  })
+  .catch(err => {
+    console.error('Delete incident error:', err);
+    showToast('Error deleting incident', 'error');
+  });
 }
 
 function renderOverviewIncidents() {
@@ -3614,7 +3722,7 @@ function renderIncidentsTable(filter = 'all') {
         <td>${new Date(r.timestamp).toLocaleDateString()}</td>
         <td>${keywordChips || '<span style="color:#ccc">-</span>'}</td>
         <td>${r.isPublic ? '<i class="fas fa-globe" style="color:var(--green)"></i>' : '<i class="fas fa-lock" style="color:var(--orange)"></i>'}</td>
-        <td><button class="btn btn-outline btn-sm" onclick="viewIncidentDetail(${r.id})"><i class="fas fa-eye"></i></button></td>
+        <td style="white-space:nowrap"><button class="btn btn-outline btn-sm" onclick="viewIncidentDetail(${r.id})"><i class="fas fa-eye"></i></button><button class="btn btn-outline btn-sm" style="color:var(--red);margin-left:4px" onclick="deleteIncident(${r.id})"><i class="fas fa-trash"></i></button></td>
       </tr>
     `;
   }).join('');
@@ -3658,7 +3766,9 @@ function viewIncidentDetail(id) {
     </div>
   `;
 
-  document.getElementById('view-incident-content').innerHTML = html;
+  const content = document.getElementById('view-incident-content');
+  content.innerHTML = html;
+  content.dataset.incId = incident.id;
   openModal('viewIncident');
 }
 
@@ -3930,6 +4040,8 @@ function initializeWordBankAndAnalysis() {
 // Initialize notification service on page load
 if (typeof NotificationService !== 'undefined') {
   document.addEventListener('DOMContentLoaded', function() {
+    // Load incidents from API on page load
+    loadIncidentsFromAPI();
     // Wait a moment for data to load, then start notifications
     setTimeout(() => {
       NotificationService.init();

@@ -87,11 +87,14 @@ function loadSampleData() {
 // Load from server
 async function loadVehiclesFromServer() {
     try {
-        const response = await PageCoordinator.api.get('/api/registrations/vehicles');
-        // API may return an array directly or a wrapper { data: [...] }
+        // Use the owner-filtered endpoint
+        const response = await PageCoordinator.api.get('/api/registrations/vehicles/mine');
+        // API may return a wrapper { success: true, data: [...] }
         const payload = (response && response.data) ? response.data : response;
         if (Array.isArray(payload)) {
             registeredVehicles = payload.map(adaptVehicle);
+        } else if (payload && payload.data && Array.isArray(payload.data)) {
+            registeredVehicles = payload.data.map(adaptVehicle);
         } else {
             // If the response is a single object, wrap it
             registeredVehicles = payload ? [adaptVehicle(payload)] : [];
@@ -103,10 +106,14 @@ async function loadVehiclesFromServer() {
 
 async function loadPetsFromServer() {
     try {
-        const response = await PageCoordinator.api.get('/api/registrations/pets');
+        // Use the owner-filtered endpoint
+        const response = await PageCoordinator.api.get('/api/registrations/pets/mine');
+        // API may return a wrapper { success: true, data: [...] }
         const payload = (response && response.data) ? response.data : response;
         if (Array.isArray(payload)) {
             registeredPets = payload.map(adaptPet);
+        } else if (payload && payload.data && Array.isArray(payload.data)) {
+            registeredPets = payload.data.map(adaptPet);
         } else {
             registeredPets = payload ? [adaptPet(payload)] : [];
         }

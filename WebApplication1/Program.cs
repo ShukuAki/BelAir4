@@ -18,6 +18,8 @@ builder.Services.AddControllersWithViews()
         // Safety net: prevent crashes from circular navigation properties (e.g. AdminUser <-> AuditLog)
         // that aren't explicitly projected to DTOs.
         options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+        // Use camelCase for JSON property names to match JavaScript conventions
+        options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
     });
 
 // Register DbContext with configuration-based connection string.

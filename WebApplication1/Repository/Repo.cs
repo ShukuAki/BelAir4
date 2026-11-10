@@ -33,8 +33,10 @@ namespace WebApplication1.Repository
         // Vehicles & Pets
         Task<List<Models.Vehicle>> GetVehiclesAsync();
         Task<Models.Vehicle> CreateVehicleAsync(Models.Vehicle vehicle);
+        Task<List<Models.Vehicle>> GetVehiclesByOwnerAsync(string ownerName);
         Task<List<Models.Pet>> GetPetsAsync();
         Task<Models.Pet> CreatePetAsync(Models.Pet pet);
+        Task<List<Models.Pet>> GetPetsByOwnerAsync(string ownerName);
         // Concern Reports
         Task<ConcernReport> CreateReportAsync(ConcernReport report);
         Task<List<ConcernReport>> GetReportsAsync();
@@ -43,6 +45,9 @@ namespace WebApplication1.Repository
         Task<int> GetMonthlyReportCountAsync(int year, int month);
         Task<ConcernReport?> GetReportByIdAsync(int id);
         Task<bool> UpdateReportStatusAsync(int id, string status, string? comment, string? handledBy);
+        Task<bool> DeleteReportAsync(int id);
+        Task<bool> DeletePetAsync(int id);
+        Task<bool> DeleteVehicleAsync(int id);
         // Keywords
         Task<List<KeywordDictionary>> GetKeywordsAsync();
         Task<List<KeywordDictionary>> GetActiveKeywordsAsync();
@@ -189,6 +194,8 @@ namespace WebApplication1.Repository
 
         // Landmarks
         Task<List<Landmark>> GetLandmarksAsync();
+        Task<List<Landmark>> GetActiveLandmarksAsync();
+        Task<Landmark?> GetLandmarkByIdAsync(int id);
         Task<int> CreateLandmarkAsync(Landmark landmark);
         Task<bool> UpdateLandmarkAsync(Landmark landmark);
         Task<bool> DeleteLandmarkAsync(int id);
@@ -459,6 +466,18 @@ namespace WebApplication1.Repository
             return vehicle;
         }
 
+        public async Task<List<Models.Vehicle>> GetVehiclesByOwnerAsync(string ownerName)
+        {
+            if (string.IsNullOrWhiteSpace(ownerName))
+                return new List<Models.Vehicle>();
+
+            return await _db.Vehicles
+                .AsNoTracking()
+                .Where(v => v.OwnerName == ownerName)
+                .OrderByDescending(v => v.Id)
+                .ToListAsync();
+        }
+
         public async Task<List<Models.Pet>> GetPetsAsync()
         {
             return await _db.Pets
@@ -472,6 +491,18 @@ namespace WebApplication1.Repository
             _db.Add(pet);
             await _db.SaveChangesAsync();
             return pet;
+        }
+
+        public async Task<List<Models.Pet>> GetPetsByOwnerAsync(string ownerName)
+        {
+            if (string.IsNullOrWhiteSpace(ownerName))
+                return new List<Models.Pet>();
+
+            return await _db.Pets
+                .AsNoTracking()
+                .Where(p => p.OwnerName == ownerName)
+                .OrderByDescending(p => p.Id)
+                .ToListAsync();
         }
 
         public async Task<bool> AddReplyAsync(Reply reply)
@@ -613,6 +644,39 @@ namespace WebApplication1.Repository
                 existing.ResolvedAt = DateTime.Now;
             }
 
+            await _db.SaveChangesAsync();
+            return true;
+        }
+
+        public async Task<bool> DeleteReportAsync(int id)
+        {
+            var existing = await _db.ConcernReports.FindAsync(id);
+            if (existing is null)
+                return false;
+
+            _db.ConcernReports.Remove(existing);
+            await _db.SaveChangesAsync();
+            return true;
+        }
+
+        public async Task<bool> DeletePetAsync(int id)
+        {
+            var existing = await _db.Pets.FindAsync(id);
+            if (existing is null)
+                return false;
+
+            _db.Pets.Remove(existing);
+            await _db.SaveChangesAsync();
+            return true;
+        }
+
+        public async Task<bool> DeleteVehicleAsync(int id)
+        {
+            var existing = await _db.Vehicles.FindAsync(id);
+            if (existing is null)
+                return false;
+
+            _db.Vehicles.Remove(existing);
             await _db.SaveChangesAsync();
             return true;
         }
@@ -1545,6 +1609,16 @@ namespace WebApplication1.Repository
                 .Where(l => l.IsActive)
                 .OrderBy(l => l.Name)
                 .ToListAsync();
+
+        public async Task<List<Landmark>> GetActiveLandmarksAsync() =>
+            await _db.Landmarks.AsNoTracking()
+                .Where(l => l.IsActive)
+                .OrderBy(l => l.Name)
+                .ToListAsync();
+
+        public async Task<Landmark?> GetLandmarkByIdAsync(int id) =>
+            await _db.Landmarks.AsNoTracking()
+                .FirstOrDefaultAsync(l => l.Id == id);
 
         public async Task<int> CreateLandmarkAsync(Landmark landmark)
         {

@@ -755,6 +755,30 @@ namespace WebApplication1.Controllers
             return Json(pets);
         }
 
+        [HttpGet("/api/registrations/vehicles/mine")]
+        [WebApplication1.Filters.UserTypeAuthorize(1, 2, 3)]
+        public async Task<IActionResult> GetMyVehicles()
+        {
+            var username = HttpContext.Session.GetString("Username");
+            if (string.IsNullOrWhiteSpace(username))
+                return Unauthorized(new { success = false, error = "Not logged in" });
+
+            var vehicles = await _repo.GetVehiclesByOwnerAsync(username);
+            return Json(new { success = true, data = vehicles });
+        }
+
+        [HttpGet("/api/registrations/pets/mine")]
+        [WebApplication1.Filters.UserTypeAuthorize(1, 2, 3)]
+        public async Task<IActionResult> GetMyPets()
+        {
+            var username = HttpContext.Session.GetString("Username");
+            if (string.IsNullOrWhiteSpace(username))
+                return Unauthorized(new { success = false, error = "Not logged in" });
+
+            var pets = await _repo.GetPetsByOwnerAsync(username);
+            return Json(new { success = true, data = pets });
+        }
+
         [HttpPost("/api/registrations/pets")]
         [WebApplication1.Filters.UserTypeAuthorize(1,2,3)]
         public async Task<IActionResult> CreatePet([FromBody] Models.Pet pet)
@@ -873,6 +897,69 @@ namespace WebApplication1.Controllers
             }
         }
 
+        [HttpPost("/api/registrations/vehicles/{id:int}/delete")]
+        [WebApplication1.Filters.UserTypeAuthorize(2, 3)] // Staff and Admin only
+        public async Task<IActionResult> DeleteVehicle(int id)
+        {
+            try
+            {
+                var ok = await _repo.DeleteVehicleAsync(id);
+                if (!ok)
+                    return NotFound(new { success = false, error = "Vehicle not found" });
+
+                return Ok(new { success = true, message = "Vehicle registration deleted successfully" });
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error deleting vehicle {VehicleId}", id);
+                return StatusCode(500, new { success = false, error = ex.Message });
+            }
+        }
+
+        [HttpPost("/api/registrations/pets/{id:int}/delete")]
+        [WebApplication1.Filters.UserTypeAuthorize(2, 3)] // Staff and Admin only
+        public async Task<IActionResult> DeletePet(int id)
+        {
+            try
+            {
+                var ok = await _repo.DeletePetAsync(id);
+                if (!ok)
+                    return NotFound(new { success = false, error = "Pet not found" });
+
+                return Ok(new { success = true, message = "Pet registration deleted successfully" });
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error deleting pet {PetId}", id);
+                return StatusCode(500, new { success = false, error = ex.Message });
+            }
+        }
+
+        [HttpPost("/api/incidents/{id}/delete")]
+        [WebApplication1.Filters.UserTypeAuthorize(2, 3)] // Staff and Admin only
+        public async Task<IActionResult> DeleteIncident(int id)
+        {
+            try
+            {
+                var username = HttpContext.Session.GetString("Username") ?? "Staff";
+                _logger?.LogInformation("DeleteIncident {ReportId} by {Username}", id, username);
+
+                var ok = await _repo.DeleteReportAsync(id);
+                if (!ok)
+                {
+                    _logger?.LogWarning("Attempted to delete non-existent report {ReportId}", id);
+                    return NotFound(new { success = false, error = "Report not found" });
+                }
+
+                return Ok(new { success = true, message = "Report deleted successfully" });
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error deleting incident {ReportId}", id);
+                return StatusCode(500, new { success = false, error = ex.Message });
+            }
+        }
+
         // GET /api/admin/recent-activities - aggregated live activity feed for the admin/staff dashboard
         [HttpGet("/api/admin/recent-activities")]
         [WebApplication1.Filters.UserTypeAuthorize(2, 3)]
@@ -938,6 +1025,22 @@ namespace WebApplication1.Controllers
                 .ToList();
 
             return Json(new { success = true, data = ordered });
+        }
+
+        // GET /api/landmarks - Get all active landmarks for public map
+        [HttpGet("/api/landmarks")]
+        public async Task<IActionResult> GetLandmarks()
+        {
+            try
+            {
+                var landmarks = await _repo.GetLandmarksAsync();
+                return Json(new { success = true, data = landmarks });
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error loading landmarks");
+                return StatusCode(500, new { success = false, error = ex.Message });
+            }
         }
 
         // ═══════════════════════════════════════════════════════════
